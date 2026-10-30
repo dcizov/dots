@@ -1,0 +1,11 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v pacman >/dev/null 2>&1; then
+  missing="$(pacman -T git chezmoi just 2>/dev/null || true)"
+  if [[ -n "$missing" ]]; then
+    sudo pacman -S --needed $missing
+  fi
+fi
+{{- end }}

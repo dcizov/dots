@@ -1,0 +1,11 @@
+# fd global ignore file: ~/.config/fd/ignore
+
+.git/
+node_modules/
+dist/
+build/
+target/
+coverage/
+__pycache__/
+.venv/
+.cache/

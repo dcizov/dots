@@ -1,0 +1,18 @@
+# bat config: ~/.config/bat/config
+
+--theme=TwoDark
+--style=numbers,changes,header
+--paging=auto
+--pager=less
+--tabs=4
+
+# Persistent syntax mappings.
+--map-syntax='.ignore:Git Ignore'
+--map-syntax='.fdignore:Git Ignore'
+--map-syntax='.env*:Bourne Again Shell (bash)'
+--map-syntax='.zsh*:Bourne Again Shell (bash)'
+--map-syntax='PKGBUILD:Bourne Again Shell (bash)'
+
+# Optional, but broad: many .conf files are INI-like, some are not.
+# Enable only if you like this behavior.
+# --map-syntax='*.conf:INI'

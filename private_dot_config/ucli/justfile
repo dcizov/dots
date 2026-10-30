@@ -1,0 +1,13 @@
+set shell := ["bash", "-uc"]
+set dotenv-load := false
+
+import 'recipes/core.just'
+import 'recipes/install.just'
+import 'recipes/system.just'
+import 'recipes/gnome.just'
+import 'recipes/inventory.just'
+import 'recipes/devbox.just'
+
+# List recipes.
+_default:
+    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" --list --unsorted

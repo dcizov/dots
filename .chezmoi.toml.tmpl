@@ -1,0 +1,21 @@
+{{ $machine := promptStringOnce . "machine" "Machine type (auto/laptop/workstation)" -}}
+{{ $desktop := promptStringOnce . "desktop" "Desktop (auto/gnome/kde/hyprland)" -}}
+{{ $terminal := promptStringOnce . "terminal" "Terminal (auto/ghostty/kitty/konsole)" -}}
+{{ $role := promptStringOnce . "role" "Role (dev/dev-gaming/minimal)" -}}
+{{ $gaming := promptStringOnce . "gaming" "Gaming machine? (true/false)" -}}
+{{ $devbox_ssh_port := promptStringOnce . "devbox_ssh_port" "Distrobox SSH port (default 2222)" -}}
+
+[edit]
+    command = "nano"
+
+[git]
+    autoCommit = false
+    autoPush = false
+
+[data]
+    machine = {{ $machine | default "auto" | quote }}
+    desktop = {{ $desktop | default "auto" | quote }}
+    terminal = {{ $terminal | default "auto" | quote }}
+    role = {{ $role | default "dev" | quote }}
+    gaming = {{ eq $gaming "true" }}
+    devbox_ssh_port = {{ $devbox_ssh_port | default "2222" | quote }}

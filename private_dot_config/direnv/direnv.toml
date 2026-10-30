@@ -1,0 +1,5 @@
+[global]
+strict_env = true
+warn_timeout = "5s"
+hide_env_diff = false
+load_dotenv = false

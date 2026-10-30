@@ -1,0 +1,15 @@
+# ripgrep config: ~/.config/ripgrep/config
+
+--smart-case
+--hidden
+
+# Keep hidden config files searchable, but skip noisy/generated directories.
+--glob=!.git/
+--glob=!node_modules/
+--glob=!dist/
+--glob=!build/
+--glob=!target/
+--glob=!coverage/
+--glob=!__pycache__/
+--glob=!.venv/
+--glob=!.cache/

@@ -1,0 +1,4 @@
+# Put managed GNOME dconf profiles here:
+# desktop.dconf
+# shell.dconf
+# extensions.dconf

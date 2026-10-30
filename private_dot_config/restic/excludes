@@ -1,0 +1,16 @@
+.cache
+.cache/**
+.Trash
+.Trash/**
+node_modules
+node_modules/**
+dist
+dist/**
+build
+build/**
+target
+target/**
+__pycache__
+__pycache__/**
+.venv
+.venv/**

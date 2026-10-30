@@ -1,0 +1,15 @@
+{
+  // VSCodium runtime arguments -- managed by chezmoi.
+  // Source: dot_vscode-oss/argv.json   Target: ~/.vscode-oss/argv.json
+  //
+  // Grants every API proposal open-remote-ssh declares, including
+  // contribViewsRemote, so its "SSH Targets" view registers inside the
+  // built-in Remote container. Without it, createTreeView('sshHosts') in
+  // src/extension.ts:23 throws "No view is registered with id: sshHosts"
+  // and activation aborts right after the resolver is registered.
+  //
+  // Read only at startup: fully quit and relaunch VSCodium after changing.
+  "enable-proposed-api": [
+    "jeanp413.open-remote-ssh"
+  ]
+}

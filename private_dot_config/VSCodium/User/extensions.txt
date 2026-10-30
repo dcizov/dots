@@ -1,0 +1,36 @@
+# =================================================================================
+# VSCodium extensions — managed by chezmoi.
+# Source:   private_dot_config/VSCodium/User/extensions.txt
+# Target:   ~/.config/VSCodium/User/extensions.txt
+#
+# Installed with:  ucli install-vscodium-ext  (see install-vscodium-extensions.sh)
+#
+# HOW TO FILL THIS IN CORRECTLY:
+#   The entries below were inferred from the extensions your settings.json
+#   references. VERIFY and complete them on a working machine with:
+#       codium --list-extensions
+#   then paste the output here (one per line; '#' lines are ignored).
+# =================================================================================
+
+aaron-bond.better-comments
+alefragnani.bookmarks
+austinjohnson.open-remote-ssh-local
+be5invis.vscode-custom-css
+docker.docker
+esbenp.prettier-vscode
+github.copilot-chat
+gruntfuggly.todo-tree
+isudox.vscode-jetbrains-keybindings
+mkhl.shfmt
+ms-azuretools.vscode-containers
+# piousdeer.adwaita-theme
+pkief.material-icon-theme
+rangav.vscode-thunder-client
+redhat.vscode-yaml
+shan.code-settings-sync
+skellock.just
+usernamehw.errorlens
+visualstudioexptteam.intellicode-api-usage-examples
+visualstudioexptteam.vscodeintellicode
+waderyan.gitblame
+yzhang.markdown-all-in-one

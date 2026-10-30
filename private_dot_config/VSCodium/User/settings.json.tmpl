@@ -1,0 +1,123 @@
+// ===========================================================================
+// VSCodium user settings — managed by chezmoi.
+// Source:
+//   ~/.local/share/chezmoi/private_dot_config/VSCodium/User/settings.json.tmpl
+// Target:
+//   ~/.config/VSCodium/User/settings.json
+//
+// This is a chezmoi template:
+//   - `.chezmoi.homeDir`  -> home directory (fills in /home/<user>)
+//   - `.chezmoi.username` -> username
+//   - `devbox_ssh_port`   -> from [data] in chezmoi.toml (see the devbox block
+//     in .chezmoi.toml.tmpl); defaults to 2222.
+// ===========================================================================
+{
+  // --- existing settings ---------------------------------------------
+  "window.titleBarStyle": "custom",
+  "workbench.colorTheme": "Adwaita Dark (purple accent)",
+  "window.commandCenter": true,
+  "window.autoDetectColorScheme": false,
+  "workbench.preferredLightColorTheme": "Adwaita Light",
+  "editor.renderLineHighlight": "none",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.tree.indent": 12,
+  "sync.gist": "04dae9eef13953668d254508ad2b9c56",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": [
+    "source.organizeImports",
+    "source.fixAll.eslint"
+  ],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.suggestSelection": "first",
+  "editor.tabSize": 2,
+  "files.trimTrailingWhitespace": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "workbench.startupEditor": "none",
+  "window.controlsStyle": "custom",
+  "vscode_custom_css.imports": [
+    "file://{{ .chezmoi.homeDir }}/Projects/vscode-adwaita/custom-gnome50-close-only.css"
+  ],
+  "editor.fontFamily": "'Adwaita Mono', 'Cantarell Mono', 'JetBrains Mono', monospace",
+  "workbench.preferredDarkColorTheme": "Adwaita Dark (purple accent)",
+  "workbench.productIconTheme": "adwaita",
+  "todo-tree.ripgrep.ripgrep": "/usr/bin/rg",
+  "terminal.external.linuxExec": "ghostty",
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
+  "yaml.disableSchemaDetection": [
+    "**/docker-compose.yml",
+    "**/docker-compose.yaml",
+    "**/docker-compose.*.yml",
+    "**/docker-compose.*.yaml",
+    "**/compose.yml",
+    "**/compose.yaml",
+    "**/compose.*.yml",
+    "**/compose.*.yaml"
+  ],
+  "redhat.telemetry.enabled": false,
+
+  // --- dev distrobox integration: Remote-SSH (RECOMMENDED) ----------
+  // Attaches VSCodium to the dev box so language servers run IN the box.
+  // No Dev Containers involved.
+  "remote.SSH.enableDynamicForwarding": false,
+  "remote.SSH.useLocalServer": true,
+  "remote.SSH.remotePlatform": {
+    "{{ .chezmoi.username }}@localhost:{{ index . "devbox_ssh_port" | default "2222" }}": "linux"
+  },
+
+  // --- Intelephense (PHP/Laravel) ------------------------------------------
+  // With Remote-SSH these are only a fallback; with the exported-binaries path
+  // they tell Intelephense which PHP to target (still host-side, a mitigation).
+  "intelephense.php.version": "8.2",
+  "intelephense.environment.phpVersion": "8.2",
+
+  // --- Make the box's exported wrappers visible in the integrated terminal --
+  // So `node`/`php`/`composer` in the host terminal are the box's versions.
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:HOME}/.local/bin:${env:PATH}"
+  },
+  "remote.SSH.defaultExtensions": [
+    // JS / TS / Node / React / Tailwind
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "christian-kohler.path-intellisense",
+    "mikestead.dotenv",
+    "dsznajder.es7-react-js-snippets",
+    "wix.vscode-import-cost",
+    "bradlc.vscode-tailwindcss",
+
+    // PHP / Laravel (+ React / Inertia)
+    "bmewburn.vscode-intelephense-client",
+    "amiralizadeh9480.laravel-extra-intellisense",
+    "onecentlin.laravel-blade",
+    "laravel.vscode-laravel",
+    "codingyu.laravel-goto-view",
+    "ryannaddy.laravel-artisan",
+    "mdrbx.laravel-tinker-vscode",
+    "open-southeners.laravel-pint",
+    "nhedger.inertia",
+    "calebporzio.better-phpunit",
+    "xdebug.php-debug",
+
+    // SQL / Databases
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "mtxr.sqltools-driver-mysql",
+
+    // Project hygiene
+    "EditorConfig.EditorConfig",
+
+    // Misc
+    "waderyan.gitblame",
+    "GitHub.copilot-chat",
+    "yzhang.markdown-all-in-one",
+    "mkhl.shfmt",
+    "rangav.vscode-thunder-client",
+    "Gruntfuggly.todo-tree",
+    "redhat.vscode-yaml"
+  ],
+}

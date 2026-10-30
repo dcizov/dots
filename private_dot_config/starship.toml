@@ -1,0 +1,112 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+command_timeout = 1000
+palette = 'adwaita_dark'
+
+format = '[╭─](dim)$username$hostname$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](dim)$python$character'
+right_format = ''
+
+[palettes.adwaita_dark]
+accent      = '#62a0ea'
+accent_soft = '#99c1f1'
+ok          = '#57e389'
+ok_dim      = '#2ec27e'
+warn        = '#f5c211'
+err         = '#ed333b'
+purple      = '#c061cb'
+fg          = '#ffffff'
+path        = '#deddda'
+dim         = '#9a9996'
+muted       = '#77767b'
+
+[username]
+show_always = true
+style_user = 'bold accent'
+style_root = 'bold err'
+format = '[$user]($style)'
+
+[hostname]
+ssh_only = false
+style = 'bold accent_soft'
+format = '[ at ](dim)[$hostname]($style)'
+
+[directory]
+style = 'bold path'
+repo_root_style = 'bold fg'
+format = '[ in ](dim)[$path]($style)'
+truncation_length = 3
+truncation_symbol = '…/'
+truncate_to_repo = true
+read_only = ' 🔒'
+read_only_style = 'err'
+
+[git_branch]
+symbol = '🌱 '
+style = 'bold ok_dim'
+format = '[ on ](dim)[$symbol$branch]($style)'
+truncation_length = 32
+
+[git_commit]
+style = 'dim'
+format = ' [\\($hash$tag\\)]($style)'
+only_detached = true
+
+[git_state]
+style = 'bold warn'
+format = ' [%state( $progress_current/$progress_total)]($style)'
+
+[git_status]
+style = 'bold accent_soft'
+format = '( [$all_status$ahead_behind]($style))'
+conflicted = '[=](bold err)'
+ahead = '[⇡${count}](bold ok)'
+behind = '[⇣${count}](bold err)'
+diverged = '[⇕⇡${ahead_count}⇣${behind_count}](bold warn)'
+untracked = '[?${count}](bold accent_soft)'
+stashed = '[\\$${count}](bold muted)'
+modified = '[!${count}](bold warn)'
+staged = '[+${count}](bold ok)'
+renamed = '[»${count}](bold warn)'
+deleted = '[✘${count}](bold err)'
+
+[cmd_duration]
+min_time = 2000
+show_milliseconds = false
+format = '[ took ](dim)[$duration](bold warn)'
+
+[fill]
+symbol = ' '
+style = ''
+
+[time]
+disabled = false
+time_format = '%H:%M:%S'
+style = 'muted'
+format = '[$time]($style)'
+
+[python]
+style = 'bold accent_soft'
+format = '([$virtualenv]($style) )'
+detect_extensions = ['py', 'ipynb']
+
+[line_break]
+disabled = false
+
+[character]
+format = '$symbol'
+success_symbol = '[▸](fg) '
+error_symbol = '[×](bold err) '
+vimcmd_symbol = '[◂](fg) '
+
+[jobs]
+style = 'bold warn'
+symbol = '✦'
+number_threshold = 1
+format = '[$symbol$number]($style) '
+
+[package]
+disabled = true
+
+[status]
+disabled = true

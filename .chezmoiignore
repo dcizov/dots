@@ -1,0 +1,44 @@
+{{- $terminal := index . "terminal" | default "none" -}}
+{{- $desktop := index . "desktop" | default "none" -}}
+
+README.md
+AGENT_HANDOFF.md
+*.tar.gz
+*.zip
+*.bak
+
+{{- if ne $terminal "kitty" }}
+.config/kitty/
+{{- end }}
+
+{{- if ne $terminal "ghostty" }}
+.config/ghostty/
+{{- end }}
+
+{{- if ne $terminal "konsole" }}
+.config/konsolerc
+.config/konsolesshconfig
+.config/konsolestaterc
+{{- end }}
+
+{{- if ne $desktop "hyprland" }}
+.config/hypr/
+.config/waybar/
+.config/wofi/
+.config/rofi/
+{{- end }}
+
+{{- if ne $desktop "gnome" }}
+.config/gtk-3.0/
+.config/gtk-4.0/
+{{- end }}
+
+{{- if ne $desktop "kde" }}
+.config/kdeglobals
+.config/kwinrc
+.config/plasmarc
+.config/plasma-org.kde.plasma.desktop-appletsrc
+{{- end }}
+
+# Bootstrap installer, served by install.wtfaq.tech
+install.sh
