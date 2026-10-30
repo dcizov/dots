@@ -6,7 +6,8 @@
 #   provisioner  -> private_dot_config/distrobox/executable_provision-dev.sh
 #   tunables     -> private_dot_config/distrobox/devbox.env   (node/php channel)
 #   reconcile    -> private_dot_config/ucli/scripts/devbox/executable_devbox-reconcile.sh
-#   hook         -> run_after_92-distrobox-dev.sh  (same script, every apply)
+#   (no hook)    -> chezmoi ships these files only; nothing in run_* starts,
+#                   stops or enters a container
 #   compose file -> private_dot_config/dev-services/compose.yml
 #   vscodium ext -> private_dot_config/ucli/scripts/install/executable_install-vscodium-extensions.sh
 #
@@ -22,9 +23,9 @@ devbox-shell:
 devbox-reconcile:
     @~/.config/ucli/scripts/devbox/devbox-reconcile.sh
 
-# Rebuild the container to apply image/volume/init_hooks changes (Debian bump).
 # The container is discarded; $HOME, ~/.nvm, ~/.vscode-server and your repos
 # survive, and provisioning runs automatically afterwards.
+# Rebuild the container to apply image/volume/init_hooks changes (Debian bump).
 devbox-recreate:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -38,9 +39,13 @@ devbox-versions:
 devbox-log:
     @distrobox enter dev -- sudo tail -n 100 /var/log/devbox-provision.log
 
+# Goes through the reconcile so it shares the flock, the init wait and the
+# streamed output instead of starting a second apt run behind its back.
 # Re-run provisioning in place, without recreating the container.
 devbox-reprovision:
-    @distrobox enter dev -- sudo DEVBOX_FORCE=1 bash ~/.config/distrobox/provision-dev.sh
+    #!/usr/bin/env bash
+    set -euo pipefail
+    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Print the exact command assemble would run for this manifest.
 devbox-dry-run:
@@ -48,12 +53,12 @@ devbox-dry-run:
     set -euo pipefail
     distrobox assemble create --dry-run --file "$HOME/.config/distrobox/dev.ini"
 
-# Diagnose why Remote-SSH cannot bootstrap its server in the box.
 # Walks auth -> login shell -> prereqs -> the exact `bash -l` pipeline.
+# Diagnose why Remote-SSH cannot bootstrap its server in the box.
 devbox-vscode-doctor *ARGS:
     ~/.config/ucli/scripts/devbox/devbox-vscode-doctor.sh {{ARGS}}
 
-# Bisect the `bash -l` profile chain for the file that eats stdin,
 # and prove the host-spawn guard fixes it before you install it.
+# Bisect the `bash -l` profile chain for the file that eats stdin.
 devbox-vscode-bisect *ARGS:
     ~/.config/ucli/scripts/devbox/devbox-vscode-bisect.sh {{ARGS}}

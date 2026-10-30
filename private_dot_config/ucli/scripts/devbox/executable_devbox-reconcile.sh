@@ -318,7 +318,8 @@ provision_in_box() {
   # stream (docker-build style). DEVBOX_VERBOSE=0 / QUIET=1 silences it.
   ANIM=0; [ -t 1 ] && ANIM=1
   if ! in_box env DEVBOX_PROVISION_HASH="$PROV_HASH" DEVBOX_VERBOSE="$DEVBOX_VERBOSE" \
-       DEVBOX_ANIM="$ANIM" /usr/bin/env bash "$PROV"; then
+       DEVBOX_ANIM="$ANIM" ${DEVBOX_FORCE:+DEVBOX_FORCE="$DEVBOX_FORCE"} \
+       /usr/bin/env bash "$PROV"; then
     printf '\033[1;31merror:\033[0m provisioning failed in %s\n' "$BOX" >&2
     in_box sh -c 'tail -n 25 /var/log/devbox-provision.log 2>/dev/null' >&2 || true
     if ! box_running; then

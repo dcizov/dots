@@ -8,7 +8,7 @@ usage:
     @printf '%s\n' '  chezmoi init/apply'
     @printf '%s\n' '  ucli setup-snapshots'
     @printf '%s\n' '  ucli setup-system'
-    @printf '%s\n' '  ucli devbox-reconcile
+    @printf '%s\n' '  ucli devbox-reconcile'
     @printf '%s\n' ''
     @printf '%s\n' 'Browse commands:'
     @printf '%s\n' '  ucli --choose'
@@ -53,10 +53,20 @@ doctor:
     if command -v distrobox >/dev/null 2>&1; then
       printf 'OK:      distrobox -> %s\n' "$(command -v distrobox)"
       if distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
-        distrobox enter dev -- bash -lc \
-          'printf "OK:      dev: debian %s / node %s / php %s\n" \
-             "$(cat /etc/debian_version)" "$(node -v 2>/dev/null || echo MISSING)" \
-             "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)"' || true
+        # a container that exists but was never provisioned looks identical to a
+        # healthy one unless we ask about the versions the tooling assumes
+        out="$(distrobox enter dev -- bash -lc \
+          'printf "%s|%s|%s\n" "$(cat /etc/debian_version)" \
+             "$(node -v 2>/dev/null || echo MISSING)" \
+             "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)"' 2>/dev/null || true)"
+        debian="${out%%|*}"; rest="${out#*|}"; node="${rest%%|*}"; php="${rest##*|}"
+        if [[ -n "$debian" && "$node" != MISSING && "$php" != MISSING ]]; then
+          printf 'OK:      dev: debian %s / node %s / php %s\n' "$debian" "$node" "$php"
+        else
+          printf 'INCOMPLETE: dev exists but is not provisioned (node %s, php %s)\n' \
+            "${node:-?}" "${php:-?}"
+          printf '         run: ucli devbox-reconcile (or ucli devbox-reprovision)\n'
+        fi
       else
         printf 'MISSING: container dev (ucli devbox-reconcile)\n'
       fi

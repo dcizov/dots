@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${WTFAQ_REPO:-https://github.com/wtfaq/dotfiles.git}"
+REPO="${WTFAQ_REPO:-https://github.com/dcizov/dots.git}"
 BRANCH="${WTFAQ_BRANCH:-}"
 APPLY=1
 YES=0

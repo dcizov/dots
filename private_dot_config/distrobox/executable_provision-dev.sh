@@ -226,11 +226,12 @@ done
 
 step "per-boot bits: sshd, docker shim, profile.d, host-spawn guard"
 
+SSH_PORT="${DEVBOX_SSH_PORT:-2222}"
 if [ -x /usr/sbin/sshd ] && ! pgrep -x sshd >/dev/null 2>&1; then
   install -d -m 755 /run/sshd || true
   ssh-keygen -A >/dev/null 2>&1 || true
-  /usr/sbin/sshd -p 2222 >/dev/null 2>&1 || warn "sshd failed to start on port 2222"
-  say "sshd started on :2222"
+  /usr/sbin/sshd -p "$SSH_PORT" >/dev/null 2>&1 || warn "sshd failed to start on port $SSH_PORT"
+  say "sshd started on :$SSH_PORT"
 fi
 
 if [ -x /usr/bin/distrobox-host-exec ] && [ ! -L /usr/local/bin/docker ]; then
