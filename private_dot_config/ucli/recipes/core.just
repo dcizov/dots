@@ -93,6 +93,55 @@ doctor:
       printf 'MISSING: distrobox\n'
     fi
 
+# Compare the prompt-relevant settings of the host and the dev box.
+[group('Help')]
+_prompt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # zsh draws the prompt with zle, which needs three things to agree:
+    #   * a multibyte locale   — otherwise prompt width is measured in bytes,
+    #   * a terminal size shared with starship's `$fill` — otherwise the first
+    #     line is one column too long and wraps,
+    #   * a terminfo entry for $TERM.
+    # When any of these differ between host and box, zle redraws one line off.
+    row() {  # <label> <term> <cols> <charmap> <multibyte> <starship>
+      printf '%-6s TERM=%-16s cols=%-4s COLUMNS=%-5s locale=%-14s zsh-multibyte=%-3s starship=%s\n' \
+        "$1" "${2:-unset}" "${3:-?}" "${COLUMNS:-unset}" "${4:-?}" "$5" "${6:-MISSING}"
+    }
+    cols_here() { tput cols 2>/dev/null || stty size 2>/dev/null | awk '{print $2}'; }
+    mb_here() {  # 1 = zsh is really multibyte, 4 = it silently fell back to C
+      command -v zsh >/dev/null 2>&1 || { printf 'no'; return; }
+      [[ "$(zsh -fc 'print ${#${(%):-🌱}}' 2>/dev/null || echo 4)" == 1 ]] && printf 'yes' || printf 'no'
+    }
+
+    row host "${TERM:-unset}" "$(cols_here || true)" "$(locale charmap 2>/dev/null || echo '?')" \
+        "$(mb_here)" "$(starship --version 2>/dev/null | awk '{print $2}')"
+
+    if ! command -v distrobox >/dev/null 2>&1; then
+      printf '%-6s no distrobox\n' dev
+      exit 0
+    fi
+    if ! distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
+      printf '%-6s no dev box\n' dev
+      exit 0
+    fi
+    box="$(distrobox enter dev -- bash -s 2>/dev/null <<'PROBE' || true
+    cols="$(tput cols 2>/dev/null || stty size 2>/dev/null | awk '{print $2}')"
+    mb=no
+    if command -v zsh >/dev/null 2>&1 &&
+       [ "$(zsh -fc 'print ${#${(%):-🌱}}' 2>/dev/null || echo 4)" = 1 ]; then
+      mb=yes
+    fi
+    term_ok=missing
+    infocmp "${TERM:-}" >/dev/null 2>&1 && term_ok=ok
+    printf '%s|%s|%s|%s|%s|%s\n' "${TERM:-unset}" "$cols" "$(locale charmap 2>/dev/null || echo '?')" \
+      "$mb" "$(starship --version 2>/dev/null | awk '{print $2}')" "$term_ok"
+    PROBE
+    )"
+    IFS='|' read -r bterm_name bcols bchar bmb bstar bterm <<<"$box" || true
+    row dev "$bterm_name" "$bcols" "$bchar" "$bmb" "$bstar"
+    printf '%-6s terminfo for %s inside the box: %s\n' '' "${bterm_name:-unset}" "${bterm:-not checked}"
+
 # Validate package arrays.
 [group('Help')]
 validate:

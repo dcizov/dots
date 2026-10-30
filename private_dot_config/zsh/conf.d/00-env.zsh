@@ -1,27 +1,24 @@
-# Locale — must come first, because it changes how zsh measures the prompt.
+# Locale — first, because it decides how zsh measures the prompt.
 #
-# zsh counts a prompt's width in BYTES when the locale is not multibyte
+# zsh measures a prompt in BYTES unless it is really running multibyte
 # (Src/utils.c: mb_metastrlenend() returns the byte length when MB_CUR_MAX == 1).
-# starship's prompt here is mostly multibyte glyphs (╭ ─ … 🌱 ▸), so in a C/POSIX
-# locale zsh believes the line is ~10 columns wider than it really is; zle then
-# erases and scrolls by that wrong amount on every redraw (Enter, Tab), which is
-# the "prompt eats the line above it" bug inside the distrobox.
+# starship's prompt is mostly multibyte glyphs (╭ ─ … 🌱 ▸), so in that state zsh
+# believes the line is ~10 columns wider than it is and zle erases a screen line
+# on every redraw — Enter and Tab both scroll one line too many.
 #
-# The box inherits LANG from the host, but the container is a fresh Debian image
-# where that locale need not be generated — glibc then silently falls back to
-# ANSI_X3.4-1968 (ASCII) and the prompt breaks, while the host looks fine.
-# So test the effective charset, not the name of the locale.
-if [[ "$(locale charmap 2>/dev/null)" != "UTF-8" ]]; then
+# Ask zsh itself rather than the environment: a locale variable naming a locale
+# the container never generated makes setlocale(LC_ALL, "") fail as a whole, and
+# zsh then silently stays in C while `locale charmap` can still print UTF-8.
+# Counting one wide glyph answers the question that zle actually asks.
+if (( ${#${(%):-🌱}} > 1 )); then
   # C.UTF-8 is built into glibc >= 2.35, so it exists on Arch and Debian 12+
-  # without locale-gen ever having run.
+  # even when locale-gen has never run.
   unset LC_ALL LC_CTYPE
   export LANG=C.UTF-8
-  if [[ "$(locale charmap 2>/dev/null)" != "UTF-8" ]]; then
-    print -u2 "warning: no UTF-8 locale available; the prompt will be misaligned"
+  if (( ${#${(%):-🌱}} > 1 )); then
+    print -u2 "warning: no usable UTF-8 locale; the prompt will be misaligned"
   fi
 fi
-
-# Environment.
 
 export PATH="$HOME/.local/bin:$PATH"
 export EDITOR="${EDITOR:-nano}"

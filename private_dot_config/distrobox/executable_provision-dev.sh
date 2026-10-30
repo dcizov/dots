@@ -295,7 +295,11 @@ if ! run "apt-get install base packages" apt_get install -y "$APT_Q" --no-instal
 fi
 
 if [ "${DEVBOX_SKIP_APT_TOOLING:-0}" != "1" ]; then
-  TOOLING_PKGS="bash-completion zsh fzf starship fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential"
+  # ncurses-term: the extended terminfo database. Without it the box knows only
+  # the handful of entries in ncurses-base, and for a terminal like foot,
+  # alacritty, wezterm, kitty or ghostty zle loses the capabilities it redraws
+  # the prompt with.
+  TOOLING_PKGS="bash-completion zsh fzf starship fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential ncurses-term"
   step "apt: interactive tooling (best-effort)"
   say "$TOOLING_PKGS"
   TOOLING_FAILED=""
