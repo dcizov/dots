@@ -91,6 +91,7 @@ CLI=(
   duf
   ripgrep
   fzf
+  gum          # menu backend for ucli (ujust uses it too)
   starship
   glow
   direnv

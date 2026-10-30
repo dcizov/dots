@@ -14,6 +14,35 @@
 # The reconcile reads the Debian version from `image=debian:<N>` in dev.ini and
 # the box name from its `[section]`, so dev.ini is the single source of truth.
 
+# Everything the box can do, in one menu (fzf → gum → plain select).
+[group('Dev box')]
+devbox:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    . "$HOME/.config/ucli/scripts/lib/choose.sh"
+    ucli_bin="$(command -v ucli || printf '%s' "$HOME/.local/bin/ucli")"
+    action="$(ui_choose 'dev box' \
+      'reconcile|create or update the box — instant no-op when nothing changed' \
+      'shell|open an interactive shell inside dev' \
+      'versions|debian / node / npm / php / composer inside the box' \
+      'log|tail /var/log/devbox-provision.log from the last run' \
+      'reprovision|re-run provisioning, keep the container' \
+      'recreate|rebuild the container (image / volumes / init_hooks)' \
+      'dry-run|print the distrobox-assemble command for this manifest' \
+      'vscode-doctor|diagnose why Remote-SSH cannot bootstrap in the box' \
+      'vscode-bisect|find the profile file that eats stdin')" || exit 0
+    case "$action" in
+      reconcile)     exec "$ucli_bin" devbox-reconcile ;;
+      shell)         exec "$ucli_bin" devbox-shell ;;
+      versions)      exec "$ucli_bin" _devbox-versions ;;
+      log)           exec "$ucli_bin" _devbox-log ;;
+      reprovision)   exec "$ucli_bin" _devbox-reprovision ;;
+      recreate)      exec "$ucli_bin" _devbox-recreate ;;
+      dry-run)       exec "$ucli_bin" _devbox-dry-run ;;
+      vscode-doctor) exec "$ucli_bin" _devbox-vscode-doctor ;;
+      vscode-bisect) exec "$ucli_bin" _devbox-vscode-bisect ;;
+    esac
+
 # Open an interactive shell inside dev.
 [group('Dev box')]
 devbox-shell:
@@ -28,46 +57,39 @@ devbox-reconcile:
 # The container is discarded; $HOME, ~/.nvm, ~/.vscode-server and your repos
 # survive, and provisioning runs automatically afterwards.
 # Rebuild the container to apply image/volume/init_hooks changes (Debian bump).
-[group('Dev box')]
-devbox-recreate:
+_devbox-recreate:
     #!/usr/bin/env bash
     set -euo pipefail
     DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Versions inside the box (what the rest of the tooling assumes).
-[group('Dev box')]
-devbox-versions:
+_devbox-versions:
     @distrobox enter dev -- bash -lc 'printf "debian   %s\n" "$(cat /etc/debian_version)"; printf "node     %s\n" "$(node -v 2>/dev/null || echo MISSING)"; printf "npm      %s\n" "$(npm -v 2>/dev/null || echo MISSING)"; printf "php      %s\n" "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)"; printf "composer %s\n" "$(composer --version 2>/dev/null | head -1)"; printf "docker   %s\n" "$(docker --version 2>/dev/null | head -1)"'
 
 # Provisioning log from the last create/boot (apt, nvm, php, plugin warnings).
-[group('Dev box')]
-devbox-log:
+_devbox-log:
     @distrobox enter dev -- sudo tail -n 100 /var/log/devbox-provision.log
 
 # Goes through the reconcile so it shares the flock, the init wait and the
 # streamed output instead of starting a second apt run behind its back.
 # Re-run provisioning in place, without recreating the container.
-[group('Dev box')]
-devbox-reprovision:
+_devbox-reprovision:
     #!/usr/bin/env bash
     set -euo pipefail
     DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Print the exact command assemble would run for this manifest.
-[group('Dev box')]
-devbox-dry-run:
+_devbox-dry-run:
     #!/usr/bin/env bash
     set -euo pipefail
     distrobox assemble create --dry-run --file "$HOME/.config/distrobox/dev.ini"
 
 # Walks auth -> login shell -> prereqs -> the exact `bash -l` pipeline.
 # Diagnose why Remote-SSH cannot bootstrap its server in the box.
-[group('Dev box')]
-devbox-vscode-doctor *ARGS:
+_devbox-vscode-doctor *ARGS:
     ~/.config/ucli/scripts/devbox/devbox-vscode-doctor.sh {{ARGS}}
 
 # and prove the host-spawn guard fixes it before you install it.
 # Bisect the `bash -l` profile chain for the file that eats stdin.
-[group('Dev box')]
-devbox-vscode-bisect *ARGS:
+_devbox-vscode-bisect *ARGS:
     ~/.config/ucli/scripts/devbox/devbox-vscode-bisect.sh {{ARGS}}

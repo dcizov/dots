@@ -23,39 +23,31 @@ gaming:
 apps:
     ~/.config/ucli/scripts/install/install-overrides.sh
 
-# Optional extras picker.
-_extras:
+# Picker for the opt-in extras (shell, paru, overrides, full setup).
+[group('Install')]
+extras:
     #!/usr/bin/env bash
     set -euo pipefail
-    items=(
-      'cli|Set up shell CLI experience'
-      'devmode|Set up developer tools'
-      'gaming|Install gaming profile'
-      'apps|Install personal apps and overrides'
-      'shell-overrides|Install explicit shell override packages'
-      'full-setup|Install system profile plus cli/dev/gaming'
-      'shell|Install Oh My Zsh and fzf-tab'
-      'paru|Install paru idempotently'
-    )
-    if command -v fzf >/dev/null 2>&1; then
-      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='extras> ' --with-nth=1,2 --delimiter='|')" || exit 0
-      choice="${choice%%|*}"
-    else
-      select item in "${items[@]}"; do choice="${item%%|*}"; break; done
-    fi
+    . "$HOME/.config/ucli/scripts/lib/choose.sh"
+    ucli_bin="$(command -v ucli || printf '%s' "$HOME/.local/bin/ucli")"
+    choice="$(ui_choose 'extras' \
+      'cli|Set up shell CLI experience' \
+      'devmode|Set up developer tools (includes the dev box)' \
+      'gaming|Install gaming profile' \
+      'apps|Install personal apps and overrides' \
+      'shell-overrides|Install explicit shell override packages' \
+      'full-setup|Install system profile plus cli/dev/gaming' \
+      'shell|Install Oh My Zsh and fzf-tab' \
+      'paru|Install paru idempotently')" || exit 0
     case "$choice" in
-      cli) ~/.config/ucli/scripts/install/install-packages.sh cli ;;
-      devmode) ~/.config/ucli/scripts/install/install-dev-profile.sh ;;
-      gaming) ~/.config/ucli/scripts/install/install-gaming-profile.sh ;;
-      apps) ~/.config/ucli/scripts/install/install-overrides.sh ;;
-      shell-overrides) ~/.config/ucli/scripts/install/install-packages.sh shell-overrides ;;
-      full-setup)
-        ~/.config/ucli/scripts/install/install-packages.sh full
-        ~/.config/ucli/scripts/install/install-shell.sh
-        ~/.config/ucli/scripts/install/install-flatpaks.sh full
-        ;;
-      shell) ~/.config/ucli/scripts/install/install-shell.sh ;;
-      paru) ~/.config/ucli/scripts/install/install-paru.sh ;;
+      cli)             exec "$ucli_bin" cli ;;
+      devmode)         exec "$ucli_bin" devmode ;;
+      gaming)          exec "$ucli_bin" gaming ;;
+      apps)            exec "$ucli_bin" apps ;;
+      shell-overrides) exec "$ucli_bin" _shell-overrides ;;
+      full-setup)      exec "$ucli_bin" _full-setup ;;
+      shell)           exec "$ucli_bin" _shell ;;
+      paru)            exec "$ucli_bin" _install-paru ;;
     esac
 
 # Install first-machine profile.

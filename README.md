@@ -79,12 +79,19 @@ entirely in this repo:
 | `private_dot_config/ucli/scripts/devbox/executable_devbox-reconcile.sh` | create-or-update, the single entry point |
 
 ```bash
-ucli devbox-reconcile     # create the box, or bring it in line with this commit
-ucli devbox-versions      # debian / node / npm / php / composer inside the box
-ucli devbox-shell         # distrobox enter dev
-ucli devbox-recreate      # rebuild — only needed for image/volumes/init_hooks changes
-ucli devbox-reprovision   # re-run provisioning without recreating
-ucli devbox-log           # /var/log/devbox-provision.log from the last run
+ucli devbox              # menu: reconcile, shell, versions, log, reprovision,
+                         #       recreate, dry-run, vscode-doctor, vscode-bisect
+ucli devbox-reconcile    # create the box, or bring it in line with this commit
+ucli devbox-shell        # distrobox enter dev
+```
+
+The rarely-typed actions are hidden recipes (`_devbox-versions`, `_devbox-recreate`,
+`_devbox-log`, …) so the list stays readable — they still run if you name them,
+and the menu is the discoverable path:
+
+```bash
+ucli --show _devbox-recreate    # what the menu entry runs
+ucli _devbox-versions           # direct
 ```
 
 `distrobox assemble create` on its own only creates a bare container — no Node,

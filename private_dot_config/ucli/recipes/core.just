@@ -19,14 +19,15 @@ usage:
     @printf '%s\n' '  ucli devmode   # developer tools'
     @printf '%s\n' '  ucli gaming    # gaming profile'
     @printf '%s\n' '  ucli apps      # personal apps and overrides'
+    @printf '%s\n' '  ucli extras    # everything else: shell, paru, overrides, full setup'
     @printf '%s\n' '  ucli system    # checks and maintenance helpers'
     @printf '%s\n' '  ucli gnome     # GNOME helpers'
-    @printf '%s\n' '  ucli devbox    # distrobox box: reconcile/recreate/versions/log'
+    @printf '%s\n' '  ucli devbox    # box menu: reconcile, shell, versions, log, recreate …'
     @printf '%s\n' ''
     @printf '%s\n' 'Direct tools:'
     @printf '%s\n' '  chezmoi diff && chezmoi apply -v'
     @printf '%s\n' '  ucli devbox-reconcile    # creates or updates the box'
-    @printf '%s\n' '  ucli devbox-recreate     # rebuild on a new Debian base'
+    @printf '%s\n' '  ucli devbox              # menu, incl. recreate on a new Debian base'
     @printf '%s\n' '  cd ~/.config/dev-services && docker compose up -d'
 
 # Show configured and detected profile data.
