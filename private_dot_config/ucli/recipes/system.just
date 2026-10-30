@@ -1,8 +1,10 @@
 # Set up snapshots and boot entries. Skips CachyOS.
+[group('System')]
 setup-snapshots:
     sudo ~/.config/ucli/scripts/system/arch-snapper-limine.sh
 
 # System menu.
+[group('System')]
 system:
     #!/usr/bin/env bash
     set -euo pipefail

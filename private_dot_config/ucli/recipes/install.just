@@ -1,20 +1,25 @@
 # Set up the machine profile.
+[group('Install')]
 setup-system:
     ~/.config/ucli/scripts/install/install-profile.sh
 
 # Set up shell CLI experience.
+[group('Install')]
 cli:
     ~/.config/ucli/scripts/install/install-packages.sh cli
 
 # Set up developer tools.
+[group('Install')]
 devmode:
     ~/.config/ucli/scripts/install/install-dev-profile.sh
 
 # Install gaming profile.
+[group('Install')]
 gaming:
     ~/.config/ucli/scripts/install/install-gaming-profile.sh
 
 # Install personal apps and overrides.
+[group('Install')]
 apps:
     ~/.config/ucli/scripts/install/install-overrides.sh
 

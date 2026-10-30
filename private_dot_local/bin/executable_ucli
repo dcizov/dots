@@ -1,3 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec just --justfile "$HOME/.config/ucli/justfile" --working-directory "$HOME" "$@"
+
+JUSTFILE="${UCLI_JUSTFILE:-$HOME/.config/ucli/justfile}"
+
+# ujust parity: `--choose` needs fzf, and without this guard a missing fzf
+# surfaces as `bash: fzf: command not found` from just's default chooser.
+# ujust installs it via brew; Arch has it in the repos (and in packages.bash).
+if printf '%s\n' "$@" | grep -qx -- '--choose' && ! command -v fzf >/dev/null 2>&1; then
+  printf 'ucli: --choose requires fzf\n' >&2
+  if command -v pacman >/dev/null 2>&1 && [ -t 0 ]; then
+    read -r -p 'install fzf with pacman now? [y/N] ' ans
+    if [[ "${ans:-}" == [yY]* ]]; then
+      sudo pacman -S --needed --noconfirm fzf || true
+    fi
+  fi
+  if ! command -v fzf >/dev/null 2>&1; then
+    printf 'ucli: fzf still missing — install it (pacman -S fzf), then retry\n' >&2
+    exit 127
+  fi
+fi
+
+exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$@"

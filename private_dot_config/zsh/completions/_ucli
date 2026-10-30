@@ -1,0 +1,15 @@
+#compdef ucli
+#
+# Recipe list comes from the justfile itself, so a new recipe completes as soon
+# as it is added — the same trick as ujust's bash completion (`just --summary`).
+# fzf-tab renders this as a fuzzy menu with descriptions from your config.
+
+_ucli() {
+  local justfile="${UCLI_JUSTFILE:-$HOME/.config/ucli/justfile}"
+  local -a recipes
+  recipes=(${(f)"$(just --summary --justfile "$justfile" 2>/dev/null | tr ' ' '\n')"})
+  (( ${#recipes} )) || return 1
+  _describe -t commands 'ucli recipe' recipes
+}
+
+_ucli "$@"

@@ -1,5 +1,8 @@
 # Completion / fzf-tab styles loaded before compinit.
 
+# ucli recipe completion (config/zsh/completions/_ucli)
+fpath=("$HOME/.config/zsh/completions" $fpath)
+
 zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' menu no
 [[ -n "$LS_COLORS" ]] && zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}

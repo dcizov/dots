@@ -3,6 +3,7 @@ _choose:
     @ucli --choose
 
 # Show common flows.
+[group('Help')]
 usage:
     @printf '%s\n' 'Setup:'
     @printf '%s\n' '  chezmoi init/apply'
@@ -29,10 +30,12 @@ usage:
     @printf '%s\n' '  cd ~/.config/dev-services && docker compose up -d'
 
 # Show configured and detected profile data.
+[group('Help')]
 profile:
     ~/.config/ucli/scripts/system/detect.sh
 
 # Check setup health.
+[group('Help')]
 doctor:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -75,6 +78,7 @@ doctor:
     fi
 
 # Validate package arrays.
+[group('Help')]
 validate:
     ~/.config/ucli/scripts/install/validate-packages.sh
 

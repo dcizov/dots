@@ -1,5 +1,7 @@
 set shell := ["bash", "-uc"]
 set dotenv-load := false
+# ujust parity: never echo comment lines from recipe bodies.
+set ignore-comments
 
 import 'recipes/core.just'
 import 'recipes/install.just'
@@ -8,6 +10,8 @@ import 'recipes/gnome.just'
 import 'recipes/inventory.just'
 import 'recipes/devbox.just'
 
-# List recipes.
+# List recipes. ujust-style: a docs pointer, then the grouped list.
 _default:
-    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" --list --unsorted
+    @printf '%s\n' 'https://github.com/dcizov/dots#ucli'
+    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" \
+        --list --unsorted --list-heading $'Available commands:\n'

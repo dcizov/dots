@@ -1,4 +1,5 @@
 # GNOME menu.
+[group('GNOME')]
 gnome:
     #!/usr/bin/env bash
     set -euo pipefail
