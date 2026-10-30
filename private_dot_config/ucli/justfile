@@ -9,6 +9,7 @@ import 'recipes/system.just'
 import 'recipes/gnome.just'
 import 'recipes/inventory.just'
 import 'recipes/devbox.just'
+import 'recipes/maintenance.just'
 
 # List recipes. ujust-style: a docs pointer, then the grouped list.
 _default:

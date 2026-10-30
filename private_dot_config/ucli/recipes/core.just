@@ -5,6 +5,11 @@ _choose:
 # Show common flows.
 [group('Help')]
 usage:
+    @printf '%s\n' 'Day to day:'
+    @printf '%s\n' '  ucli update    # pacman + AUR + flatpaks + dev box'
+    @printf '%s\n' '  ucli logs      # this boot / last boot / devbox / pacman'
+    @printf '%s\n' '  ucli clean-system'
+    @printf '%s\n' ''
     @printf '%s\n' 'Setup:'
     @printf '%s\n' '  chezmoi init/apply'
     @printf '%s\n' '  ucli setup-snapshots'

@@ -119,6 +119,27 @@ reachable from inside the box because distrobox shares the host network
 namespace. Keep app connection strings on `127.0.0.1`, not `localhost`
 (`localhost` resolves to `::1` first and the port mapping is IPv4).
 
+## Maintenance
+
+Ported from Bluefin's `ujust`, adapted to pacman/AUR + distrobox:
+
+```bash
+ucli update            # pacman -Syu, AUR (paru/yay), flatpak, mise, then the box
+ucli clean-system      # dangling images, unused flatpaks, old pkg cache (asks first)
+ucli report            # machine + toolchain facts to ~/report-<date>.txt
+ucli logs              # menu: this boot / last boot / devbox provision log / pacman
+ucli changelogs        # what the last pacman transaction changed
+ucli bios              # reboot into firmware settings (asks first)
+ucli bios-info         # board + firmware version
+```
+
+`clean-system` never touches named volumes: `dev_pgdata`, `dev_mysql` and
+`dev_redis` survive it, and it only prunes *dangling* images and *anonymous*
+volumes. Bluefin's `ujust clean-system` prunes unused named volumes; that would
+delete your databases, so it is deliberately not copied.
+
+`report` writes a local file — no pastebin upload, nothing from the environment.
+
 ## Chezmoi
 
 Use chezmoi directly:
