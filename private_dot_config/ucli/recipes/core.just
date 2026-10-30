@@ -108,7 +108,17 @@ _prompt:
       printf '%-6s TERM=%-16s cols=%-4s COLUMNS=%-5s locale=%-14s zsh-multibyte=%-3s starship=%s\n' \
         "$1" "${2:-unset}" "${3:-?}" "${COLUMNS:-unset}" "${4:-?}" "$5" "${6:-MISSING}"
     }
-    cols_here() { tput cols 2>/dev/null || stty size 2>/dev/null | awk '{print $2}'; }
+    # /dev/tty first: with stdin redirected (which is how this recipe reaches the
+    # box) `tput cols` quietly returns the terminfo default of 80, which is not
+    # the terminal's width and makes the comparison meaningless.
+    cols_here() {
+      local size cols
+      size="$(stty size < /dev/tty 2>/dev/null || true)"
+      cols="${size##* }"
+      # a stale pty reports 0x0, which is not a width
+      case "$cols" in ''|0) cols="$(tput cols 2>/dev/null || printf '?')" ;; esac
+      printf '%s' "$cols"
+    }
     mb_here() {  # 1 = zsh is really multibyte, 4 = it silently fell back to C
       command -v zsh >/dev/null 2>&1 || { printf 'no'; return; }
       [[ "$(zsh -fc 'print ${#${(%):-🌱}}' 2>/dev/null || echo 4)" == 1 ]] && printf 'yes' || printf 'no'
@@ -126,7 +136,9 @@ _prompt:
       exit 0
     fi
     raw="$(distrobox enter dev -- bash -s 2>/dev/null <<'PROBE' || true
-    cols="$(tput cols 2>/dev/null || stty size 2>/dev/null | awk '{print $2}')"
+    size="$(stty size < /dev/tty 2>/dev/null || true)"
+    cols="${size##* }"
+    case "$cols" in ''|0) cols="$(tput cols 2>/dev/null || echo '?')" ;; esac
     mb=no
     if command -v zsh >/dev/null 2>&1 &&
        [ "$(zsh -fc 'print ${#${(%):-🌱}}' 2>/dev/null || echo 4)" = 1 ]; then
