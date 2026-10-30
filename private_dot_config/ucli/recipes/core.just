@@ -115,7 +115,7 @@ _prompt:
     }
 
     row host "${TERM:-unset}" "$(cols_here || true)" "$(locale charmap 2>/dev/null || echo '?')" \
-        "$(mb_here)" "$(starship --version 2>/dev/null | awk '{print $2}')"
+        "$(mb_here)" "$(starship --version 2>/dev/null | head -n1 | awk '{print $2}')"
 
     if ! command -v distrobox >/dev/null 2>&1; then
       printf '%-6s no distrobox\n' dev
@@ -136,7 +136,7 @@ _prompt:
     infocmp "${TERM:-}" >/dev/null 2>&1 && term_ok=ok
     printf 'UCLI-PROMPT|%s|%s|%s|%s|%s|%s|%s\n' "${TERM:-unset}" "$cols" \
       "$(locale charmap 2>/dev/null || echo '?')" "$mb" \
-      "$(starship --version 2>/dev/null | awk '{print $2}')" "$term_ok" \
+      "$(starship --version 2>/dev/null | head -n1 | awk '{print $2}')" "$term_ok" \
       "$(command -v starship 2>/dev/null || echo none)"
     PROBE
     )"
@@ -147,7 +147,7 @@ _prompt:
     printf '%-6s terminfo for %s inside the box: %s     starship: %s\n' '' \
       "${bterm_name:-unset}" "${bterm:-not checked}" "${bstar_path:-?}"
 
-    host_star="$(starship --version 2>/dev/null | awk '{print $2}')"
+    host_star="$(starship --version 2>/dev/null | head -n1 | awk '{print $2}')"
     if [[ -n "$host_star" && -n "${bstar:-}" && "$host_star" != "$bstar" ]]; then
       printf 'WARN   starship %s on the host but %s in the box — `$fill` lays the\n' "$host_star" "$bstar"
       printf '       prompt out differently, so the older one can draw a line one\n'

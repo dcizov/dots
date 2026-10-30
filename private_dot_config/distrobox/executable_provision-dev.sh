@@ -382,8 +382,12 @@ fi
 #
 # STARSHIP_VERSION comes from devbox-reconcile, which reads it off the host, so
 # the box draws the prompt with exactly the binary the host uses.
+starship_version() {  # <binary> → x.y.z, or nothing
+  "$1" --version 2>/dev/null | head -n1 | awk '{print $2}' \
+    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true
+}
 STARSHIP_WANT="${STARSHIP_VERSION:-}"
-STARSHIP_HAVE="$(starship --version 2>/dev/null | awk '{print $2}' || true)"
+STARSHIP_HAVE="$(starship_version starship)"
 if [ -n "$STARSHIP_WANT" ] && [ "$STARSHIP_HAVE" = "$STARSHIP_WANT" ]; then
   step "starship: already $STARSHIP_WANT"
 else
@@ -398,6 +402,12 @@ else
       sh -c 'curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin' \
       || warn "starship: installer failed"
   fi
+  STARSHIP_NOW="$(starship_version /usr/local/bin/starship)"
+  if [ -n "$STARSHIP_VERSION" ] && [ "$STARSHIP_NOW" != "$STARSHIP_VERSION" ]; then
+    warn "starship: /usr/local/bin has ${STARSHIP_NOW:-nothing}, wanted $STARSHIP_VERSION"
+  elif [ -n "$STARSHIP_NOW" ]; then
+    say "starship: $STARSHIP_NOW in /usr/local/bin"
+  fi
 fi
 # an apt copy in /usr/bin is shadowed by /usr/local/bin, but leaving two versions
 # around is how this bug happened in the first place — only drop it once the
@@ -406,7 +416,7 @@ if dpkg -l starship 2>/dev/null | grep -q '^ii'; then
   if [ -x /usr/local/bin/starship ]; then
     step "starship: removing the archive's $(dpkg-query -W -f='${Version}' starship 2>/dev/null)"
     run "apt-get remove starship" apt_get remove -y "$APT_Q" starship || warn "could not remove starship"
-  else
+  elif [ -z "$STARSHIP_VERSION" ] || [ "$(starship_version starship)" = "$STARSHIP_VERSION" ]; then
     warn "starship: kept the archive's $(dpkg-query -W -f='${Version}' starship 2>/dev/null) (no /usr/local/bin/starship to replace it)"
   fi
 fi
@@ -420,7 +430,9 @@ fi
 # the starship prompt in bytes instead of columns — every redraw then erases a
 # screen line. Generate the host locale here so the box is UTF-8 natively, and
 # make sure C.UTF-8 exists as the fallback 00-env.zsh relies on.
-LOC_WANT="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}"
+# DEVBOX_LOCALE is what the host runs with (passed in by devbox-reconcile); the
+# process environment here is a bare `podman exec` and usually has no LANG.
+LOC_WANT="${DEVBOX_LOCALE:-${LC_ALL:-${LC_CTYPE:-${LANG:-}}}}"
 case "$LOC_WANT" in
   *.[Uu][Tt][Ff]-8|*.[Uu][Tt][Ff]8) ;;
   *) LOC_WANT="C.UTF-8" ;;
@@ -434,14 +446,16 @@ step "locale"
 # The `locales` package is what provides /etc/locale.gen; a plain debian image has
 # only C/C.utf8/POSIX, and C.utf8 being present is NOT proof we can generate the
 # host's locale, so test the locale we actually want.
-if [ ! -e /etc/locale.gen ] || ! locale -a 2>/dev/null | grep -qx "$LOC_GREP"; then
+if [ ! -e /etc/locale.gen ] || ! locale -a 2>/dev/null | grep -qix "$LOC_GREP"; then
   run "apt-get install locales" apt_get install -y "$APT_Q" --no-install-recommends locales \
     || warn "locales: install failed"
 fi
 if [ -e /etc/locale.gen ]; then
-  # idempotent: append the two entries we need unless they are already there
+  # idempotent, and always with the charset column: a bare "C.UTF-8" line makes
+  # locale-gen fail with `error: Bad entry`
   for want in "$LOC_WANT" "C.UTF-8"; do
-    grep -qxF "$want" /etc/locale.gen 2>/dev/null || printf '%s\n' "$want" >> /etc/locale.gen
+    grep -qxF "$want UTF-8" /etc/locale.gen 2>/dev/null \
+      || printf '%s UTF-8\n' "$want" >> /etc/locale.gen
   done
   run "locale-gen" locale-gen || warn "locale-gen failed"
   if command -v update-locale >/dev/null 2>&1; then

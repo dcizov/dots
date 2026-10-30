@@ -320,9 +320,17 @@ provision_in_box() {
   # the box must draw the prompt with the same starship the host uses: the $fill
   # layout differs between versions, and a line one column too wide wraps, which
   # makes zle eat a line on every redraw inside the box only
-  STARSHIP_VERSION="$(command -v starship >/dev/null 2>&1 && starship --version 2>/dev/null | awk '{print $2}' || true)"
+  # first line only, and only if it really is a version: `starship --version` on
+  # this host also emits trailing lines, and an unvalidated capture ends up in the
+  # installer command line ("sh: 4: 10:19:51: not found").
+  STARSHIP_VERSION="$(command -v starship >/dev/null 2>&1 \
+    && starship --version 2>/dev/null | head -n1 | awk '{print $2}' \
+    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+  # the box needs to generate the HOST's locale (a container that was entered
+  # with LC_ALL=de_DE.UTF-8 but never generated it keeps warning about it)
+  DEVBOX_LOCALE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}"
   if ! in_box env DEVBOX_PROVISION_HASH="$PROV_HASH" DEVBOX_VERBOSE="$DEVBOX_VERBOSE" \
-       STARSHIP_VERSION="$STARSHIP_VERSION" \
+       STARSHIP_VERSION="$STARSHIP_VERSION" DEVBOX_LOCALE="$DEVBOX_LOCALE" \
        DEVBOX_ANIM="$ANIM" ${DEVBOX_FORCE:+DEVBOX_FORCE="$DEVBOX_FORCE"} \
        /usr/bin/env bash "$PROV"; then
     printf '\033[1;31merror:\033[0m provisioning failed in %s\n' "$BOX" >&2
