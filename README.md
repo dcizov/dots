@@ -94,6 +94,10 @@ ucli --show _devbox-recreate    # what the menu entry runs
 ucli _devbox-versions           # direct
 ```
 
+The menus use `gum` when it is installed (the TUI ujust uses), then `fzf`, then
+a plain numbered list — `UCLI_MENU=gum|fzf|select` forces one. `ucli cli` installs
+gum.
+
 `distrobox assemble create` on its own only creates a bare container — no Node,
 no PHP, nothing provisioned. Always go through `ucli devbox-reconcile`
 (or `ucli devmode`, which calls it).
