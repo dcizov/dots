@@ -8,8 +8,9 @@
 // This is a chezmoi template:
 //   - `.chezmoi.homeDir`  -> home directory (fills in /home/<user>)
 //   - `.chezmoi.username` -> username
-//   - `devbox_ssh_port`   -> from [data] in chezmoi.toml (see the devbox block
-//     in .chezmoi.toml.tmpl); defaults to 2222.
+//   - `devbox_ssh_port`   -> read from ~/.config/distrobox/devbox.env
+//     (DEVBOX_SSH_PORT), the single source the provisioner uses; defaults to
+//     2222 when the file or the key is absent.
 // ===========================================================================
 {
   // --- existing settings ---------------------------------------------
@@ -65,7 +66,7 @@
   "remote.SSH.enableDynamicForwarding": false,
   "remote.SSH.useLocalServer": true,
   "remote.SSH.remotePlatform": {
-    "{{ .chezmoi.username }}@localhost:{{ index . "devbox_ssh_port" | default "2222" }}": "linux"
+    "{{ .chezmoi.username }}@localhost:{{ (output "sh" "-c" "sed -n 's/^DEVBOX_SSH_PORT=//p' \"$HOME/.config/distrobox/devbox.env\" 2>/dev/null | head -1") | default "2222" }}": "linux"
   },
 
   // --- Intelephense (PHP/Laravel) ------------------------------------------

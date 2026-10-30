@@ -9,7 +9,16 @@ printf 'configured.desktop: %s\n' "$(ucli_profile_value desktop auto)"
 printf 'configured.terminal: %s\n' "$(ucli_profile_value terminal auto)"
 printf 'configured.role: %s\n' "$(ucli_profile_value role dev)"
 printf 'configured.gaming: %s\n' "$(ucli_profile_value gaming false)"
-printf 'configured.devbox_ssh_port: %s\n' "$(ucli_profile_value devbox_ssh_port 2222)"
+# the port lives in devbox.env (plain file, read by provision-dev.sh), not in
+# chezmoi data — the hook in dev.ini cannot be templated.
+devbox_ssh_port() {
+  local port=""
+  if [[ -r "$HOME/.config/distrobox/devbox.env" ]]; then
+    port="$(sed -n 's/^DEVBOX_SSH_PORT=//p' "$HOME/.config/distrobox/devbox.env" | head -1)"
+  fi
+  printf '%s' "${port:-2222}"
+}
+printf 'configured.devbox_ssh_port: %s\n' "$(devbox_ssh_port)"
 echo
 printf 'detected.distro: %s\n' "$(detect_distro)"
 printf 'detected.arch: %s\n' "$(detect_arch)"

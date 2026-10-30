@@ -227,11 +227,26 @@ done
 step "per-boot bits: sshd, docker shim, profile.d, host-spawn guard"
 
 SSH_PORT="${DEVBOX_SSH_PORT:-2222}"
-if [ -x /usr/sbin/sshd ] && ! pgrep -x sshd >/dev/null 2>&1; then
-  install -d -m 755 /run/sshd || true
-  ssh-keygen -A >/dev/null 2>&1 || true
-  /usr/sbin/sshd -p "$SSH_PORT" >/dev/null 2>&1 || warn "sshd failed to start on port $SSH_PORT"
-  say "sshd started on :$SSH_PORT"
+# The init_hooks line in dev.ini starts sshd on 2222 at container boot and
+# cannot know DEVBOX_SSH_PORT (hooks must stay variable-free), so compare the
+# PORT the running daemon was started with — not just "is sshd running".
+if [ -x /usr/sbin/sshd ]; then
+  # `|| true` is load-bearing: pgrep exits 1 when no sshd runs and `set -o pipefail`
+  # would otherwise abort provisioning on a fresh box.
+  running_port="$(pgrep -af 'sshd -p [0-9]+' 2>/dev/null | sed -n 's/.*sshd -p \([0-9][0-9]*\).*/\1/p' | head -1 || true)"
+  if [ "$running_port" = "$SSH_PORT" ]; then
+    say "sshd already listening on :$SSH_PORT"
+  else
+    if [ -n "$running_port" ]; then
+      pkill -x sshd >/dev/null 2>&1 || true
+      sleep 1
+      say "sshd was on :$running_port, restarting on :$SSH_PORT"
+    fi
+    install -d -m 755 /run/sshd || true
+    ssh-keygen -A >/dev/null 2>&1 || true
+    /usr/sbin/sshd -p "$SSH_PORT" >/dev/null 2>&1 || warn "sshd failed to start on port $SSH_PORT"
+    say "sshd started on :$SSH_PORT"
+  fi
 fi
 
 if [ -x /usr/bin/distrobox-host-exec ] && [ ! -L /usr/local/bin/docker ]; then

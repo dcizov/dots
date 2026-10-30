@@ -14,8 +14,8 @@ Bootstrap wtfaq chezmoi/ucli setup.
 
 Examples:
   curl -fsSL https://install.wtfaq.tech | bash
-  curl -fsSL https://install.wtfaq.tech | bash -s -- --repo https://github.com/wtfaq/dotfiles.git
-  curl -fsSL https://install.wtfaq.tech | bash -s -- --branch master
+  curl -fsSL https://install.wtfaq.tech | bash -s -- --repo https://github.com/dcizov/dots.git
+  curl -fsSL https://install.wtfaq.tech | bash -s -- --branch main
 USAGE
 }
 
