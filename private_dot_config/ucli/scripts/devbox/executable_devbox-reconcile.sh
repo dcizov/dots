@@ -317,7 +317,12 @@ provision_in_box() {
   # `podman exec` gives the child no tty, so tell the provisioner explicitly to
   # stream (docker-build style). DEVBOX_VERBOSE=0 / QUIET=1 silences it.
   ANIM=0; [ -t 1 ] && ANIM=1
+  # the box must draw the prompt with the same starship the host uses: the $fill
+  # layout differs between versions, and a line one column too wide wraps, which
+  # makes zle eat a line on every redraw inside the box only
+  STARSHIP_VERSION="$(command -v starship >/dev/null 2>&1 && starship --version 2>/dev/null | awk '{print $2}' || true)"
   if ! in_box env DEVBOX_PROVISION_HASH="$PROV_HASH" DEVBOX_VERBOSE="$DEVBOX_VERBOSE" \
+       STARSHIP_VERSION="$STARSHIP_VERSION" \
        DEVBOX_ANIM="$ANIM" ${DEVBOX_FORCE:+DEVBOX_FORCE="$DEVBOX_FORCE"} \
        /usr/bin/env bash "$PROV"; then
     printf '\033[1;31merror:\033[0m provisioning failed in %s\n' "$BOX" >&2

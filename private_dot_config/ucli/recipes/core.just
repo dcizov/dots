@@ -125,7 +125,7 @@ _prompt:
       printf '%-6s no dev box\n' dev
       exit 0
     fi
-    box="$(distrobox enter dev -- bash -s 2>/dev/null <<'PROBE' || true
+    raw="$(distrobox enter dev -- bash -s 2>/dev/null <<'PROBE' || true
     cols="$(tput cols 2>/dev/null || stty size 2>/dev/null | awk '{print $2}')"
     mb=no
     if command -v zsh >/dev/null 2>&1 &&
@@ -134,13 +134,26 @@ _prompt:
     fi
     term_ok=missing
     infocmp "${TERM:-}" >/dev/null 2>&1 && term_ok=ok
-    printf '%s|%s|%s|%s|%s|%s\n' "${TERM:-unset}" "$cols" "$(locale charmap 2>/dev/null || echo '?')" \
-      "$mb" "$(starship --version 2>/dev/null | awk '{print $2}')" "$term_ok"
+    printf 'UCLI-PROMPT|%s|%s|%s|%s|%s|%s|%s\n' "${TERM:-unset}" "$cols" \
+      "$(locale charmap 2>/dev/null || echo '?')" "$mb" \
+      "$(starship --version 2>/dev/null | awk '{print $2}')" "$term_ok" \
+      "$(command -v starship 2>/dev/null || echo none)"
     PROBE
     )"
-    IFS='|' read -r bterm_name bcols bchar bmb bstar bterm <<<"$box" || true
+    # only our own line, whatever else the login files print
+    box="$(printf '%s\n' "$raw" | grep '^UCLI-PROMPT|' | tail -n 1 || true)"
+    IFS='|' read -r _ bterm_name bcols bchar bmb bstar bterm bstar_path <<<"$box" || true
     row dev "$bterm_name" "$bcols" "$bchar" "$bmb" "$bstar"
-    printf '%-6s terminfo for %s inside the box: %s\n' '' "${bterm_name:-unset}" "${bterm:-not checked}"
+    printf '%-6s terminfo for %s inside the box: %s     starship: %s\n' '' \
+      "${bterm_name:-unset}" "${bterm:-not checked}" "${bstar_path:-?}"
+
+    host_star="$(starship --version 2>/dev/null | awk '{print $2}')"
+    if [[ -n "$host_star" && -n "${bstar:-}" && "$host_star" != "$bstar" ]]; then
+      printf 'WARN   starship %s on the host but %s in the box — `$fill` lays the\n' "$host_star" "$bstar"
+      printf '       prompt out differently, so the older one can draw a line one\n'
+      printf '       column too wide and zle then eats a line on every redraw:\n'
+      printf '         ucli devbox-reconcile   (installs the host version in the box)\n'
+    fi
 
 # Validate package arrays.
 [group('Help')]

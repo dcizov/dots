@@ -299,7 +299,8 @@ if [ "${DEVBOX_SKIP_APT_TOOLING:-0}" != "1" ]; then
   # the handful of entries in ncurses-base, and for a terminal like foot,
   # alacritty, wezterm, kitty or ghostty zle loses the capabilities it redraws
   # the prompt with.
-  TOOLING_PKGS="bash-completion zsh fzf starship fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential ncurses-term"
+  # starship is NOT in this list on purpose — see the pinned install below.
+  TOOLING_PKGS="bash-completion zsh fzf fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential ncurses-term"
   step "apt: interactive tooling (best-effort)"
   say "$TOOLING_PKGS"
   TOOLING_FAILED=""
@@ -367,6 +368,46 @@ EOF2
         *) warn "not installed: $p" ;;
       esac
     done
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 2a. starship — the HOST's version, not the archive's
+# ---------------------------------------------------------------------------
+# trixie ships starship 1.22.1; a current host runs newer. The two versions lay
+# out `$fill` differently, so a prompt line computed by the older one can end one
+# column past the terminal edge: the terminal wraps it, zle counts two lines
+# where it drew three, and every redraw (Enter, Tab) eats the line above. Same
+# config, same terminal — only the box misbehaved.
+#
+# STARSHIP_VERSION comes from devbox-reconcile, which reads it off the host, so
+# the box draws the prompt with exactly the binary the host uses.
+STARSHIP_WANT="${STARSHIP_VERSION:-}"
+STARSHIP_HAVE="$(starship --version 2>/dev/null | awk '{print $2}' || true)"
+if [ -n "$STARSHIP_WANT" ] && [ "$STARSHIP_HAVE" = "$STARSHIP_WANT" ]; then
+  step "starship: already $STARSHIP_WANT"
+else
+  if [ -n "$STARSHIP_WANT" ]; then
+    step "starship: upstream v${STARSHIP_WANT} -> /usr/local/bin"
+    run "starship install.sh v${STARSHIP_WANT}" \
+      sh -c "curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin --version v${STARSHIP_WANT}" \
+      || warn "starship: installer failed (box keeps ${STARSHIP_HAVE:-none})"
+  else
+    step "starship: upstream latest -> /usr/local/bin"
+    run "starship install.sh" \
+      sh -c 'curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin' \
+      || warn "starship: installer failed"
+  fi
+fi
+# an apt copy in /usr/bin is shadowed by /usr/local/bin, but leaving two versions
+# around is how this bug happened in the first place — only drop it once the
+# pinned binary is really there, so a failed download cannot leave the box bare
+if dpkg -l starship 2>/dev/null | grep -q '^ii'; then
+  if [ -x /usr/local/bin/starship ]; then
+    step "starship: removing the archive's $(dpkg-query -W -f='${Version}' starship 2>/dev/null)"
+    run "apt-get remove starship" apt_get remove -y "$APT_Q" starship || warn "could not remove starship"
+  else
+    warn "starship: kept the archive's $(dpkg-query -W -f='${Version}' starship 2>/dev/null) (no /usr/local/bin/starship to replace it)"
   fi
 fi
 
