@@ -4,7 +4,7 @@ add_newline = false
 command_timeout = 1000
 palette = 'adwaita_dark'
 
-format = '[╭─](dim)$username$hostname$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](dim)$python$character'
+format = '[╭─](dim)$username$hostname${custom.distrobox}$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](dim)$python$character'
 right_format = ''
 
 [palettes.adwaita_dark]
@@ -110,3 +110,20 @@ disabled = true
 
 [status]
 disabled = true
+
+# Distrobox badge — from gist mmaeusezahl/9de899ac, with two changes:
+#
+#   * `when` is POSIX. starship runs it with `sh -c`, and inside the box /bin/sh
+#     is dash, where `[[ … ]]` is a syntax error — the gist's bash-only test
+#     would fail there and the badge would never show exactly where it matters.
+#   * a hexagon instead of the gist's Nerd-Font box glyph, which is a
+#     private-use codepoint and renders as tofu unless the font has it.
+#
+# $CONTAINER_ID is set by distrobox inside the container and empty on the host.
+[custom.distrobox]
+when = '[ -n "${CONTAINER_ID:-}" ]'
+command = 'printf "%s" "$CONTAINER_ID"'
+symbol = '⬢'
+style = 'bold ok'
+format = '[ in ](dim)[$symbol $output]($style)'
+disabled = false

@@ -367,6 +367,56 @@ EOF2
 fi
 
 # ---------------------------------------------------------------------------
+# 2b. UTF-8 locale
+# ---------------------------------------------------------------------------
+# distrobox hands the container the host's LANG, but a fresh Debian image has
+# only C/C.utf8/POSIX generated until `locales` is installed and locale-gen runs.
+# glibc then falls back to ASCII (see `locale charmap`) and zsh starts counting
+# the starship prompt in bytes instead of columns — every redraw then erases a
+# screen line. Generate the host locale here so the box is UTF-8 natively, and
+# make sure C.UTF-8 exists as the fallback 00-env.zsh relies on.
+LOC_WANT="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}"
+case "$LOC_WANT" in
+  *.[Uu][Tt][Ff]-8|*.[Uu][Tt][Ff]8) ;;
+  *) LOC_WANT="C.UTF-8" ;;
+esac
+LOC_WANT="${LOC_WANT%%@*}"            # strip @euro and friends
+LOC_BASE="${LOC_WANT%%.*}"
+# `locale -a` spells them de_DE.UTF-8 -> de_DE.utf8
+LOC_GREP="$(printf '%s' "$LOC_BASE" | tr 'A-Z' 'a-z').utf8"
+
+step "locale"
+# The `locales` package is what provides /etc/locale.gen; a plain debian image has
+# only C/C.utf8/POSIX, and C.utf8 being present is NOT proof we can generate the
+# host's locale, so test the locale we actually want.
+if [ ! -e /etc/locale.gen ] || ! locale -a 2>/dev/null | grep -qx "$LOC_GREP"; then
+  run "apt-get install locales" apt_get install -y "$APT_Q" --no-install-recommends locales \
+    || warn "locales: install failed"
+fi
+if [ -e /etc/locale.gen ]; then
+  # idempotent: append the two entries we need unless they are already there
+  for want in "$LOC_WANT" "C.UTF-8"; do
+    grep -qxF "$want" /etc/locale.gen 2>/dev/null || printf '%s\n' "$want" >> /etc/locale.gen
+  done
+  run "locale-gen" locale-gen || warn "locale-gen failed"
+  if command -v update-locale >/dev/null 2>&1; then
+    update-locale LANG="$LOC_WANT" >/dev/null 2>&1 || true
+  fi
+fi
+CHARMAP="$(LC_ALL="$LOC_WANT" locale charmap 2>/dev/null || true)"
+if [ "$CHARMAP" = "UTF-8" ]; then
+  say "locale: $LOC_WANT (UTF-8)"
+else
+  # C.UTF-8 needs no locale-gen on glibc >= 2.35; if even that is not UTF-8 the
+  # image is older than Debian 12 and the prompt cannot be trusted.
+  if [ "$(LC_ALL=C.UTF-8 locale charmap 2>/dev/null || true)" = "UTF-8" ]; then
+    warn "locale: $LOC_WANT is not UTF-8 (charmap ${CHARMAP:-?}); shells fall back to C.UTF-8"
+  else
+    warn "locale: no UTF-8 locale available (charmap ${CHARMAP:-?})"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # 3. drop the archive's Node (18.x on bookworm) so nothing shadows nvm
 # ---------------------------------------------------------------------------
 if dpkg -l nodejs 2>/dev/null | grep -q '^ii'; then

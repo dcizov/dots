@@ -64,13 +64,23 @@ doctor:
       if distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
         # a container that exists but was never provisioned looks identical to a
         # healthy one unless we ask about the versions the tooling assumes
+        # `locale charmap` is the effective charset: a LANG that names a locale
+        # the container never generated still reads as ANSI_X3.4-1968, and zsh
+        # then measures the prompt in bytes (prompt eats a line on every redraw).
         out="$(distrobox enter dev -- bash -lc \
-          'printf "%s|%s|%s\n" "$(cat /etc/debian_version)" \
+          'printf "%s|%s|%s|%s\n" "$(cat /etc/debian_version)" \
              "$(node -v 2>/dev/null || echo MISSING)" \
-             "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)"' 2>/dev/null || true)"
-        debian="${out%%|*}"; rest="${out#*|}"; node="${rest%%|*}"; php="${rest##*|}"
+             "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)" \
+             "$(locale charmap 2>/dev/null || echo none)"' 2>/dev/null || true)"
+        IFS='|' read -r debian node php charmap <<<"$out" || true
         if [[ -n "$debian" && "$node" != MISSING && "$php" != MISSING ]]; then
-          printf 'OK:      dev: debian %s / node %s / php %s\n' "$debian" "$node" "$php"
+          printf 'OK:      dev: debian %s / node %s / php %s / locale %s\n' \
+            "$debian" "$node" "$php" "${charmap:-?}"
+          if [[ "${charmap:-}" != UTF-8 ]]; then
+            printf 'WARN:    dev locale is %s, not UTF-8 — prompt/redraw will misbehave\n' \
+              "${charmap:-unknown}"
+            printf '         run: ucli devbox-reconcile  (provisions a UTF-8 locale)\n'
+          fi
         else
           printf 'INCOMPLETE: dev exists but is not provisioned (node %s, php %s)\n' \
             "${node:-?}" "${php:-?}"
