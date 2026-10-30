@@ -77,3 +77,21 @@ ui_confirm() {
   read -r -p "$prompt [y/N] " ans
   [[ "${ans:-}" == [yY]* ]]
 }
+
+# show <cmd...> — page the output when it is a terminal, otherwise just print it.
+# A pager that quits after one screen (less -F) makes the producer die of
+# SIGPIPE, which under `set -o pipefail` surfaces as exit 141 and fails the
+# recipe. 141 from the producer is normal here, not an error.
+show() {
+  local rc=0
+  if [ -t 1 ] && command -v "${PAGER:-less}" >/dev/null 2>&1; then
+    set +o pipefail
+    "$@" | ${PAGER:-less -FRX}
+    rc=${PIPESTATUS[0]}
+    set -o pipefail
+    [ "$rc" -eq 141 ] && rc=0
+  else
+    "$@" || rc=$?
+  fi
+  return "$rc"
+}

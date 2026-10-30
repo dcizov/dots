@@ -17,7 +17,7 @@ mkdir -p "$out"
 pacman -Sgq gnome | sort -u > "$out/gnome-group-repo.txt"
 pacman -Qq | sort -u > "$out/pacman-installed-all.txt"
 pacman -Qqen | sort -u > "$out/pacman-explicit-native.txt"
-pacman -Qqem | sort -u > "$out/pacman-explicit-aur.txt"
+pacman -Qqem 2>/dev/null | sort -u > "$out/pacman-explicit-aur.txt" || true   # exit 1 when there are no AUR packages
 
 # GNOME group packages currently installed after your cleanup.
 comm -12 "$out/gnome-group-repo.txt" "$out/pacman-installed-all.txt" > "$out/gnome-group-installed-now.txt"

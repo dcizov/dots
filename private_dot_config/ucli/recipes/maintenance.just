@@ -108,17 +108,17 @@ report:
       uname -a
       ( . /etc/os-release && printf '%s %s\n' "$NAME" "$VERSION" ) 2>/dev/null || true
       printf 'cpu: %s\n' "$(awk -F: '/model name/{print $2; exit}' /proc/cpuinfo | sed 's/^ //')"
-      have lspci && lspci -nn | grep -Ei 'vga|3d|display'
+      have lspci && lspci -nn | grep -Ei 'vga|3d|display' || true
       printf '\n### desktop\n'
       printf 'session: %s / %s\n' "${XDG_CURRENT_DESKTOP:-?}" "${XDG_SESSION_TYPE:-?}"
       have gnome-shell && gnome-shell --version
       printf '\n### packages\n'
       have pacman && printf 'installed: %s\n' "$(pacman -Q | wc -l)"
       have pacman && printf 'foreign (AUR): %s\n' "$(pacman -Qm | wc -l)"
-      have flatpak && flatpak list --columns=application,version 2>/dev/null | head -40
+      have flatpak && flatpak list --columns=application,version 2>/dev/null | awk 'NR<=40'
       printf '\n### toolchain (host)\n'
       for c in just chezmoi docker podman distrobox node npm php composer; do
-        printf '%-10s %s\n' "$c" "$(command -v "$c" >/dev/null 2>&1 && "$c" --version 2>/dev/null | head -1 || echo MISSING)"
+        printf '%-10s %s\n' "$c" "$(command -v "$c" >/dev/null 2>&1 && { "$c" --version 2>/dev/null | awk 'NR==1'; } || echo MISSING)"
       done
       printf '\n### dev box\n'
       if have distrobox && distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
@@ -149,12 +149,12 @@ logs:
       'devbox|/var/log/devbox-provision.log inside the dev box' \
       'pacman|recent package transactions')" || exit 0
     case "$what" in
-      this-boot) journalctl -b --no-pager | less -FRX ;;
-      last-boot) journalctl -b -1 --no-pager | less -FRX ;;
+      this-boot) show journalctl -b --no-pager ;;
+      last-boot) show journalctl -b -1 --no-pager ;;
       devbox)    distrobox enter dev -- sudo tail -n 200 /var/log/devbox-provision.log ;;
       pacman)
         [ -r /var/log/pacman.log ] || { printf 'no /var/log/pacman.log on this machine\n' >&2; exit 1; }
-        grep -E '^\[.*\] \[ALPM\] (upgraded|installed|removed) ' /var/log/pacman.log | less -FRX
+        show grep -E '^\[.*\] \[ALPM\] (upgraded|installed|removed) ' /var/log/pacman.log
         ;;
     esac
 
@@ -174,10 +174,28 @@ bios:
 bios-info:
     #!/usr/bin/env bash
     set -euo pipefail
-    command -v dmidecode >/dev/null 2>&1 || { printf 'dmidecode not installed\n' >&2; exit 1; }
-    sudo dmidecode -t bios -t baseboard \
-      | grep -E '^[[:space:]]+(Manufacturer|Product Name|Version|Release Date|Vendor):' \
-      | sed 's/^[[:space:]]*//'
+    # /sys/class/dmi/id is world-readable, so this needs neither dmidecode nor
+    # sudo. dmidecode is only a fallback for kernels without dmi-id.
+    dmi=/sys/class/dmi/id
+    if [ -d "$dmi" ]; then
+      for pair in 'sys_vendor|Manufacturer' 'product_name|Product Name' \
+                  'product_version|Version' 'board_name|Board' \
+                  'bios_vendor|BIOS Vendor' 'bios_version|BIOS Version' \
+                  'bios_date|BIOS Date'; do
+        key="${pair%%|*}"; label="${pair#*|}"
+        [ -r "$dmi/$key" ] || continue
+        printf '%-13s %s\n' "$label" "$(cat "$dmi/$key")"
+      done
+      exit 0
+    fi
+    if command -v dmidecode >/dev/null 2>&1; then
+      sudo dmidecode -t bios -t baseboard \
+        | grep -E '^[[:space:]]+(Manufacturer|Product Name|Version|Release Date|Vendor):' \
+        | sed 's/^[[:space:]]*//'
+      exit 0
+    fi
+    printf 'no /sys/class/dmi/id and dmidecode is not installed\n' >&2
+    exit 1
 
 # Packages changed in the most recent pacman transaction.
 [group('System')]

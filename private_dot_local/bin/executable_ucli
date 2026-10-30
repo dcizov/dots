@@ -3,21 +3,67 @@ set -euo pipefail
 
 JUSTFILE="${UCLI_JUSTFILE:-$HOME/.config/ucli/justfile}"
 
-# ujust parity: `--choose` needs fzf, and without this guard a missing fzf
-# surfaces as `bash: fzf: command not found` from just's default chooser.
-# ujust installs it via brew; Arch has it in the repos (and in packages.bash).
-if printf '%s\n' "$@" | grep -qx -- '--choose' && ! command -v fzf >/dev/null 2>&1; then
-  printf 'ucli: --choose requires fzf\n' >&2
-  if command -v pacman >/dev/null 2>&1 && [ -t 0 ]; then
-    read -r -p 'install fzf with pacman now? [y/N] ' ans
-    if [[ "${ans:-}" == [yY]* ]]; then
-      sudo pacman -S --needed --noconfirm fzf || true
+# `--choose` is implemented here, not delegated to `just --choose`.
+#
+# `just --choose` shells out to a chooser binary and, if that chooser exits 0
+# without selecting anything (an fzf wrapper, a stale fzf, a pager set through
+# $JUST_CHOOSER…), just returns 0 having printed nothing at all: no picker, no
+# error, no hint. Owning the picker means we use the same backend order as the
+# rest of ucli (gum → fzf → plain select), we work without fzf installed, and
+# we can say something useful when there is no terminal to draw on.
+choose_recipe() {
+  local -a passthru=("$@")
+
+  if [ ! -t 0 ]; then
+    printf 'ucli: --choose needs a terminal (try `ucli usage` for the plain list)\n' >&2
+    exit 2
+  fi
+
+  # shellcheck source=/dev/null
+  . "$HOME/.config/ucli/scripts/lib/choose.sh"
+
+  local listing
+  listing="$(just --justfile "$JUSTFILE" --working-directory "$HOME" \
+                  --list --list-heading '' --list-prefix '')"
+
+  # `name    # doc` → `name|doc`; drop group headers and private recipes
+  local -a items=()
+  local line name doc
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in '['*) continue ;; esac
+    name="${line%%[[:space:]]*}"
+    case "$name" in _*|'') continue ;; esac
+    if [ "$line" = "$name" ]; then
+      doc="$name"
+    else
+      doc="${line#*# }"
     fi
+    items+=("$name|$doc")
+  done <<<"$listing"
+
+  if [ "${#items[@]}" -eq 0 ]; then
+    printf 'ucli: no recipes found in %s\n' "$JUSTFILE" >&2
+    exit 1
   fi
-  if ! command -v fzf >/dev/null 2>&1; then
-    printf 'ucli: fzf still missing — install it (pacman -S fzf), then retry\n' >&2
-    exit 127
-  fi
+
+  local picked
+  picked="$(ui_choose 'ucli' "${items[@]}")" || { printf 'ucli: nothing picked\n' >&2; exit 0; }
+  [ -n "$picked" ] || exit 0
+
+  exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$picked" "${passthru[@]}"
+}
+
+args=()
+for a in "$@"; do
+  case "$a" in
+    --choose|--choose=*) choose=1 ;;
+    *) args+=("$a") ;;
+  esac
+done
+
+if [ "${choose:-0}" = 1 ]; then
+  choose_recipe "${args[@]}"
 fi
 
 exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$@"

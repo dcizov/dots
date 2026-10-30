@@ -6,11 +6,11 @@ mkdir -p "$OUT"/{packages,flatpak,gnome,appimages,dconf}
 
 # Pacman/AUR inventory.
 pacman -Qqen > "$OUT/packages/pacman-explicit-native.txt"
-pacman -Qqem > "$OUT/packages/aur-explicit.txt"
+pacman -Qqem > "$OUT/packages/aur-explicit.txt" || true      # exit 1 when there are no foreign packages
 pacman -Qqe  > "$OUT/packages/explicit-all.txt"
 pacman -Qq   > "$OUT/packages/all-installed.txt"
 pacman -Qen  > "$OUT/packages/pacman-explicit-native-with-versions.txt"
-pacman -Qem  > "$OUT/packages/aur-explicit-with-versions.txt"
+pacman -Qem  > "$OUT/packages/aur-explicit-with-versions.txt" || true      # exit 1 when there are no foreign packages
 pacman -Qe   > "$OUT/packages/explicit-all-with-versions.txt"
 
 # Flatpak inventory.

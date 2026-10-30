@@ -103,13 +103,13 @@ note "-- script via stdin (what the extension does): --"
 printf 'echo STDIN_SURVIVED\n' | ssh "$HOST" 'bash -l' 2>&1 | sed 's/^/  /'
 note "-- lines that can break a non-interactive login shell: --"
 ssh "$HOST" 'grep -nHE "^[^#]*(\bexec\b|\bread\b|\bfzf\b|neofetch|figlet|fastfetch|\bbash\b|\bzsh\b)" \
-               /etc/profile ~/.bash_profile ~/.bash_login ~/.profile 2>/dev/null' | sed 's/^/  /'
+               /etc/profile ~/.bash_profile ~/.bash_login ~/.profile 2>/dev/null || true' | sed 's/^/  /'
 note "A guard at the top of ~/.bashrc keeps non-interactive shells out:"
 note '    case $- in *i*) ;; *) return ;; esac'
 
 # --- 7. sshd settings the extension requires ----------------------------------
 R "7. sshd config (open-remote-ssh requires AllowTcpForwarding yes)"
-ssh "$HOST" 'sudo sshd -T 2>/dev/null | grep -Ei "^(allowtcpforwarding|permitopen|allowstreamlocalforwarding|usepam|permitrootlogin)"' | sed 's/^/  /'
+ssh "$HOST" 'sudo sshd -T 2>/dev/null | grep -Ei "^(allowtcpforwarding|permitopen|allowstreamlocalforwarding|usepam|permitrootlogin)" || true' | sed 's/^/  /'
 
 # --- 8. lockfile target -------------------------------------------------------
 # TMP_DIR="${XDG_RUNTIME_DIR:-/tmp}"; then `exec 9<>"$TMP_DIR/server_install.lock"`

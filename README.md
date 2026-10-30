@@ -25,7 +25,7 @@ enters a container — chezmoi ships files, `ucli` performs actions.
 
 ```bash
 ucli                      list every recipe (hidden `_`-prefixed ones omitted)
-ucli --choose             fuzzy picker
+ucli --choose             picker (gum → fzf → plain select)
 ucli usage                the short version of this README
 ucli profile              configured + detected profile facts
 ucli doctor               health check (chezmoi, zsh, commands, dev box)
