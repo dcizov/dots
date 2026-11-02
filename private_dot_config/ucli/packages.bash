@@ -22,11 +22,13 @@ BOOTSTRAP=(
   wget
 )
 
-ZSH=(
-  zsh-syntax-highlighting
-  zsh-autosuggestions
-  zsh-history-substring-search
-)
+# Deliberately empty: these three used to be installed as Arch packages, which
+# put them in /usr/share/zsh/plugins — a location the dev box (Debian) does not
+# have. They are now cloned into $ZSH_CUSTOM/plugins by install-shell.sh and
+# loaded by oh-my-zsh's plugins=() array, so both systems run the same files
+# from the same place. Kept as an (empty) array because install-packages.sh and
+# validate-packages.sh reference it by name.
+ZSH=()
 
 SYSTEM_CORE_TOOLS=(
   expac

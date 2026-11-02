@@ -12,11 +12,19 @@ ZSH_CONFIG_DIR="${ZSH_CONFIG_DIR:-$HOME/.config/zsh}"
 # Completion styles must be set before Oh My Zsh runs compinit.
 [[ -r "$ZSH_CONFIG_DIR/pre-omz.zsh" ]] && source "$ZSH_CONFIG_DIR/pre-omz.zsh"
 
+# Every plugin lives in one place: $ZSH_CUSTOM/plugins (git clone there, both on
+# the host and in the dev box — see ucli/scripts/install/install-shell.sh and
+# distrobox/provision-dev.sh). oh-my-zsh loads them from this array only, so
+# Arch's /usr/share/zsh/plugins packages and Debian's paths stop mattering.
 plugins=(
   git
   fzf
-  fzf-tab
   extract
+  fzf-tab
+  zsh-autosuggestions
+  zsh-history-substring-search
+  # must stay last: it wraps every widget bound before it
+  zsh-syntax-highlighting
 )
 
 source "$ZSH/oh-my-zsh.sh"
