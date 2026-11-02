@@ -28,8 +28,8 @@ picture="file://${solid}"
 set_key org.gnome.desktop.background picture-uri       "$picture"
 set_key org.gnome.desktop.background picture-uri-dark  "$picture"
 set_key org.gnome.desktop.background color-shading-type 'solid'
-set_key org.gnome.desktop.background primary-color      '#222e34'
-set_key org.gnome.desktop.background secondary-color    '#222e34'
+set_key org.gnome.desktop.background primary-color      '#1c1c1f'
+set_key org.gnome.desktop.background secondary-color    '#1c1c1f'
 set_key org.gnome.desktop.screensaver picture-uri       "$picture"
 
 exit 0

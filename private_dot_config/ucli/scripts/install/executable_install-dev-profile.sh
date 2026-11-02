@@ -2,7 +2,12 @@
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-"$script_dir/install-packages.sh" dev
+# devmode always installs the dev CLI + dev package set regardless of the
+# detected role — the user explicitly requested it. The role-based guard in
+# install-packages.sh dev mode is bypassed by calling install-packages.sh with
+# the dev-cli and dev arrays directly, then installing dev flatpaks.
+"$script_dir/install-packages.sh" dev-cli
+"$script_dir/install-packages.sh" --force dev
 "$script_dir/install-flatpaks.sh" dev
 
 if command -v codium >/dev/null 2>&1 && [[ -x "$script_dir/install-vscodium-extensions.sh" ]]; then

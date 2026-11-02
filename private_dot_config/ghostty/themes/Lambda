@@ -4,11 +4,11 @@
 # Only the two base colours and the 16 ANSI slots are set. Everything else
 # (cursor, selection, borders) is ghostty's own default, which is derived
 # from these — so the terminal behaves as before, in the new palette.
-background = #222e34
+background = #1c1c1f
 foreground = #d5d7d9
 
 # slot 0-7 normal, 8-15 bright
-palette = 0=#222e34   # black         background
+palette = 0=#1c1c1f   # black         background
 palette = 1=#df005f   # red           errors, deletions
 palette = 2=#83b64f   # green         additions, executables
 palette = 3=#efd25c   # yellow        warnings, the username

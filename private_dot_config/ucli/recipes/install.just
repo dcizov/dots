@@ -79,3 +79,9 @@ _full-setup:
 # Install paru idempotently.
 _install-paru:
     ~/.config/ucli/scripts/install/install-paru.sh
+
+# Reverse what chezmoi/ucli deployed in this user's home directory.
+# Removes chezmoi-managed dotfiles, ucli wrapper, and ucli-installed packages.
+[group('Install')]
+uninstall:
+    ~/.config/ucli/scripts/install/uninstall.sh

@@ -26,7 +26,8 @@ extension_pk_arrays=(GNOME_SYSTEM_EXTENSION_PKS GNOME_OVERRIDE_EXTENSION_PKS)
 
 aur_exists() {
   local pkg="$1"
-  python3 - "$pkg" <<'PY' >/dev/null 2>&1
+  # Primary: AUR RPC API (fast, structured).
+  if python3 - "$pkg" <<'PY' >/dev/null 2>&1
 import json, sys, urllib.parse, urllib.request
 pkg = sys.argv[1]
 url = "https://aur.archlinux.org/rpc/v5/info?" + urllib.parse.urlencode({"arg[]": pkg})
@@ -37,6 +38,15 @@ for result in data.get("results", []):
         sys.exit(0)
 sys.exit(1)
 PY
+  then
+    return 0
+  fi
+  # Fallback: git ls-remote (works when the API is down or rate-limited).
+  if command -v git >/dev/null 2>&1; then
+    git ls-remote "https://aur.archlinux.org/${pkg}.git" >/dev/null 2>&1
+    return $?
+  fi
+  return 1
 }
 
 extension_pk_exists() {

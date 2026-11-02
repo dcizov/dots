@@ -29,6 +29,9 @@ Aliases:
   overrides       apps
   full-profile    full
 
+Options:
+  --force   bypass role/gaming checks for dev/gaming modes (used by ucli devmode/ucli gaming)
+
 Policy:
   - package names are resolved exactly
   - pacman repo/package group wins
@@ -41,6 +44,7 @@ dry_run=0
 yes_flag=0
 base_desktop=0
 additions_only=0
+force=0
 mode=""
 distro_override=""
 cpu_override=""
@@ -53,6 +57,7 @@ for arg in "$@"; do
     --yes|-y) yes_flag=1 ;;
     --base-desktop) base_desktop=1 ;;
     --additions-only) additions_only=1 ;;
+    --force) force=1 ;;
     --distro=*) distro_override="${arg#*=}" ;;
     --cpu=*) cpu_override="${arg#*=}" ;;
     --gpu=*) gpu_override="${arg#*=}" ;;
@@ -208,8 +213,21 @@ select_packages() {
       case "$desktop" in gnome) add_array GNOME_SHELL_OVERRIDES ;; *) echo "No shell overrides defined for desktop=$desktop" >&2 ;; esac
       ;;
     dev-cli) add_array DEV_CLI ;;
-    dev) [[ "$role" == *dev* ]] && { select_packages dev-cli; add_array DEV; } ;;
-    gaming) [[ "$gaming" == "true" || "$role" == *gaming* ]] && add_array GAMING ;;
+    dev)
+      if (( force )) || [[ "$role" == *dev* ]]; then
+        select_packages dev-cli
+        add_array DEV
+      else
+        echo "dev mode: role='$role' is not dev; skipping (use --force to override)" >&2
+      fi
+      ;;
+    gaming)
+      if (( force )) || [[ "$gaming" == "true" || "$role" == *gaming* ]]; then
+        add_array GAMING
+      else
+        echo "gaming mode: gaming='$gaming' role='$role'; skipping (use --force to override)" >&2
+      fi
+      ;;
     snapshot)
       if (( is_cachyos )); then echo "CachyOS detected: snapshot/bootloader integration is installer-owned; skipping" >&2; return 0; fi
       add_array SNAPSHOT_LIMINE

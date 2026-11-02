@@ -5,12 +5,17 @@ REPO="${WTFAQ_REPO:-https://github.com/dcizov/dots.git}"
 BRANCH="${WTFAQ_BRANCH:-}"
 APPLY=1
 YES=0
+DRY_RUN=0
 
 usage() {
   cat <<'USAGE'
-usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--yes]
+usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--yes] [--dry-run]
 
 Bootstrap wtfaq chezmoi/ucli setup.
+
+WARNING: The recommended install method pipes a remote script directly into bash
+  (curl https://install.wtfaq.tech | bash). Verify the script contents before
+  piping it, or download and inspect it first.
 
 Examples:
   curl -fsSL https://install.wtfaq.tech | bash
@@ -43,6 +48,10 @@ while (($#)); do
       ;;
     --yes|-y)
       YES=1
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=1
       shift
       ;;
     --help|-h)
@@ -104,7 +113,14 @@ install_arch_requirements() {
     nano
   )
 
+  if (( DRY_RUN )); then
+    log "[dry-run] would run: sudo pacman -Syu --needed ${packages[*]}"
+    return 0
+  fi
+
   log "Installing bootstrap packages with pacman"
+  # Full system upgrade (-Syu) during bootstrap: review what will change first.
+  # Use --needed to avoid reinstalling already-satisfied packages.
   sudo pacman -Syu --needed "${packages[@]}"
 }
 
@@ -129,6 +145,11 @@ run_chezmoi_init() {
   (( APPLY )) && args+=(--apply)
 
   args+=("$REPO")
+
+  if (( DRY_RUN )); then
+    log "[dry-run] would run: chezmoi ${args[*]}"
+    return 0
+  fi
 
   log "Running: chezmoi ${args[*]}"
   chezmoi "${args[@]}"
@@ -175,7 +196,11 @@ main() {
   log "Repository: $REPO"
   [[ -n "$BRANCH" ]] && log "Branch: $BRANCH"
 
-  if (( ! YES )); then
+  if (( DRY_RUN )); then
+    log "[dry-run] no changes will be made"
+  fi
+
+  if (( ! YES )) && (( ! DRY_RUN )); then
     confirm "Bootstrap wtfaq dotfiles on this machine?" || exit 0
   fi
 

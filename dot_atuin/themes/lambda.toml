@@ -8,7 +8,7 @@
 # Every Meaning is mapped so the TUI never falls back to atuin's builtin
 # palette (which resolves `auto` against the terminal and picked a light
 # scheme). Only foreground colours are set: atuin paints no backgrounds of
-# its own, so the terminal's #222e34 stays in place.
+# its own, so the terminal's #1c1c1f stays in place.
 
 [theme]
 name = "lambda"

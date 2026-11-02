@@ -9,7 +9,7 @@
   CIELAB; greys (C* < 10) map by lightness, colours by hue:
     orange/yellow code → bright yellow   blue → cyan (the palette has no blue)
     purple → purple                      red → bright red      green → bright green
-  Palette: bg #222e34 surface #2b3940 border #33424a dim #5b7683
+  Palette: bg #1c1c1f surface #2b3940 border #33424a dim #5b7683
            muted #77767b text #d5d7d9 white #ffffff yellow #efd25c pink #d54f8b
            cyan #00c6dc purple #cb75f7 green #83b64f teal #1addb3 red #df005f
 -->
@@ -42,7 +42,7 @@
 			<key>settings</key>
 			<dict>
 				<key>background</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 				<key>caret</key>
 				<string>#e0a3ff</string>
 				<key>foreground</key>
@@ -50,7 +50,7 @@
 				<key>invisibles</key>
 				<string>#5b7683</string>
 				<key>lineHighlight</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 				<key>selection</key>
 				<string>#33424a</string>
 			</dict>
@@ -500,7 +500,7 @@
 				<key>background</key>
 				<string>#ff5f8f</string>
 				<key>foreground</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 			</dict>
 		</dict>
 		<dict>
@@ -513,7 +513,7 @@
 				<key>background</key>
 				<string>#efd25c</string>
 				<key>foreground</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 			</dict>
 		</dict>
 		<dict>
@@ -526,7 +526,7 @@
 				<key>background</key>
 				<string>#ff5f8f</string>
 				<key>foreground</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 			</dict>
 		</dict>
 		<dict>
@@ -539,7 +539,7 @@
 				<key>background</key>
 				<string>#5b7683</string>
 				<key>foreground</key>
-				<string>#222e34</string>
+				<string>#1c1c1f</string>
 			</dict>
 		</dict>
 		<dict>

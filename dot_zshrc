@@ -5,7 +5,12 @@ ZSH_THEME="robbyrussell"        # starship is initialized later
 DISABLE_MAGIC_FUNCTIONS="true"
 # ENABLE_CORRECTION="true"
 COMPLETION_WAITING_DOTS="true"
-export FZF_BASE=/usr/share/fzf
+# fzf keybindings path — portable across Arch (/usr/share/fzf) and Debian.
+if [[ -d /usr/share/fzf ]]; then
+  export FZF_BASE=/usr/share/fzf
+elif [[ -d /usr/share/doc/fzf/examples ]]; then
+  export FZF_BASE=/usr/share/doc/fzf/examples
+fi
 
 ZSH_CONFIG_DIR="${ZSH_CONFIG_DIR:-$HOME/.config/zsh}"
 
@@ -27,7 +32,13 @@ plugins=(
   zsh-syntax-highlighting
 )
 
-source "$ZSH/oh-my-zsh.sh"
+# Only source oh-my-zsh if it was actually installed (install-shell.sh clones
+# plugins but omz itself is installed by install-oh-my-zsh.sh).
+if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+else
+  echo "warning: oh-my-zsh not found at $ZSH; run 'ucli shell' to install" >&2
+fi
 
 # Load modular config in numeric order.
 for file in "$ZSH_CONFIG_DIR"/conf.d/*.zsh(N); do

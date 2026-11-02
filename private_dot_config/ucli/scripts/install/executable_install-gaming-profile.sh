@@ -10,5 +10,5 @@ if [[ "$distro" == "cachyos" ]]; then
   exit 0
 fi
 
-"$script_dir/install-packages.sh" gaming
+"$script_dir/install-packages.sh" --force gaming
 "$script_dir/install-flatpaks.sh" gaming

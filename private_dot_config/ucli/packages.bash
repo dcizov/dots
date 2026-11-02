@@ -51,8 +51,17 @@ GPU_AMD=(
   vulkan-radeon
 )
 
-GPU_INTEL=()
-GPU_NVIDIA=()
+GPU_INTEL=(
+  intel-media-driver
+  libva-intel-driver
+  vulkan-intel
+)
+
+GPU_NVIDIA=(
+  nvidia
+  nvidia-utils
+  lib32-nvidia-utils
+)
 
 SYSTEM_SUPPORT=(
   gufw
@@ -125,7 +134,13 @@ DEV=(
   vscodium-marketplace
 )
 
-GAMING=()
+GAMING=(
+  steam
+  mangohud
+  gamemode
+  lib32-mangohud
+  lib32-gamemode
+)
 
 # -----------------------------
 # GNOME

@@ -8,7 +8,7 @@
 # the same 16). Only zsh-syntax-highlighting needs it in the shell: it paints
 # with hex, not with ANSI names.
 typeset -gA _lam=(
-  bg      '#222e34'   # window background
+  bg      '#1c1c1f'   # window background (matches GNOME Console)
   surface '#2b3940'   # current line in fzf, selected row in the menu
   border  '#33424a'   # fzf borders
   dim     '#5b7683'   # comments, autosuggestion ghost text, fzf info
@@ -36,7 +36,7 @@ typeset -gA _lam=(
 #   border 59→dim                label 145→muted
 # Defined here as a variable so the fzf popup (30-fzf.zsh) and fzf-tab's Tab
 # popup cannot drift apart.
-typeset -g _fzf_colours='bg:#222e34,bg+:#2b3940,fg+:#ffffff,hl:#83b64f,hl+:#a6d97a,prompt:#00c6dc,pointer:#df005f,marker:#d54f8b,spinner:#a6d97a,info:#efd25c,header:#1addb3,footer:#1addb3,border:#5b7683,label:#77767b'
+typeset -g _fzf_colours='bg:#1c1c1f,bg+:#2b3940,fg+:#ffffff,hl:#83b64f,hl+:#a6d97a,prompt:#00c6dc,pointer:#df005f,marker:#d54f8b,spinner:#a6d97a,info:#efd25c,header:#1addb3,footer:#1addb3,border:#5b7683,label:#77767b'
 
 # Nothing below this line paints a colour on purpose.
 #
