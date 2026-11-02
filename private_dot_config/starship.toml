@@ -1,85 +1,102 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# ── lambda ────────────────────────────────────────────────────────────────────
+# Recreation of the prompt in the reference screenshot, which is itself inspired
+# by the fish theme https://github.com/netologist/theme-lambda:
+#
+#   ╭─malte on laptopalte in ~/.config on 🌱 mast took 8s591ms
+#   ╰─λ
+#
+# Colours are sampled from that screenshot, not from the fish source, because a
+# terminal renders the theme's 256-colour values slightly differently — and the
+# corner colour there is derived per host (md5 of the hostname), pinned here.
+palette = 'lambda'
+
 add_newline = false
 command_timeout = 1000
-palette = 'adwaita_dark'
 
-# `$fill` pins $time to the right margin by padding line 1 to the full terminal
-# width. That is a known trigger for a zsh redraw bug with multi-line prompts, so
-# ~/.config/zsh/conf.d/99-prompt.zsh hands starship a terminal two columns
-# narrower than the real one — the fill then stops just short of the margin.
-# Keep the two in sync: if you remove `$fill` here, drop that adjustement too.
-format = '[╭─](dim)$username$hostname${custom.distrobox}$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](dim)$python$character'
+format = '[╭─](corner)$username[ on ](text)$hostname${custom.distrobox}[ in ](text)$directory$git_branch$git_status$cmd_duration$fill$time$line_break[╰─](corner)$jobs$python$character'
 right_format = ''
 
-[palettes.adwaita_dark]
-accent      = '#62a0ea'
-accent_soft = '#99c1f1'
-ok          = '#57e389'
-ok_dim      = '#2ec27e'
-warn        = '#f5c211'
-err         = '#ed333b'
-purple      = '#c061cb'
-fg          = '#ffffff'
-path        = '#deddda'
-dim         = '#9a9996'
-muted       = '#77767b'
+[palettes.lambda]
+fg     = '#ffffff'   # plain foreground: the ▸ / ◂ prompt arrow
+corner = '#5b7683'   # the ╭─ / ╰─ glyphs, and the clock
+text   = '#d5d7d9'   # the words "on" / "in" / "took"
+user   = '#efd25c'   # username, and the command duration
+host   = '#d54f8b'   # hostname
+path   = '#00c6dc'   # working directory
+branch = '#cb75f7'   # git branch name
+leaf   = '#83b64f'   # the git symbol
+teal   = '#1addb3'   # box badge, git status
+warn   = '#efd25c'   # background jobs, long commands
+err    = '#df005f'   # root user, failed command
 
 [username]
 show_always = true
-style_user = 'bold accent'
+style_user = 'bold user'
 style_root = 'bold err'
 format = '[$user]($style)'
 
 [hostname]
 ssh_only = false
-style = 'bold accent_soft'
-format = '[ at ](dim)[$hostname]($style)'
+style = 'bold host'
+format = '[$hostname]($style)'
+
+# Distrobox badge, after the hostname: `⬢ dev`. Empty on the host.
+[custom.distrobox]
+when = '[ -n "${CONTAINER_ID:-}" ]'
+command = 'printf "%s" "$CONTAINER_ID"'
+format = '[ ⬢ $output](bold teal)'
+disabled = false
 
 [directory]
 style = 'bold path'
-repo_root_style = 'bold fg'
-format = '[ in ](dim)[$path]($style)'
+format = '[$path]($style)'
 truncation_length = 3
 truncation_symbol = '…/'
-truncate_to_repo = true
 read_only = ' 🔒'
-read_only_style = 'err'
 
 [git_branch]
+# the fish theme shows the sprout, the branch name in purple, and a space
 symbol = '🌱 '
-style = 'bold ok_dim'
-format = '[ on ](dim)[$symbol$branch]($style)'
+style = 'bold branch'
+format = '[ on ](text)[$symbol](bold leaf)[$branch]($style)'
 truncation_length = 32
 
+[git_status]
+style = 'bold teal'
+format = '([$all_status$ahead_behind]($style))'
+conflicted = '='
+ahead = '⇡${count}'
+behind = '⇣${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+untracked = '?${count}'
+modified = '!${count}'
+staged = '+${count}'
+renamed = '»${count}'
+deleted = '✘${count}'
+
 [git_commit]
-style = 'dim'
+style = 'corner'
 format = ' [\\($hash$tag\\)]($style)'
 only_detached = true
 
 [git_state]
-style = 'bold warn'
+style = 'bold user'
 format = ' [%state( $progress_current/$progress_total)]($style)'
 
-[git_status]
-style = 'bold accent_soft'
-format = '( [$all_status$ahead_behind]($style))'
-conflicted = '[=](bold err)'
-ahead = '[⇡${count}](bold ok)'
-behind = '[⇣${count}](bold err)'
-diverged = '[⇕⇡${ahead_count}⇣${behind_count}](bold warn)'
-untracked = '[?${count}](bold accent_soft)'
-stashed = '[\\$${count}](bold muted)'
-modified = '[!${count}](bold warn)'
-staged = '[+${count}](bold ok)'
-renamed = '[»${count}](bold warn)'
-deleted = '[✘${count}](bold err)'
-
+# fish's `took 8s591ms`
 [cmd_duration]
-min_time = 2000
-show_milliseconds = false
-format = '[ took ](dim)[$duration](bold warn)'
+min_time = 1000
+show_milliseconds = true
+style = 'bold user'
+format = '[ took ](text)[$duration]($style)'
 
+# `$fill` pads line 1 so `$time` lands on the right margin. A multi-line prompt
+# whose first line ends flush with the edge makes zle eat a line on every redraw
+# (Tab), so 99-prompt.zsh hands starship a terminal two columns narrower than the
+# real one: the fill stops 2 columns short of the margin, the clock stays right
+# aligned, and zle's row count stays correct. Keep the two in step.
 [fill]
 symbol = ' '
 style = ''
@@ -87,48 +104,42 @@ style = ''
 [time]
 disabled = false
 time_format = '%H:%M:%S'
-style = 'muted'
+# the theme's corner grey, as in the rest of the prompt
+style = 'corner'
 format = '[$time]($style)'
 
-[python]
-style = 'bold accent_soft'
-format = '([$virtualenv]($style) )'
-detect_extensions = ['py', 'ipynb']
-
-[line_break]
-disabled = false
-
+# Small arrow instead of the lambda glyph. Each symbol carries its own trailing
+# space so the cursor starts one column after the arrow; `format` stays a bare
+# `$symbol` so nothing else is drawn next to it.
+#
+# Vi mode: ▸ insert, ◂ normal, ▴ visual/replace. Starship 1.27.0 only reports
+# these for fish (src/modules/character.rs: Visual/Replace map from Shell::Fish);
+# zsh passes `vicmd` for normal mode and nothing else, so ◂ works under
+# `bindkey -v` while the ▴ entries stay inert there — kept anyway, they cost
+# nothing and are what other arrow-based configs ship.
 [character]
 format = '$symbol'
 success_symbol = '[▸](fg) '
 error_symbol = '[×](bold err) '
 vimcmd_symbol = '[◂](fg) '
+vimcmd_replace_one_symbol = '[▴](bold warn) '
+vimcmd_replace_symbol = '[▴](bold warn) '
+vimcmd_visual_symbol = '[▴](bold warn) '
 
 [jobs]
-style = 'bold warn'
+# `✦2` when two background jobs are running; silent otherwise.
 symbol = '✦'
 number_threshold = 1
+style = 'bold warn'
 format = '[$symbol$number]($style) '
+
+[python]
+style = 'bold branch'
+format = '([$virtualenv]($style) )'
+detect_extensions = ['py', 'ipynb']
 
 [package]
 disabled = true
 
 [status]
 disabled = true
-
-# Distrobox badge — from gist mmaeusezahl/9de899ac, with two changes:
-#
-#   * `when` is POSIX. starship runs it with `sh -c`, and inside the box /bin/sh
-#     is dash, where `[[ … ]]` is a syntax error — the gist's bash-only test
-#     would fail there and the badge would never show exactly where it matters.
-#   * a hexagon instead of the gist's Nerd-Font box glyph, which is a
-#     private-use codepoint and renders as tofu unless the font has it.
-#
-# $CONTAINER_ID is set by distrobox inside the container and empty on the host.
-[custom.distrobox]
-when = '[ -n "${CONTAINER_ID:-}" ]'
-command = 'printf "%s" "$CONTAINER_ID"'
-symbol = '⬢'
-style = 'bold ok'
-format = '[ in ](dim)[$symbol $output]($style)'
-disabled = false
