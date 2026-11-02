@@ -24,6 +24,20 @@ typeset -gA _lam=(
   red     '#df005f'   # errors, unknown tokens
 )
 
+# ─── fzf ──────────────────────────────────────────────────────────────────
+# fzf is the one tool here whose default scheme is a hardcoded 256-colour set
+# (src/tui/tui.go, Dark256), so it does not follow the terminal palette. These
+# are fzf's own defaults, retoned one-for-one — same role, same hue, palette
+# colour:
+#   bg -1→bg   bg+ 236→surface   fg+ 254→white     hl 108→green
+#   hl+ 151→bright green         prompt 110→cyan   pointer 161→red
+#   marker 168→pink              spinner 148→bright green
+#   info 144→yellow              header/footer 109→teal
+#   border 59→dim                label 145→muted
+# Defined here as a variable so the fzf popup (30-fzf.zsh) and fzf-tab's Tab
+# popup cannot drift apart.
+typeset -g _fzf_colours='bg:#222e34,bg+:#2b3940,fg+:#ffffff,hl:#83b64f,hl+:#a6d97a,prompt:#00c6dc,pointer:#df005f,marker:#d54f8b,spinner:#a6d97a,info:#efd25c,header:#1addb3,footer:#1addb3,border:#5b7683,label:#77767b'
+
 # Nothing below this line paints a colour on purpose.
 #
 # The terminal's 16 ANSI slots are these same values, so every plugin default
@@ -43,7 +57,11 @@ zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' menu no
 [[ -n "$LS_COLORS" ]] && zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
-# fzf-tab does not follow FZF_DEFAULT_OPTS by default; keep plugin flags small.
+# fzf-tab does not follow FZF_DEFAULT_OPTS by default, so it gets the retoned
+# scheme explicitly; everything else about its flags stays stock.
+zstyle ':fzf-tab:*' fzf-flags --color="$_fzf_colours"
+
+# Keep plugin flags otherwise small.
 # Its colours come from fzf's own ANSI-based scheme, so they follow the palette.
 zstyle ':fzf-tab:*' switch-group '<' '>'
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto --group-directories-first $realpath 2>/dev/null || ls -1 $realpath'

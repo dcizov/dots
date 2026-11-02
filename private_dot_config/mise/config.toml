@@ -1,3 +1,4 @@
 [settings]
 auto_install = true
-color_theme = "auto"
+# auto probes the terminal and can resolve to a light palette; pin the dark one
+color_theme = "dark"

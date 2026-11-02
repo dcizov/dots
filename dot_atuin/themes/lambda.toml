@@ -1,0 +1,42 @@
+# Lambda theme for atuin. Selected by `[theme] name = "lambda"` in
+# ~/.config/atuin/config.toml.
+#
+# atuin looks for theme files in `~/.atuin/themes/<name>.toml` (its own data
+# directory, not ~/.config/atuin), or in `$ATUIN_CONFIG_DIR/themes/` when that
+# variable is set. This file therefore lives at ~/.atuin/themes/lambda.toml.
+#
+# Every Meaning is mapped so the TUI never falls back to atuin's builtin
+# palette (which resolves `auto` against the terminal and picked a light
+# scheme). Only foreground colours are set: atuin paints no backgrounds of
+# its own, so the terminal's #222e34 stays in place.
+
+[theme]
+name = "lambda"
+
+[colors]
+# body / search results
+Base = "#d5d7d9"
+# bold, highest emphasis
+Important = "#ffffff"
+# falls back to Important in the builtin theme; pinned to match
+Title = "#ffffff"
+# de-emphasised chrome (help bar, tabs)
+Muted = "#77767b"
+# annotations, timestamps, gutter
+Annotation = "#5b7683"
+
+# alerts, mirroring the builtin Dark{Green,Yellow,Red}
+AlertInfo = "#83b64f"
+AlertWarn = "#efd25c"
+AlertError = "#df005f"
+# builtin uses DarkBlue for guidance; the palette has no blue, cyan is the
+# established stand-in
+Guidance = "#00c6dc"
+
+# command-line syntax highlighting, one hue per builtin role
+SyntaxCommand = "#83b64f"
+SyntaxFlag = "#1addb3"
+SyntaxString = "#efd25c"
+SyntaxVariable = "#cb75f7"
+SyntaxOperator = "#d5d7d9"
+SyntaxComment = "#5b7683"

@@ -1,4 +1,7 @@
-style: "auto"
+# lambda.json is glamour's "dark" style with every colour retoned to the
+# prompt palette (same structure, same weights, only the hues changed).
+# glow expands "~", so this works on both machines.
+style: "~/.config/glow/lambda.json"
 mouse: true
 pager: true
 width: 100

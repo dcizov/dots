@@ -13,6 +13,10 @@ if (( $+commands[fzf] )); then
     --bind=?:toggle-preview
   '
 
+  # fzf's own dark scheme retoned to the palette; the spec lives in pre-omz.zsh
+  # so fzf-tab uses exactly the same one.
+  FZF_DEFAULT_OPTS+=" --color=$_fzf_colours"
+
   if (( $+commands[fd] )); then
     export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND='fd --type f --type d --type l --strip-cwd-prefix --hidden --follow --exclude .git'

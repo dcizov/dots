@@ -1,6 +1,9 @@
 # bat config: ~/.config/bat/config
 
---theme=TwoDark
+# Lambda: TwoDark with every colour retoned to the prompt palette
+# (~/.config/bat/themes/Lambda.tmTheme). Needs `bat cache --build` once after
+# the file changes; run_onchange_after_97-bat-theme.sh does that.
+--theme=Lambda
 --style=numbers,changes,header
 --paging=auto
 --pager=less

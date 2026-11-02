@@ -25,6 +25,11 @@ history_filter = [
   "Bearer ",
 ]
 
+[theme]
+# Explicit dark theme: atuin's `auto` resolves against the terminal and was
+# picking a light scheme. The palette lives in ~/.atuin/themes/lambda.toml.
+name = "lambda"
+
 [daemon]
 enabled = true
 autostart = true
