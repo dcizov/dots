@@ -4,7 +4,12 @@ add_newline = false
 command_timeout = 1000
 palette = 'adwaita_dark'
 
-format = '[╭─](dim)$username$hostname${custom.distrobox}$directory$git_branch$git_commit$git_state$git_status$cmd_duration$time$line_break[╰─](dim)$python$character'
+# `$fill` pins $time to the right margin by padding line 1 to the full terminal
+# width. That is a known trigger for a zsh redraw bug with multi-line prompts, so
+# ~/.config/zsh/conf.d/99-prompt.zsh hands starship a terminal two columns
+# narrower than the real one — the fill then stops just short of the margin.
+# Keep the two in sync: if you remove `$fill` here, drop that adjustement too.
+format = '[╭─](dim)$username$hostname${custom.distrobox}$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](dim)$python$character'
 right_format = ''
 
 [palettes.adwaita_dark]
@@ -75,30 +80,15 @@ min_time = 2000
 show_milliseconds = false
 format = '[ took ](dim)[$duration](bold warn)'
 
-# Deliberately disabled. `$fill` pads the first prompt line to EXACTLY the
-# terminal width, and zsh has a long-standing redraw bug with multi-line prompts
-# whose line fills the full width: every completion redraw (Tab) moves one row
-# too many, so the prompt repaints itself a line lower each time and walks up
-# the screen / eats the line above. Re-enabling it needs the line to end at
-# least one column short of the edge, which `$fill` cannot express.
-#
-#   https://stackoverflow.com/a/23544078        ("the problem happens exactly
-#                                                when the first line of the
-#                                                prompt fully fills the width")
-#   https://github.com/sorin-ionescu/prezto/issues/1245
-#   https://github.com/ohmyzsh/ohmyzsh/issues/6226
 [fill]
 symbol = ' '
 style = ''
-disabled = true
 
 [time]
 disabled = false
 time_format = '%H:%M:%S'
 style = 'muted'
-# two spaces: `$fill` used to provide the gap, and with it gone the time would
-# sit flush against the previous segment
-format = '  [$time]($style)'
+format = '[$time]($style)'
 
 [python]
 style = 'bold accent_soft'
