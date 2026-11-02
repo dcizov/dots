@@ -1,12 +1,12 @@
-# Completion / fzf-tab styles loaded before compinit, plus every colour the
-# interactive shell paints. This file is sourced before oh-my-zsh, which is
-# what the plugin colour variables below need — the plugins themselves are
-# loaded from the `plugins=(...)` array in ~/.zshrc.
+# Completion / fzf-tab styles loaded before compinit, plus the palette the
+# shell colours itself from. Sourced before oh-my-zsh (the plugins themselves
+# come from the `plugins=(...)` array in ~/.zshrc).
 #
 # ─── Palette ──────────────────────────────────────────────────────────────
 # One source of truth. It mirrors the `lambda` palette in starship.toml and
-# the 16 ANSI slots in ~/.config/ghostty/config, so the prompt, the syntax
-# highlighting, the autosuggestion, the completion popup and fzf agree.
+# the 16 ANSI slots in ~/.config/ghostty/themes/Lambda (kitty and konsole use
+# the same 16). Only zsh-syntax-highlighting needs it in the shell: it paints
+# with hex, not with ANSI names.
 typeset -gA _lam=(
   bg      '#222e34'   # window background
   surface '#2b3940'   # current line in fzf, selected row in the menu
@@ -24,27 +24,17 @@ typeset -gA _lam=(
   red     '#df005f'   # errors, unknown tokens
 )
 
-# ─── zle's own colours ────────────────────────────────────────────────────
-# What completion would add, the ^R match, the selected row of the menu.
-zle_highlight=(
-  "default:fg=${_lam[text]}"
-  "suffix:fg=${_lam[dim]}"
-  "special:fg=${_lam[teal]}"
-  "region:fg=${_lam[white]},bg=${_lam[surface]}"
-  "isearch:fg=${_lam[bg]},bg=${_lam[yellow]}"
-  "paste:fg=${_lam[white]},bg=${_lam[surface]}"
-  "listselect:fg=${_lam[white]},bg=#2f4b56"
-)
-
-# ─── zsh-autosuggestions ──────────────────────────────────────────────────
-# The ghost text is the dimmest thing on screen: it must never compete with
-# the command you are actually typing.
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=${_lam[dim]}"
-
-# ─── zsh-history-substring-search ─────────────────────────────────────────
-HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND="bg=${_lam[surface]},fg=${_lam[white]},bold"
-HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND="bg=${_lam[surface]},fg=${_lam[red]}"
-HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_TIMEOUT=0.2
+# Nothing below this line paints a colour on purpose.
+#
+# The terminal's 16 ANSI slots are these same values, so every plugin default
+# that *names* a colour already renders in the palette with no config: the
+# autosuggestion's `fg=8` is bright black (#5b7683), the history search's
+# `bg=magenta,fg=white,bold` is #cb75f7 on #ffffff, fzf's `hl:2` / `prompt:4`
+# are leaf green and path cyan. Restating them here would only be a second
+# copy that can drift — the palette is changed in one place, the terminal.
+#
+# The single exception is zsh-syntax-highlighting's `comment = fg=black`,
+# which on this background would be invisible; see 90-post-plugins.zsh.
 
 # ucli recipe completion (config/zsh/completions/_ucli)
 fpath=("$HOME/.config/zsh/completions" $fpath)
@@ -54,8 +44,7 @@ zstyle ':completion:*' menu no
 [[ -n "$LS_COLORS" ]] && zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # fzf-tab does not follow FZF_DEFAULT_OPTS by default; keep plugin flags small.
-# It still gets the palette explicitly: this is the Tab popup.
-zstyle ':fzf-tab:*' fzf-flags --color="fg:${_lam[text]},bg:${_lam[bg]},hl:${_lam[cyan]},fg+:${_lam[white]},bg+:${_lam[surface]},hl+:${_lam[teal]},info:${_lam[dim]},prompt:${_lam[teal]},pointer:${_lam[purple]},marker:${_lam[green]},spinner:${_lam[teal]},header:${_lam[dim]},border:${_lam[border]},label:${_lam[dim]},query:${_lam[text]},disabled:${_lam[dim]}"
+# Its colours come from fzf's own ANSI-based scheme, so they follow the palette.
 zstyle ':fzf-tab:*' switch-group '<' '>'
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto --group-directories-first $realpath 2>/dev/null || ls -1 $realpath'
 zstyle ':fzf-tab:complete:z:*' fzf-preview 'eza -1 --color=always --icons=auto --group-directories-first $realpath 2>/dev/null || ls -1 $realpath'
