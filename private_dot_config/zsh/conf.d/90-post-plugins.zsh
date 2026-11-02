@@ -23,3 +23,40 @@ fi
 # Arch only.
 [[ -r /usr/share/doc/pkgfile/command-not-found.zsh ]] && \
   source /usr/share/doc/pkgfile/command-not-found.zsh
+
+# ─── zsh-syntax-highlighting: the stock look, in the palette's colours ─────
+#
+# The plugin ships 44 roles whose defaults name ANSI colours — `fg=red`,
+# `fg=green`, `fg=blue`, `fg=magenta`, `fg=yellow`, `fg=cyan`, `fg=black` for
+# comments. Redefining those roles by hand drifts from upstream and changes
+# the look, so instead keep every default and rewrite only the colour names
+# to the palette from pre-omz.zsh: red stays red, it is just *our* red.
+#
+# Runs here because this file is sourced after oh-my-zsh has loaded the
+# plugin, so the defaults are already in place. Idempotent: once rewritten
+# the values hold hex, and no colour name matches any more.
+if (( ${+ZSH_HIGHLIGHT_STYLES} )); then
+  typeset -A _lam_ansi=(
+    red     "${_lam[red]}"      # unknown tokens, bracket errors
+    green   "${_lam[green]}"    # aliases, builtins, commands, autodirectories
+    yellow  "${_lam[yellow]}"   # quoted strings, reserved words, redirections
+    blue    "${_lam[cyan]}"     # globbing, history expansion, bracket level 1
+    magenta "${_lam[purple]}"   # substitution delimiters, bracket level 3
+    cyan    "${_lam[teal]}"     # $-quoted, global aliases, bracket level 5
+    white   "${_lam[text]}"
+    default "${_lam[text]}"
+    # One deliberate exception: upstream paints comments `fg=black`, and this
+    # palette's black slot IS the background — that would erase them. Bright
+    # black is the grey the prompt and all three terminals already use.
+    black   "${_lam[dim]}"
+  )
+  for _k in ${(k)ZSH_HIGHLIGHT_STYLES}; do
+    _v=$ZSH_HIGHLIGHT_STYLES[$_k]
+    for _c in ${(k)_lam_ansi}; do
+      _v=${_v//fg=$_c/fg=$_lam_ansi[$_c]}
+      _v=${_v//bg=$_c/bg=$_lam_ansi[$_c]}
+    done
+    ZSH_HIGHLIGHT_STYLES[$_k]=$_v
+  done
+  unset _k _v _c _lam_ansi
+fi

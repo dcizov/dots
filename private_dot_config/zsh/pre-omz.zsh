@@ -46,53 +46,6 @@ HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND="bg=${_lam[surface]},fg=${_lam[white]},
 HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND="bg=${_lam[surface]},fg=${_lam[red]}"
 HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_TIMEOUT=0.2
 
-# ─── zsh-syntax-highlighting ──────────────────────────────────────────────
-# Every role maps onto the same palette the prompt uses: what you would run
-# stays plain text, aliases green, builtins teal, mistakes red.
-typeset -gA ZSH_HIGHLIGHT_STYLES=(
-  # what you would run
-  command              "fg=${_lam[text]}"
-  arg0                 "fg=${_lam[text]}"
-  alias                "fg=${_lam[green]}"
-  builtin              "fg=${_lam[teal]}"
-  function             "fg=${_lam[purple]}"
-  hashed-command       "fg=${_lam[cyan]}"
-  precommand           "fg=${_lam[yellow]}"
-  reserved-word        "fg=${_lam[purple]},bold"
-  unknown-token        "fg=${_lam[red]},bold"
-  path                 "underline"
-  autodirectory        "fg=${_lam[cyan]},underline"
-  directory            "fg=${_lam[cyan]}"
-  # arguments
-  single-quoted-argument      "fg=${_lam[green]}"
-  double-quoted-argument      "fg=${_lam[green]}"
-  dollar-quoted-argument      "fg=${_lam[green]}"
-  rc-quote                    "fg=${_lam[green]}"
-  back-quoted-argument        "fg=${_lam[teal]}"
-  back-double-quoted-argument "fg=${_lam[teal]}"
-  here-string                 "fg=${_lam[green]}"
-  # operators and syntax
-  comment              "fg=${_lam[dim]},italic"
-  globbing             "fg=${_lam[yellow]}"
-  redirection          "fg=${_lam[purple]}"
-  parameter            "fg=${_lam[cyan]}"
-  history-expansion    "fg=${_lam[teal]}"
-  assign               "fg=${_lam[text]}"
-  # the `brackets` highlighter, cycling with nesting depth
-  bracket-level-1      "fg=${_lam[teal]},bold"
-  bracket-level-2      "fg=${_lam[green]},bold"
-  bracket-level-3      "fg=${_lam[yellow]},bold"
-  bracket-level-4      "fg=${_lam[pink]},bold"
-  bracket-error        "fg=${_lam[red]},bold"
-  bracket-unbalanced   "fg=${_lam[red]},underline"
-)
-ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
-# Commands worth seeing before you press Enter.
-ZSH_HIGHLIGHT_PATTERNS=(
-  'rm -rf /*'    "fg=${_lam[red]},bold"
-  'chmod 777 *'  "fg=${_lam[yellow]},bold"
-)
-
 # ucli recipe completion (config/zsh/completions/_ucli)
 fpath=("$HOME/.config/zsh/completions" $fpath)
 
