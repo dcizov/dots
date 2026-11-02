@@ -98,14 +98,6 @@ The menus use `gum` when it is installed (the TUI ujust uses), then `fzf`, then
 a plain numbered list — `UCLI_MENU=gum|fzf|select` forces one. `ucli cli` installs
 gum.
 
-The box shares `$HOME`, so it gets the same zsh + starship as the host. The one
-container-specific trap is the locale: distrobox hands the box the host's `LANG`,
-but a fresh Debian image has only `C`/`C.utf8` generated, glibc falls back to
-ASCII, and zsh then measures the prompt in *bytes* — every redraw (Enter, Tab)
-erases the line above. Provisioning generates a UTF-8 locale, `00-env.zsh`
-falls back to `C.UTF-8` if it is still missing, and `ucli doctor` prints the
-box's charset so this cannot come back unnoticed.
-
 `distrobox assemble create` on its own only creates a bare container — no Node,
 no PHP, nothing provisioned. Always go through `ucli devbox-reconcile`
 (or `ucli devmode`, which calls it).

@@ -1,24 +1,4 @@
-# Locale — first, because it decides how zsh measures the prompt.
-#
-# zsh measures a prompt in BYTES unless it is really running multibyte
-# (Src/utils.c: mb_metastrlenend() returns the byte length when MB_CUR_MAX == 1).
-# starship's prompt is mostly multibyte glyphs (╭ ─ … 🌱 ▸), so in that state zsh
-# believes the line is ~10 columns wider than it is and zle erases a screen line
-# on every redraw — Enter and Tab both scroll one line too many.
-#
-# Ask zsh itself rather than the environment: a locale variable naming a locale
-# the container never generated makes setlocale(LC_ALL, "") fail as a whole, and
-# zsh then silently stays in C while `locale charmap` can still print UTF-8.
-# Counting one wide glyph answers the question that zle actually asks.
-if (( ${#${(%):-🌱}} > 1 )); then
-  # C.UTF-8 is built into glibc >= 2.35, so it exists on Arch and Debian 12+
-  # even when locale-gen has never run.
-  unset LC_ALL LC_CTYPE
-  export LANG=C.UTF-8
-  if (( ${#${(%):-🌱}} > 1 )); then
-    print -u2 "warning: no usable UTF-8 locale; the prompt will be misaligned"
-  fi
-fi
+# Environment.
 
 export PATH="$HOME/.local/bin:$PATH"
 export EDITOR="${EDITOR:-nano}"
