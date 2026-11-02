@@ -13,6 +13,9 @@ if (( $+commands[fzf] )); then
     --bind=?:toggle-preview
   '
 
+  # Palette-matched colours; the hexes live in pre-omz.zsh.
+  FZF_DEFAULT_OPTS+=" --color=fg:${_lam[text]},bg:${_lam[bg]},hl:${_lam[cyan]},fg+:${_lam[white]},bg+:${_lam[surface]},hl+:${_lam[teal]},info:${_lam[dim]},prompt:${_lam[teal]},pointer:${_lam[purple]},marker:${_lam[green]},spinner:${_lam[teal]},header:${_lam[dim]},border:${_lam[border]},label:${_lam[dim]},query:${_lam[text]},disabled:${_lam[dim]}"
+
   if (( $+commands[fd] )); then
     export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND='fd --type f --type d --type l --strip-cwd-prefix --hidden --follow --exclude .git'
