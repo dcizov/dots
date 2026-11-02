@@ -16,16 +16,21 @@
 #   * broken escapes: 14 `%{` / 14 `%}`, balanced, `$line_break` outside markers
 #   * inherited COLUMNS: zsh always takes the pty size, never $COLUMNS
 #
-# The one asymmetry left is that `$fill` + the right-aligned `$time` make the
-# top line exactly as wide as the terminal (verified: 82/82 at width 82). A
-# single column of disagreement between zle's count and what the terminal
-# renders wraps that line and produces precisely this redraw artefact, so the
-# first thing to try is taking the flush line away:
+# CAUSE (matches the symptom and the reports): `$fill` padded the first prompt
+# line to EXACTLY the terminal width, and zsh mis-counts zle redraws for
+# multi-line prompts whose line fills the full width -- every completion redraw
+# moves one row too many, so the prompt repaints a line lower each time and
+# walks up the screen. Reproduced-by-others, not a distrobox bug:
+#   https://stackoverflow.com/a/23544078            ("happens exactly when the
+#       first line of the prompt fully fills the width of the terminal")
+#   https://github.com/sorin-ionescu/prezto/issues/1245
+#   https://github.com/ohmyzsh/ohmyzsh/issues/6226
 #
-#   # starship.toml - candidate A: no fill, time inline before the break
-#   format = '...$cmd_duration$time$line_break[╰─](dim)$python$character'
-#   [fill]
-#   disabled = true
+# FIX APPLIED: `$fill` removed from the format and `[fill] disabled = true` in
+# starship.toml; `$time` is now inline. The first line ends ~37 columns short of
+# the edge, so the width mismatch that used to matter (host 82 / box 80) cannot
+# wrap it any more. Verify with `starship prompt --terminal-width=82 | head -1`:
+# the drawn width must stay constant, not equal to the terminal width.
 #
 # Other known causes of this artefact, cheapest first:
 #   * bisect the shell: `zsh -f`, then `eval "$(starship init zsh)"`, then the
