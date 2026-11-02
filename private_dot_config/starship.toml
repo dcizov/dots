@@ -15,13 +15,15 @@ palette = 'lambda'
 add_newline = false
 command_timeout = 1000
 
-format = '[╭─](corner)$username[ on ](text)$hostname${custom.distrobox}[ in ](text)$directory$git_branch$git_status$cmd_duration$fill$time$line_break[╰─](corner)$jobs$python$character'
+format = '[╭─](corner)$username[ on ](dim)$hostname${custom.distrobox}[ in ](dim)$directory$git_branch$git_commit$git_state$git_status$cmd_duration$fill$time$line_break[╰─](corner)$jobs$python$character'
 right_format = ''
 
 [palettes.lambda]
 fg     = '#ffffff'   # plain foreground: the ▸ / ◂ prompt arrow
+dim    = '#9a9996'   # connective words: on / in / took  (old theme's grey)
+muted  = '#77767b'   # the clock on the right margin      (old theme's grey)
 corner = '#5b7683'   # the ╭─ / ╰─ glyphs, and the clock
-text   = '#d5d7d9'   # the words "on" / "in" / "took"
+text   = '#d5d7d9'   # sampled from the reference; kept for future tweaks
 user   = '#efd25c'   # username, and the command duration
 host   = '#d54f8b'   # hostname
 path   = '#00c6dc'   # working directory
@@ -54,43 +56,47 @@ style = 'bold path'
 format = '[$path]($style)'
 truncation_length = 3
 truncation_symbol = '…/'
+truncate_to_repo = true      # inside a repo, shorten to the repo root
+repo_root_style = 'bold path'
 read_only = ' 🔒'
+read_only_style = 'err'
 
 [git_branch]
 # the fish theme shows the sprout, the branch name in purple, and a space
 symbol = '🌱 '
 style = 'bold branch'
-format = '[ on ](text)[$symbol](bold leaf)[$branch]($style)'
+format = '[ on ](dim)[$symbol](bold leaf)[$branch]($style)'
 truncation_length = 32
 
 [git_status]
 style = 'bold teal'
-format = '([$all_status$ahead_behind]($style))'
-conflicted = '='
-ahead = '⇡${count}'
-behind = '⇣${count}'
-diverged = '⇕⇡${ahead_count}⇣${behind_count}'
-untracked = '?${count}'
-modified = '!${count}'
-staged = '+${count}'
-renamed = '»${count}'
-deleted = '✘${count}'
+# the leading space lives inside the group: `main ⇡2`, not `main⇡2`
+format = '( [$all_status$ahead_behind]($style))'
+conflicted = '[=](bold err)'
+ahead = '[⇡${count}](bold leaf)'
+behind = '[⇣${count}](bold err)'
+diverged = '[⇕⇡${ahead_count}⇣${behind_count}](bold warn)'
+untracked = '[?${count}](bold path)'
+modified = '[!${count}](bold warn)'
+staged = '[+${count}](bold leaf)'
+renamed = '[»${count}](bold warn)'
+deleted = '[✘${count}](bold err)'
+stashed = '[\$${count}](bold muted)'
 
 [git_commit]
-style = 'corner'
+style = 'muted'
 format = ' [\\($hash$tag\\)]($style)'
 only_detached = true
 
 [git_state]
-style = 'bold user'
+style = 'bold warn'
 format = ' [%state( $progress_current/$progress_total)]($style)'
 
 # fish's `took 8s591ms`
 [cmd_duration]
 min_time = 1000
 show_milliseconds = true
-style = 'bold user'
-format = '[ took ](text)[$duration]($style)'
+format = '[ took ](dim)[$duration](bold warn)'
 
 # `$fill` pads line 1 so `$time` lands on the right margin. A multi-line prompt
 # whose first line ends flush with the edge makes zle eat a line on every redraw
@@ -104,8 +110,8 @@ style = ''
 [time]
 disabled = false
 time_format = '%H:%M:%S'
-# the theme's corner grey, as in the rest of the prompt
-style = 'corner'
+# the old theme's muted grey for the clock
+style = 'muted'
 format = '[$time]($style)'
 
 # Small arrow instead of the lambda glyph. Each symbol carries its own trailing
@@ -134,7 +140,7 @@ style = 'bold warn'
 format = '[$symbol$number]($style) '
 
 [python]
-style = 'bold branch'
+style = 'bold path'
 format = '([$virtualenv]($style) )'
 detect_extensions = ['py', 'ipynb']
 
