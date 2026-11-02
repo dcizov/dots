@@ -133,9 +133,6 @@ if (( remove_home_snapshots )); then
   fi
 fi
 
-# Ensure /.snapshots exists; archinstall usually created it.
-run mkdir -p /.snapshots
-
 # Configure root snapper in CachyOS style.
 run mkdir -p /etc/snapper/configs
 backup /etc/snapper/configs/root
@@ -193,6 +190,18 @@ EMPTY_PRE_POST_CLEANUP="yes"
 # limits for empty pre-post-pair cleanup
 EMPTY_PRE_POST_MIN_AGE="1800"
 ROOTSNAPPER
+
+# /.snapshots must be a Btrfs subvolume (not a plain directory)
+# mkdir -p creates a regular directory which limine-snapper-sync rejects.
+# Per Arch Wiki snapper setup, create the subvolume properly.
+if [[ -e /.snapshots ]] && ! btrfs subvolume show /.snapshots >/dev/null 2>&1; then
+  # It's a regular directory (e.g. leftover from mkdir -p); remove it
+  run rm -rf /.snapshots
+fi
+if ! btrfs subvolume show /.snapshots >/dev/null 2>&1; then
+  run btrfs subvolume create /.snapshots
+  run chmod 750 /.snapshots
+fi
 
 backup /etc/conf.d/snapper
 if [[ -f /etc/conf.d/snapper ]]; then
