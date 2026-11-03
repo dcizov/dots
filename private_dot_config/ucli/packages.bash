@@ -130,6 +130,7 @@ CLI=(
   direnv
   mise
   tree
+  python-pipx  # needed to install gnome-extensions-cli (gext)
 )
 
 DEV_CLI=(
@@ -243,6 +244,7 @@ GNOME_APP_OVERRIDES=(
   nautilus-admin-gtk4    # Nautilus extension — remove if you don't use Nautilus
   nautilus-my-computer   # Nautilus extension — remove if you don't use Nautilus
   nautilus-open-any-terminal  # Nautilus extension — remove if you don't use Nautilus
+  extension-manager      # GNOME Extension Manager GUI (AUR package)
 )
 
 # ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"

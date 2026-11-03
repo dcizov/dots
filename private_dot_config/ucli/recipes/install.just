@@ -40,6 +40,13 @@ vscodium-extensions:
     # install configured VSCodium extensions
     @~/.local/share/ucli/scripts/install/install-vscodium-extensions.sh
 
+# Install gnome-extensions-cli (gext) via pipx.
+# Required before running install-gnome-extension-set.sh.
+[group('Install')]
+install-gnome-extensions-cli:
+    # install gnome-extensions-cli (gext) for GNOME extension management
+    @~/.local/share/ucli/scripts/install/install-gnome-extensions-cli.sh
+
 # Apply chezmoi-managed dotfiles.
 [group('Install')]
 chezmoi-apply:
