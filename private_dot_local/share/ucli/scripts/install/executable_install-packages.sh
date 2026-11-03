@@ -286,7 +286,11 @@ if ((${#repo_packages[@]})); then sudo pacman "${pacman_args[@]}" "${repo_packag
 if ((${#aur_packages[@]})); then
   aur_helper="$("$script_dir/install-aur-helper.sh" "${yes_flag:+--yes}")"
   echo "AUR helper: $aur_helper"
-  "$aur_helper" "${paru_args[@]}" "${aur_packages[@]}"
+  if [[ "$aur_helper" == "paru" ]]; then
+    paru -S --needed "${yes_flag:+--noconfirm}" "${aur_packages[@]}"
+  elif [[ "$aur_helper" == "shelly" ]]; then
+    shelly aur install --no-confirm "${aur_packages[@]}"
+  fi
 fi
 
 for svc in "${services[@]}"; do

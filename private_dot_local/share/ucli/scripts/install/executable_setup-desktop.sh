@@ -273,7 +273,7 @@ apply_replacements() {
         if [[ "$aur_helper" == "paru" ]] && command -v paru >/dev/null 2>&1; then
           paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
         elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
-          shelly install --needed "${replace_with[$i]}" 2>/dev/null || true
+          shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
             echo "  warning: ${replace_with[$i]} not in repos; install an AUR helper (ucli devmode) for AUR packages" >&2

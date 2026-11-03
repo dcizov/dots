@@ -97,7 +97,11 @@ if ! command -v "$aur_helper" >/dev/null 2>&1; then
   echo "$aur_helper not available after install attempt" >&2
   exit 1
 fi
-run sudo -u "${SUDO_USER:-$USER}" "$aur_helper" -S --needed limine-snapper-sync limine-mkinitcpio-hook
+if [[ "$aur_helper" == "paru" ]]; then
+  run sudo -u "${SUDO_USER:-$USER}" paru -S --needed limine-snapper-sync limine-mkinitcpio-hook
+elif [[ "$aur_helper" == "shelly" ]]; then
+  run sudo -u "${SUDO_USER:-$USER}" shelly aur install --no-confirm limine-snapper-sync limine-mkinitcpio-hook
+fi
 
 # Remove home snapper config/subvolume created by archinstall if requested.
 if (( remove_home_snapshots )); then
