@@ -13,6 +13,8 @@ usage:
     @printf '%s\n' 'Setup:'
     @printf '%s\n' '  chezmoi init/apply'
     @printf '%s\n' '  ucli setup-snapshots'
+    @printf '%s\n' '  ucli setup-desktop        # install DE + snapshot (Arch minimal)'
+    @printf '%s\n' '  ucli debloat-desktop      # remove DE packages you don'"'"'t need'
     @printf '%s\n' '  ucli setup-system'
     @printf '%s\n' '  ucli devbox-reconcile'
     @printf '%s\n' ''

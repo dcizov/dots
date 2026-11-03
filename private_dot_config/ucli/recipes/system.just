@@ -50,12 +50,19 @@ _fresh-snapshot:
     sudo ~/.config/ucli/scripts/system/snapshot-fresh-install.sh
 
 # Install a desktop environment and snapshot afterwards.
-# Usage: just setup-desktop           (prompts for gnome/hyprland/kde)
-#        just setup-desktop --set desktop=gnome
+# Usage: just setup-desktop                    (full DE set, prompts for gnome/hyprland/kde)
+#        sudo setup-desktop.sh --choose gnome  (interactive: pick package groups first)
 # For Arch minimal: run after chezmoi apply, before ucli devmode/apps.
 [group('System')]
 setup-desktop:
-    sudo ~/.config/ucli/scripts/install/setup-desktop.sh "${desktop:-}"
+    sudo ~/.config/ucli/scripts/install/setup-desktop.sh
+
+# Review installed desktop packages and remove bloat.
+# Usage: just debloat-desktop           (prompts for gnome/hyprland/kde)
+# Run after setup-desktop to remove packages you don't need.
+[group('System')]
+debloat-desktop:
+    sudo ~/.config/ucli/scripts/install/debloat-desktop.sh
 
 # Validate all package arrays.
 _validate-all:
