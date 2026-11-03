@@ -284,7 +284,7 @@ APP_FLATPAKS=(
   com.usebottles.bottles
   md.obsidian.Obsidian
 	com.spotify.Client
-	com.vencord.Vesktop
+	dev.vencord.Vesktop
 )
 
 GNOME_FLATPAKS=(
