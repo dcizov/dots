@@ -13,6 +13,17 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+# When run via sudo (from setup-desktop.sh), $HOME is root's home;
+# use the invoking user's home instead.
+real_user="${SUDO_USER:-$USER}"
+real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+
+# gext is installed by pipx to $real_home/.local/bin; add it to PATH
+# when running as root so command -v gext finds it.
+if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
+  export PATH="$real_home/.local/bin:$PATH"
+fi
+
 if ! command -v gext >/dev/null 2>&1; then
   echo "gext (gnome-extensions-cli) not found" >&2
   echo "  run: ucli install-gnome-extensions-cli" >&2

@@ -31,6 +31,12 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
+# gext is installed by pipx to $real_home/.local/bin; add it to PATH
+# when running as root so command -v gext finds it.
+if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
+  export PATH="$real_home/.local/bin:$PATH"
+fi
+
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
 # shellcheck source=/dev/null
