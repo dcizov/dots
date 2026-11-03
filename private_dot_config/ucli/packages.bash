@@ -331,6 +331,51 @@ APPS=(
 MANUAL_AUR=()
 
 # -----------------------------
+# Software replacement matrix
+# -----------------------------
+#
+# When installing a desktop environment, some packages from the DE group may
+# be unwanted or have better alternatives. This matrix defines:
+#
+#   DESKTOP_SKIP_<DE>   - packages from the DE group to NOT install
+#   DESKTOP_REPLACE_<DE> - package -> replacement pairs
+#
+# Replacements are installed instead of the skipped package. If no replacement
+# is listed, the package is simply not installed (debloat).
+#
+# Examples:
+#   - gnome-software → shelly (flatpak: com.ranfdev.DistroShelf in DEV_FLATPAKS)
+#   - gnome-system-monitor → mission-center (flatpak: io.missioncenter.MissionCenter in GNOME_FLATPAKS)
+#   - htop → btop (btop in SYSTEM_QOL_TOOLS)
+#   - gnome-console → ghostty (already configured via chezmoi)
+#
+# ArchWiki: users should install only what they need from DE groups
+# https://wiki.archlinux.org/title/GNOME
+
+# GNOME packages to skip (debloat) — none skipped by default
+DESKTOP_SKIP_GNOME=()
+
+# GNOME package replacements: "original=replacement"
+DESKTOP_REPLACE_GNOME=(
+  "gnome-software=shelly"           # shelly is the graphical software manager
+  "gnome-system-monitor=mission-center"  # mission-center flatpak
+  "gnome-console=ghostty"           # ghostty is the configured terminal
+  "htop=btop"                       # btop in SYSTEM_QOL_TOOLS
+)
+
+# Hyprland packages to skip
+DESKTOP_SKIP_HYPRLAND=()
+
+# Hyprland package replacements
+DESKTOP_REPLACE_HYPRLAND=()
+
+# KDE packages to skip
+DESKTOP_SKIP_KDE=()
+
+# KDE package replacements
+DESKTOP_REPLACE_KDE=()
+
+# -----------------------------
 # Flatpak app IDs
 # -----------------------------
 
@@ -347,8 +392,6 @@ APP_FLATPAKS=(
   com.spotify.Client
   com.vencord.Vesktop
   md.obsidian.Obsidian
-	com.spotify.Client
-	dev.vencord.Vesktop
 )
 
 GNOME_FLATPAKS=(

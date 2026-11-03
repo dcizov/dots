@@ -64,6 +64,20 @@ setup-desktop:
 debloat-desktop:
     sudo ~/.config/ucli/scripts/install/debloat-desktop.sh
 
+# Backup GNOME Shell settings and extensions.
+# Usage: just backup-gnome-settings
+# Backs up dconf settings + enabled extensions list to ~/.config/ucli/settings/gnome/
+[group('System')]
+backup-gnome-settings:
+    ~/.config/ucli/scripts/install/backup-gnome-settings.sh
+
+# Restore GNOME Shell settings and extensions from backup.
+# Usage: just restore-gnome-settings
+# Restores dconf settings + re-enables extensions from ~/.config/ucli/settings/gnome/
+[group('System')]
+restore-gnome-settings:
+    ~/.config/ucli/scripts/install/restore-gnome-settings.sh
+
 # Validate all package arrays.
 _validate-all:
     ~/.config/ucli/scripts/install/validate-packages.sh --all
