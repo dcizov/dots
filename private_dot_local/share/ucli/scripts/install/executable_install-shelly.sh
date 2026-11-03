@@ -36,6 +36,12 @@ fi
 
 sudo pacman -S --needed git base-devel
 
+# When run as root (e.g. from setup-desktop.sh), drop to the invoking user
+# for the AUR build since makepkg refuses to run as root.
+if [[ "$EUID" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
+  exec runuser -u "$SUDO_USER" -- "$0" "$@"
+fi
+
 # Use a private, unpredictable temp dir (avoid symlink races).
 workdir="$(mktemp -d -t shelly-build.XXXXXX)"
 trap 'rm -rf "$workdir"' EXIT

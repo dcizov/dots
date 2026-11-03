@@ -45,7 +45,8 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 source "$real_home/.config/ucli/packages.bash"
 
 # Resolve the AUR helper (distro-aware; cached in /etc/ucli/aur-helper).
-aur_helper="$("$script_dir/install-aur-helper.sh")"
+# Run as the real user since this may install the helper via makepkg (no root).
+aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
 
 # Install desktop packages applying the replacement matrix from packages.bash.
@@ -275,9 +276,9 @@ apply_replacements() {
       if ! pacman -Q "${replace_with[$i]}" >/dev/null 2>&1; then
         echo "installing replacement: ${replace_with[$i]}"
         if [[ "$aur_helper" == "paru" ]] && command -v paru >/dev/null 2>&1; then
-          paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
+          runuser -u "$real_user" -- paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
         elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
-          shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+          runuser -u "$real_user" -- shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
             echo "  warning: ${replace_with[$i]} not in repos; install an AUR helper (ucli devmode) for AUR packages" >&2

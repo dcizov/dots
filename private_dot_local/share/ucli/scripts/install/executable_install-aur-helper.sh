@@ -55,12 +55,22 @@ detect_distro_raw() {
   fi
 }
 
+# When run as root (e.g. from setup-desktop.sh), drop to the invoking user
+# for AUR helper installation since makepkg refuses to run as root.
+run_as_real_user() {
+  if [[ "$EUID" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
+    runuser -u "$SUDO_USER" -- "$@"
+  else
+    "$@"
+  fi
+}
+
 install_paru() {
-  "$script_dir/install-paru.sh" "$@"
+  run_as_real_user "$script_dir/install-paru.sh" "$@"
 }
 
 install_shelly() {
-  "$script_dir/install-shelly.sh" "$@"
+  run_as_real_user "$script_dir/install-shelly.sh" "$@"
 }
 
 main() {
