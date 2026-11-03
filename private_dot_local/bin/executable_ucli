@@ -48,7 +48,7 @@ choose_recipe() {
   fi
 
   local picked
-  picked="$(ui_choose 'ucli' "${items[@]}")" || { printf 'ucli: nothing picked\n' >&2; exit 0; }
+  picked="$(ui_choose 'ucli>' "${items[@]}")" || { printf 'ucli: nothing picked\n' >&2; exit 0; }
   [ -n "$picked" ] || exit 0
 
   exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$picked" "${passthru[@]}"

@@ -1,6 +1,7 @@
 # Set up snapshots and boot entries. Skips CachyOS.
 [group('System')]
 setup-snapshots:
+    # create Btrfs subvolume, configure snapper, limine-snapper-sync
     @sudo ~/.config/ucli/scripts/system/executable_arch-snapper-limine.sh
 
 # System menu.
@@ -18,7 +19,7 @@ system:
       'logs-last-boot|Show journal from last boot'
     )
     if command -v fzf >/dev/null 2>&1; then
-      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='system> ' --with-nth=1,2 --delimiter='|')" || exit 0
+      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='system>' --with-nth=1,2 --delimiter='|')" || exit 0
       choice="${choice%%|*}"
     else
       select item in "${items[@]}"; do choice="${item%%|*}"; break; done
@@ -51,6 +52,7 @@ _fresh-snapshot:
 # For Arch minimal: run after chezmoi apply, before ucli devmode/apps.
 [group('System')]
 setup-desktop:
+    # install desktop environment (gnome/hyprland/kde) + create snapshot
     @sudo ~/.config/ucli/scripts/install/executable_setup-desktop.sh
 
 # Review installed desktop packages and remove bloat.
@@ -58,6 +60,7 @@ setup-desktop:
 # Run after setup-desktop to remove packages you don't need.
 [group('System')]
 debloat-desktop:
+    # remove DE packages you don't need
     @sudo ~/.config/ucli/scripts/install/executable_debloat-desktop.sh
 
 # Backup GNOME Shell settings and extensions.
@@ -65,6 +68,7 @@ debloat-desktop:
 # Backs up dconf settings + enabled extensions list to ~/.config/ucli/settings/gnome/
 [group('System')]
 backup-gnome-settings:
+    # backup dconf settings + enabled extensions to ~/.config/ucli/settings/gnome/
     @~/.config/ucli/scripts/install/executable_backup-gnome-settings.sh
 
 # Restore GNOME Shell settings and extensions from backup.
@@ -72,6 +76,7 @@ backup-gnome-settings:
 # Restores dconf settings + re-enables extensions from ~/.config/ucli/settings/gnome/
 [group('System')]
 restore-gnome-settings:
+    # restore dconf settings + re-enable extensions
     @~/.config/ucli/scripts/install/executable_restore-gnome-settings.sh
 
 # Validate all package arrays.

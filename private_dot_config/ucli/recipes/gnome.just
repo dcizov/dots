@@ -16,7 +16,7 @@ gnome:
       'user-extensions|Install user-managed GNOME extensions'
     )
     if command -v fzf >/dev/null 2>&1; then
-      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='gnome> ' --with-nth=1,2 --delimiter='|')" || exit 0
+      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='gnome>' --with-nth=1,2 --delimiter='|')" || exit 0
       choice="${choice%%|*}"
     else
       select item in "${items[@]}"; do choice="${item%%|*}"; break; done

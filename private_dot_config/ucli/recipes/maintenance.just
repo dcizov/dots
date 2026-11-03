@@ -15,6 +15,7 @@
 # Update everything: pacman, AUR, flatpaks, mise runtimes, then the dev box.
 [group('Maintenance')]
 update:
+    # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     #!/usr/bin/env bash
     set -euo pipefail
     step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -51,6 +52,7 @@ update:
 # Reclaim space: dangling images, unused flatpaks, old package cache.
 [group('Maintenance')]
 clean-system:
+    # prune dangling images, unused flatpaks, old package cache (asks first)
     #!/usr/bin/env bash
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/choose.sh"
@@ -138,6 +140,7 @@ report:
 # System logs: menu over this boot, last boot and the devbox provisioning log.
 [group('Maintenance')]
 logs:
+    # view system logs: this boot / last boot / devbox / pacman
     #!/usr/bin/env bash
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/choose.sh"
@@ -161,6 +164,7 @@ logs:
 # Reboot into the firmware settings (dual boot, boot order, secure boot).
 [group('Maintenance')]
 bios:
+    # reboot into BIOS/UEFI firmware settings
     #!/usr/bin/env bash
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/choose.sh"
@@ -172,6 +176,7 @@ bios:
 # Show firmware/board details.
 [group('Maintenance')]
 bios-info:
+    # show motherboard/BIOS firmware details
     #!/usr/bin/env bash
     set -euo pipefail
     # /sys/class/dmi/id is world-readable, so this needs neither dmidecode nor
@@ -200,6 +205,7 @@ bios-info:
 # Packages changed in the most recent pacman transaction.
 [group('Maintenance')]
 changelogs:
+    # show packages changed in the last pacman transaction
     #!/usr/bin/env bash
     set -euo pipefail
     log=/var/log/pacman.log

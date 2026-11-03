@@ -1,7 +1,3 @@
-# Pick a command.
-_choose:
-    @ucli --choose
-
 # Show common flows.
 [group('Help')]
 usage:

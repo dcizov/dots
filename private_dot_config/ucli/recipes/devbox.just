@@ -21,7 +21,7 @@ devbox:
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/choose.sh"
     ucli_bin="$(command -v ucli || printf '%s' "$HOME/.local/bin/ucli")"
-    action="$(ui_choose 'dev box' \
+    action="$(ui_choose 'devbox>' \
       'reconcile|create or update the box — instant no-op when nothing changed' \
       'shell|open an interactive shell inside dev' \
       'versions|debian / node / npm / php / composer inside the box' \
@@ -46,6 +46,7 @@ devbox:
 # Open an interactive shell inside dev.
 [group('Dev box')]
 devbox-shell:
+    # open an interactive shell inside the dev container
     @distrobox enter dev
 
 # Create or update the box: Debian base + nvm Node + sury PHP + composer.

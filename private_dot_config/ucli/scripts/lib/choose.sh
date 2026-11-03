@@ -27,8 +27,20 @@ ui_backend() {
 }
 
 # `tag|description` -> `tag        description` (tag column padded)
+# Uses the longest tag to compute padding, so long names like
+# `backup-gnome-settings` don't break alignment.
 ui_format() {
-  printf '%s\n' "$@" | awk -F'|' '{ printf "%-14s %s\n", $1, $2 }'
+  local -a tags=()
+  local t
+  for t in "$@"; do
+    tags+=("${t%%|*}")
+  done
+  local max=0
+  for t in "${tags[@]}"; do
+    [ "${#t}" -gt "$max" ] && max="${#t}"
+  done
+  local pad=$(( max + 2 ))
+  printf '%s\n' "$@" | awk -F'|' -v pad="$pad" '{ printf "%-*s %s\n", pad, $1, $2 }'
 }
 
 # ui_choose <header> <tag|description>...   → prints the tag

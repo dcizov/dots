@@ -1,4 +1,5 @@
 # Generate package/app/settings inventory.
 [group('Inventory')]
 inventory:
-    @~/.config/ucli/scripts/inventory/inventory.sh
+    # list installed packages, apps, and settings
+    @~/.config/ucli/scripts/inventory/executable_inventory.sh
