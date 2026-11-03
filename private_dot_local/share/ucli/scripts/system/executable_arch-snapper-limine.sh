@@ -89,17 +89,15 @@ done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Install packages: pacman part first, then paru/AUR part as the invoking sudo user.
+# Install packages: pacman part first, then AUR helper part as the invoking sudo user.
 run pacman -S --needed btrfs-progs snapper snap-pac limine
-if ! command -v paru >/dev/null 2>&1; then
-  if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then
-    run sudo -u "$SUDO_USER" "$script_dir/../install/install-paru.sh" ${yes_flag:+--yes}
-  else
-    echo "paru missing and SUDO_USER unavailable; install paru manually then rerun" >&2
-    exit 1
-  fi
+aur_helper="$("$script_dir/../install/install-aur-helper.sh" "${yes_flag:+--yes}")"
+echo "AUR helper: $aur_helper"
+if ! command -v "$aur_helper" >/dev/null 2>&1; then
+  echo "$aur_helper not available after install attempt" >&2
+  exit 1
 fi
-run sudo -u "${SUDO_USER:-$USER}" paru -S --needed limine-snapper-sync limine-mkinitcpio-hook
+run sudo -u "${SUDO_USER:-$USER}" "$aur_helper" -S --needed limine-snapper-sync limine-mkinitcpio-hook
 
 # Remove home snapper config/subvolume created by archinstall if requested.
 if (( remove_home_snapshots )); then
