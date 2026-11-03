@@ -306,7 +306,7 @@ recreate_box() {
   run_dim "distrobox assemble create --file $INI" distrobox assemble create --file "$INI"
   ensure_running || die "could not start '$BOX' after recreate"
   log "waiting for distrobox-init (installs ca-certificates curl sudo, ~10-60 s)"
-  wait_for_init_ready
+  wait_for_init_ready || die "distrobox-init did not complete in '$BOX' — check container logs"
   new_major="$(console_debian_major)"
   if [ -n "$WANT_MAJOR" ] && [ -n "$new_major" ] && [ "$new_major" != "$WANT_MAJOR" ]; then
     die "recreate did not take effect: container reports Debian $new_major, $INI asks for $WANT_MAJOR"
@@ -401,7 +401,7 @@ if [ -n "$actual_major" ] && [ -n "$WANT_MAJOR" ] && [ "$actual_major" != "$WANT
 fi
 
 # --- provision ---------------------------------------------------------------
-wait_for_init_ready
+wait_for_init_ready || die "distrobox-init did not complete in '$BOX' — check container logs"
 log "provisioning '$BOX' (script hash $PROV_HASH — no-op unless it changed)"
 provision_in_box
 
