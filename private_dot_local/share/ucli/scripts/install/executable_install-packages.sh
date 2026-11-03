@@ -284,10 +284,9 @@ if (( yes_flag )); then pacman_args+=(--noconfirm); paru_args+=(--noconfirm); fi
 
 if ((${#repo_packages[@]})); then sudo pacman "${pacman_args[@]}" "${repo_packages[@]}"; fi
 if ((${#aur_packages[@]})); then
-  install_paru="$script_dir/install-paru.sh"
-  [[ -x "$install_paru" ]] || { echo "missing install-paru.sh: $install_paru" >&2; exit 1; }
-  "$install_paru" ${yes_flag:+--yes}
-  paru "${paru_args[@]}" "${aur_packages[@]}"
+  aur_helper="$("$script_dir/install-aur-helper.sh" "${yes_flag:+--yes}")"
+  echo "AUR helper: $aur_helper"
+  "$aur_helper" "${paru_args[@]}" "${aur_packages[@]}"
 fi
 
 for svc in "${services[@]}"; do

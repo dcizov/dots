@@ -40,6 +40,10 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$script_dir/../../packages.bash"
 
+# Resolve the AUR helper (distro-aware; cached in /etc/ucli/aur-helper).
+aur_helper="$("$script_dir/install-aur-helper.sh")"
+echo "AUR helper: $aur_helper"
+
 # Install desktop packages applying the replacement matrix from packages.bash.
 # Skips packages in DESKTOP_SKIP_<DE> and replaces packages in DESKTOP_REPLACE_<DE>.
 install_desktop_with_replacements() {
@@ -266,11 +270,13 @@ apply_replacements() {
     if [[ ${#replace_with[@]} -gt $i ]] && [[ -n "${replace_with[$i]:-}" ]]; then
       if ! pacman -Q "${replace_with[$i]}" >/dev/null 2>&1; then
         echo "installing replacement: ${replace_with[$i]}"
-        if command -v paru >/dev/null 2>&1; then
+        if [[ "$aur_helper" == "paru" ]] && command -v paru >/dev/null 2>&1; then
           paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
+        elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
+          shelly install --needed "${replace_with[$i]}" 2>/dev/null || true
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
-            echo "  warning: ${replace_with[$i]} not in repos; install paru (ucli devmode) for AUR packages" >&2
+            echo "  warning: ${replace_with[$i]} not in repos; install an AUR helper (ucli devmode) for AUR packages" >&2
         fi
       fi
     fi
