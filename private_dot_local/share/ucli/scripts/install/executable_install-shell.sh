@@ -3,13 +3,20 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+# When run via sudo, $HOME is root's home; use the invoking user's home instead.
+real_user="${SUDO_USER:-$USER}"
+real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+
+# Pass real_home to oh-my-zsh installer via env so it uses the right home.
+export UCLI_REAL_HOME="$real_home"
+
 "$script_dir/install-oh-my-zsh.sh"
 
 # All zsh plugins go to ONE place, $ZSH_CUSTOM/plugins, on the host and in the
 # dev box alike (provision-dev.sh clones the same list). oh-my-zsh loads them
 # from there through plugins=(...) in ~/.zshrc. Every one of these repositories
 # ships <name>/<name>.plugin.zsh, which is what oh-my-zsh's loader looks for.
-plugin_root="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+plugin_root="${ZSH_CUSTOM:-$real_home/.oh-my-zsh/custom}/plugins"
 mkdir -p "$plugin_root"
 for repo in \
   Aloxaf/fzf-tab \

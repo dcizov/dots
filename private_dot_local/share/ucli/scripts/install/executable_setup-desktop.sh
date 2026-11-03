@@ -311,8 +311,23 @@ apply_replacements() {
 apply_replacements "$desktop"
 
 # GNOME extensions are handled by the extension-set script via gext.
-# System extensions first, then user/personal overrides.
+# Ensure gext is installed (via pipx) before installing extensions.
 if [[ "$desktop" == "gnome" ]]; then
+  # Add user's pipx bin to PATH when running as root
+  if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
+    export PATH="$real_home/.local/bin:$PATH"
+  fi
+  if ! command -v gext >/dev/null 2>&1; then
+    echo "gext (gnome-extensions-cli) not found; installing via pipx ..."
+    if command -v pipx >/dev/null 2>&1; then
+      runuser -u "$real_user" -- pipx install gnome-extensions-cli
+      export PATH="$real_home/.local/bin:$PATH"
+    else
+      echo "  error: pipx not found. Run 'sudo pacman -S --needed python-pipx' first, then 'ucli install-gnome-extensions-cli'" >&2
+      exit 1
+    fi
+  fi
+  # System extensions first, then user/personal overrides.
   "$script_dir/install-gnome-extension-set.sh" system || true
   "$script_dir/install-gnome-extension-set.sh" overrides || true
 fi
