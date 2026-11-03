@@ -16,7 +16,7 @@
 #   - https://wiki.archlinux.org/title/GNOME/Shell_extensions (extensions management)
 set -euo pipefail
 
-output_dir="${1:-$HOME/.config/ucli/settings/gnome}"
+output_dir="${1:-$HOME/.local/share/ucli/settings/gnome}"
 
 if ! command -v dconf >/dev/null 2>&1; then
   echo "missing required command: dconf (package: dconf)" >&2
