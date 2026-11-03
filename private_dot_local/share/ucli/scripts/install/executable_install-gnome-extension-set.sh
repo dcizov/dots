@@ -40,23 +40,27 @@ if ! command -v gnome-extensions >/dev/null 2>&1; then
   exit 1
 fi
 
-# extensions.gnome.org API install by primary key
+# extensions.gnome.org API install by primary key.
+# NOTE: no trap here — tmp is cleaned up explicitly at each return
+# point because `set -u` would fail on an EXIT trap referencing a
+# `local` variable that's out of scope by script exit time.
 install_extension_by_pk() {
   local pk="$1" uuid="$2"
   local tmp
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
 
   echo "downloading extension pk=$pk ..."
   if ! curl -fsL "https://extensions.gnome.org/extension-info/?pk=${pk}" -o "$tmp/info.json" 2>/dev/null; then
     echo "warning: could not fetch extension info for pk=$pk" >&2
+    rm -rf "$tmp"
     return 1
   fi
 
   local download_url
-  download_url="$(python3 -c 'import json; d=json.load(open("'"$tmp"'/info.json")); print(d.get("download_url",""))' 2>/dev/null || true)"
+  download_url="$(python3 -c 'import json; d=json.load(open(\"'\"$tmp\"'/info.json\")); print(d.get("download_url",""))' 2>/dev/null || true)"
   if [[ -z "$download_url" ]]; then
     echo "warning: no download_url for pk=$pk" >&2
+    rm -rf "$tmp"
     return 1
   fi
 
@@ -68,6 +72,7 @@ install_extension_by_pk() {
 
   if ! curl -fsL "$download_url" -o "$tmp/extension.zip" 2>/dev/null; then
     echo "warning: could not download extension pk=$pk" >&2
+    rm -rf "$tmp"
     return 1
   fi
 
@@ -76,6 +81,8 @@ install_extension_by_pk() {
   if [[ -n "$uuid" ]]; then
     gnome-extensions enable "$uuid" 2>/dev/null || echo "warning: could not enable $uuid" >&2
   fi
+
+  rm -rf "$tmp"
 }
 
 case "$mode" in
