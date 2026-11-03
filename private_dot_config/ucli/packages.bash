@@ -254,18 +254,14 @@ APPS=(
   bitwarden
   firefox
   fragments
-  geary
   gparted
-  spotify-launcher
   webapp-manager
 
   deja-dup
-  syncthing
 
   fuse2
   libinput-tools
 
-  pear-desktop
   shelly
   shelly-flatpak-backend
   vesktop
@@ -288,6 +284,8 @@ APP_FLATPAKS=(
   com.warlordsoftwares.wallpaper-app-4kwall
   com.usebottles.bottles
   md.obsidian.Obsidian
+	com.spotify.Client
+	com.vencord.Vesktop
 )
 
 GNOME_FLATPAKS=(
