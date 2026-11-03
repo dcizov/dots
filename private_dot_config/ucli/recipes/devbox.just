@@ -30,7 +30,7 @@ devbox-shell:
 # Silent and instant when dev.ini / provision-dev.sh / devbox.env are unchanged.
 [group('Dev box')]
 devbox-reconcile:
-    @~/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh
+    @~/.local/share/ucli/scripts/devbox/executable_devbox-reconcile.sh
 
 # The container is discarded; $HOME, ~/.nvm, ~/.vscode-server and your repos
 # survive, and provisioning runs automatically afterwards.
@@ -65,9 +65,9 @@ _devbox-dry-run:
 # Walks auth -> login shell -> prereqs -> the exact `bash -l` pipeline.
 # Diagnose why Remote-SSH cannot bootstrap its server in the box.
 _devbox-vscode-doctor *ARGS:
-    ~/.config/ucli/scripts/devbox/executable_devbox-vscode-doctor.sh {{ARGS}}
+    ~/.local/share/ucli/scripts/devbox/executable_devbox-vscode-doctor.sh {{ARGS}}
 
 # and prove the host-spawn guard fixes it before you install it.
 # Bisect the `bash -l` profile chain for the file that eats stdin.
 _devbox-vscode-bisect *ARGS:
-    ~/.config/ucli/scripts/devbox/executable_devbox-vscode-bisect.sh {{ARGS}}
+    ~/.local/share/ucli/scripts/devbox/executable_devbox-vscode-bisect.sh {{ARGS}}

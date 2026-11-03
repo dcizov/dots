@@ -7,7 +7,7 @@
 # host, not inside the dev box).
 #
 # Usage:
-#   ~/.config/ucli/scripts/install-vscodium-extensions.sh
+#   ~/.local/share/ucli/scripts/install/executable_install-vscodium-extensions.sh
 #   # or via ucli:   ucli install-vscodium-ext
 #
 # Lines starting with '#' are ignored.

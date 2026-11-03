@@ -3,7 +3,7 @@
 #
 # Usage: restore-gnome-settings.sh [input-dir]
 #
-# Default input: ~/.config/ucli/settings/gnome/  (chezmoi-managed)
+# Default input: ~/.local/share/ucli/settings/gnome/  (chezmoi-managed)
 #
 # Restores:
 #   - dconf settings: /org/gnome/desktop/, /org/gnome/shell/, /org/gnome/shell/extensions/

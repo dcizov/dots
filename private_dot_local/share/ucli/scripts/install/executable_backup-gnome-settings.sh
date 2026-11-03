@@ -3,7 +3,7 @@
 #
 # Usage: backup-gnome-settings.sh [output-dir]
 #
-# Default output: ~/.config/ucli/settings/gnome/  (chezmoi-managed)
+# Default output: ~/.local/share/ucli/settings/gnome/  (chezmoi-managed)
 #
 # Backs up:
 #   - dconf settings: /org/gnome/desktop/, /org/gnome/shell/, /org/gnome/shell/extensions/
