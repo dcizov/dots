@@ -5,6 +5,27 @@
 # - AUR fallback through paru
 # - GNOME extension packages stay repo-only; non-repo extensions use extensions.gnome.org API scripts
 
+# ------------------------------------------------------------------
+# Desktop Environment notes (archinstall vs CachyOS Calamares)
+#
+# archinstall (script/TUI, on Arch minimal):
+#   - Profile: Desktop -> pick DE (gnome, kde, hyprland, ...)
+#   - GNOME:   gnome gnome-tweaks gdm + enable gdm
+#   - Hyprland: hyprland hyprpaper xdg-desktop-portal-hyprland waybar wofi kitty sddm
+#   - Vanilla Arch packages, no distro-specific theming
+#
+# CachyOS Calamares (GUI, on CachyOS):
+#   - 17+ DE choices during install (KDE Plasma, GNOME, COSMIC, Hyprland, Niri, ...)
+#   - Each DE gets distro-specific settings packages (e.g. cachyos-hyprland-settings,
+#     cachyos-kde-settings) + CPU-optimized builds + tuned kernel
+#   - Calamares handles Snapper/Limine + DE during install; skip ucli setup-snapshots
+#   - On CachyOS you pick DE in the installer, not manually after boot
+#
+# This repo's DESKTOP_* arrays are for manual post-install DE setup on Arch minimal.
+# On CachyOS, DE is already installed by Calamares; use these arrays only to add
+# or adjust packages afterward.
+# ------------------------------------------------------------------
+
 # -----------------------------
 # Base setup
 # -----------------------------
@@ -145,6 +166,12 @@ GAMING=(
 # -----------------------------
 
 # ArchWiki: the gnome group contains the base GNOME desktop and core apps.
+# Core: gnome (shell, core apps), gdm (display manager).
+# Optional / removable if you don't need them:
+#   gnome-tweaks              -- appearance customization (remove if you don't tweak)
+#   gnome-boxes               -- VM manager (remove if you don't use VMs)
+#   gdm-settings              -- GDM theme/config (remove if you leave defaults)
+#   nautilus-* extensions     -- file manager extras (remove if you don't use Nautilus)
 DESKTOP_GNOME_BASE=(
   gnome
   gnome-tweaks
@@ -214,6 +241,13 @@ SERVICES_GNOME=(
 
 # -----------------------------
 # Hyprland / KDE
+
+# Hyprland essentials: compositor + bar/launcher + portal + session tools.
+# Optional / removable:
+#   kitty        -- terminal (replace with ghostty/alacritty/foot if preferred)
+#   dolphin      -- file manager (remove if you use another)
+#   wofi         -- app launcher (remove if you use rofi/wofi alternatives)
+#   grim/slurp   -- screenshot tools (remove if you don't screenshot)
 # -----------------------------
 
 DESKTOP_HYPRLAND_BASE=(
@@ -252,6 +286,7 @@ SERVICES_KDE=(
 
 APPS=(
   bitwarden
+  btrfs-assistant
   firefox
   fragments
   gparted
