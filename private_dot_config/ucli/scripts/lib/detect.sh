@@ -201,7 +201,7 @@ detect_terminal() {
   case "$desktop" in
     gnome) printf 'ghostty\n' ;;
     hyprland) printf 'kitty\n' ;;
-    kde) printf 'konsole\n' ;;
+    kde) printf 'kwi\n' ;;
     *) printf 'none\n' ;;
   esac
 }

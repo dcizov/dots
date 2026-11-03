@@ -83,7 +83,7 @@ install_desktop_with_replacements() {
                 kitty dolphin wofi grim slurp dunst)
       ;;
     kde)
-      all_pkgs=(plasma plasma-wayland-session sddm konsole dolphin kate)
+      all_pkgs=(plasma plasma-wayland-session sddm kwi dolphin kate)
       ;;
   esac
 
@@ -158,8 +158,8 @@ if (( choose )); then
     kde)
       groups[core]="KDE Plasma desktop (required)"
       pkgs[core]="plasma plasma-wayland-session sddm"
-      groups[apps]="Core KDE apps (konsole dolphin kate)"
-      pkgs[apps]="konsole dolphin kate"
+      groups[apps]="Core KDE apps (kwi dolphin kate)"
+      pkgs[apps]="kwi dolphin kate"
       ;;
   esac
 

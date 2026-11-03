@@ -61,7 +61,7 @@ HOME_TARGETS=(
   "$HOME/.config/zsh"
   "$HOME/.local/bin/ucli"
   "$HOME/.local/share/backgrounds"
-  "$HOME/.local/share/konsole"
+  "$HOME/.local/share/kwi"
   # chezmoi runtime state
   "$HOME/.local/share/chezmoi"
   "$HOME/.config/chezmoi"

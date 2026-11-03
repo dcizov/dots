@@ -65,8 +65,8 @@ case "$desktop" in
   kde)
     groups[core]="KDE Plasma desktop (required)"
     pkgs[core]="plasma plasma-wayland-session sddm"
-    groups[apps]="Core KDE apps (konsole, dolphin, kate)"
-    pkgs[apps]="konsole dolphin kate"
+    groups[apps]="Core KDE apps (kwi, dolphin, kate)"
+    pkgs[apps]="kwi dolphin kate"
     ;;
 esac
 
