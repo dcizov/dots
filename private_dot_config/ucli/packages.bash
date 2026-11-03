@@ -282,6 +282,8 @@ APP_FLATPAKS=(
   app.drey.Warp
   com.warlordsoftwares.wallpaper-app-4kwall
   com.usebottles.bottles
+  com.spotify.Client
+  com.vencord.Vesktop
   md.obsidian.Obsidian
 	com.spotify.Client
 	dev.vencord.Vesktop
