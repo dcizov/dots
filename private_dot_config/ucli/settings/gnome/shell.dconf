@@ -1,0 +1,125 @@
+[/]
+app-picker-layout=[{'org.gnome.Contacts.desktop': <{'position': <0>}>, 'org.gnome.Weather.desktop': <{'position': <1>}>, 'org.gnome.clocks.desktop': <{'position': <2>}>, 'org.gnome.Maps.desktop': <{'position': <3>}>, 'org.gnome.Music.desktop': <{'position': <4>}>, 'org.gnome.SimpleScan.desktop': <{'position': <5>}>, 'org.gnome.Settings.desktop': <{'position': <6>}>, 'lstopo.desktop': <{'position': <7>}>, 'org.gnome.Snapshot.desktop': <{'position': <8>}>, 'org.gnome.Characters.desktop': <{'position': <9>}>, 'Utilities': <{'position': <10>}>, 'System': <{'position': <11>}>, 'org.gnome.Console.desktop': <{'position': <12>}>, 'org.gnome.Tour.desktop': <{'position': <13>}>, 'org.gnome.Yelp.desktop': <{'position': <14>}>, 'htop.desktop': <{'position': <15>}>, 'cups.desktop': <{'position': <16>}>, 'system-config-printer.desktop': <{'position': <17>}>, 'qv4l2.desktop': <{'position': <18>}>, 'qvidcap.desktop': <{'position': <19>}>, 'vim.desktop': <{'position': <20>}>, 'com.shellyorg.shelly.desktop': <{'position': <21>}>}, {'com.mattjakeman.ExtensionManager.desktop': <{'position': <0>}>, 'org.gnome.Epiphany.desktop': <{'position': <1>}>, 'org.gnome.Calendar.desktop': <{'position': <2>}>, 'org.gnome.Software.desktop': <{'position': <3>}>, 'org.gnome.TextEditor.desktop': <{'position': <4>}>, 'org.gnome.Calculator.desktop': <{'position': <5>}>, 'com.github.tchx84.Flatseal.desktop': <{'position': <6>}>, 'io.github.flattool.Warehouse.desktop': <{'position': <7>}>, 'io.missioncenter.MissionCenter.desktop': <{'position': <8>}>, 'dev.qwery.AddWater.desktop': <{'position': <9>}>, 'gufw.desktop': <{'position': <10>}>, 'jconsole-java-openjdk.desktop': <{'position': <11>}>, 'jshell-java-openjdk.desktop': <{'position': <12>}>, 'limine-snapper-restore.desktop': <{'position': <13>}>, 'nvim.desktop': <{'position': <14>}>, 'io.dbeaver.DBeaver.desktop': <{'position': <15>}>, 'me.iepure.devtoolbox.desktop': <{'position': <16>}>, 'com.ranfdev.DistroShelf.desktop': <{'position': <17>}>}]
+disable-user-extensions=false
+disabled-extensions=@as []
+enabled-extensions=['blur-my-shell@aunetx', 'BetterTrayIcons@nexaknight.com', 'just-perfection-desktop@just-perfection', 'dash-to-dock@micxgx.gmail.com', 'gnome-ui-tune@itstime.tech', 'gsconnect@andyholmes.github.io', 'caffeine@patapon.info', 'logomenu@aryan_k', 'copyous@boerdereinar.dev', 'appindicatorsupport@rgcjonas.gmail.com', 'color-picker@tuberry', 'user-accent-colors@fabito02']
+favorite-apps=['org.gnome.Nautilus.desktop', 'eu.betterbird.Betterbird.desktop', 'firefox.desktop', 'md.obsidian.Obsidian.desktop', 'com.mitchellh.ghostty.desktop', 'codium.desktop', 'dev.vencord.Vesktop.desktop', 'com.spotify.Client.desktop', 'io.podman_desktop.PodmanDesktop.desktop']
+welcome-dialog-last-shown-version='51.1'
+
+[extensions/Logo-menu]
+hide-softwarecentre=true
+menu-button-extensions-app='com.mattjakeman.ExtensionManager.desktop'
+menu-button-icon-image=6
+menu-button-icon-size=16
+menu-button-software-center='shelly'
+menu-button-system-monitor='flatpak run io.missioncenter.MissionCenter'
+menu-button-terminal='ghostty'
+show-activities-button=true
+show-lockscreen=true
+symbolic-icon=true
+use-custom-icon=false
+
+[extensions/bettertrayicons]
+app-config-sync-meta='{"entries":{"shelly-notifications":{"m":1793646796845,"h":"eedf7083"}},"tombstones":{}}'
+app-configs='{"shelly-notifications":{"title":"Shelly Notifications","detected_icon":"shelly-shell-symbolic","seen_icons":["shelly-shell-symbolic","shelly-tray"],"is_hidden":false}}'
+minimize-when-focused=false
+overflow-layout-mode='row'
+visible-icon-limit=0
+
+[extensions/blur-my-shell]
+settings-version=8
+
+[extensions/blur-my-shell/applications]
+blur=false
+pipeline='pipeline_default'
+whitelist=['com.mitchellh.ghostty', 'org.gnome.Nautilus']
+
+[extensions/caffeine]
+cli-toggle=false
+indicator-position-max=2
+user-enabled=true
+
+[extensions/chromaleon]
+accent-color='#798186'
+custom-color=false
+gnome-colors=false
+user-themes-warning=false
+
+[extensions/color-picker]
+color-history=[uint32 1842207]
+
+[extensions/copyous]
+auto-hide-search=true
+clipboard-orientation='vertical'
+clipboard-position-horizontal='top'
+clipboard-position-vertical='fill'
+clipboard-size=500
+database-backend='json'
+disable-hljs-dialog=false
+dynamic-item-height=true
+header-controls-visibility='visible-on-hover'
+item-height=100
+item-width=300
+show-at-pointer=true
+show-header=false
+
+[extensions/copyous/file-item]
+file-preview-visibility='file-info'
+
+[extensions/copyous/link-item]
+link-preview-orientation='horizontal'
+
+[extensions/dash-to-dock]
+background-opacity=0.80000000000000004
+custom-theme-shrink=true
+dash-max-icon-size=48
+dock-position='BOTTOM'
+height-fraction=0.90000000000000002
+preferred-monitor=-2
+preferred-monitor-by-connector='eDP-1'
+show-show-apps-button=false
+
+[extensions/gnome-ui-tune]
+increase-thumbnails-size='100%'
+
+[extensions/gsconnect]
+devices=['d2e92ffa10dd4e1a994871ace1e2b1e9']
+missing-openssl=false
+name='arch'
+show-indicators=false
+
+[extensions/gsconnect/device/d2e92ffa10dd4e1a994871ace1e2b1e9]
+certificate-pem='-----BEGIN CERTIFICATE-----\nMIIBizCCATGgAwIBAgIBATAKBggqhkjOPQQDBDBPMSkwJwYDVQQDDCBkMmU5MmZm\nYTEwZGQ0ZTFhOTk0ODcxYWNlMWUyYjFlOTEUMBIGA1UECwwLS0RFIENvbm5lY3Qx\nDDAKBgNVBAoMA0tERTAeFw0yNTA3MDQyMjAwMDBaFw0zNjA3MDQyMjAwMDBaME8x\nKTAnBgNVBAMMIGQyZTkyZmZhMTBkZDRlMWE5OTQ4NzFhY2UxZTJiMWU5MRQwEgYD\nVQQLDAtLREUgQ29ubmVjdDEMMAoGA1UECgwDS0RFMFkwEwYHKoZIzj0CAQYIKoZI\nzj0DAQcDQgAE5X+zLpaIOVEzECraiNJICnHeIUydVPmdpsl8z8mpWilmqWmH3jvZ\nywJrj1fbUArvCRQvSYElFmj33AMDLlEppzAKBggqhkjOPQQDBANIADBFAiBbHYrL\n+CfFceMrBQ3/3lLhzem4zJL2NPLLWKoBQJCswQIhANM48pBFqYnZbakr9tPhrbeR\njDhT4Rjgauy8UvGyg+SR\n-----END CERTIFICATE-----\n'
+incoming-capabilities=['kdeconnect.battery', 'kdeconnect.clipboard', 'kdeconnect.clipboard.connect', 'kdeconnect.contacts.request_all_uids_timestamps', 'kdeconnect.contacts.request_vcards_by_uid', 'kdeconnect.findmyphone.request', 'kdeconnect.mousepad.keyboardstate', 'kdeconnect.mousepad.request', 'kdeconnect.mpris', 'kdeconnect.mpris.request', 'kdeconnect.notification', 'kdeconnect.notification.action', 'kdeconnect.notification.reply', 'kdeconnect.notification.request', 'kdeconnect.ping', 'kdeconnect.runcommand', 'kdeconnect.runcommand.output', 'kdeconnect.sftp.request', 'kdeconnect.share.request', 'kdeconnect.share.request.update', 'kdeconnect.shareinputdevices.request', 'kdeconnect.sms.request', 'kdeconnect.sms.request_attachment', 'kdeconnect.sms.request_conversation', 'kdeconnect.sms.request_conversations', 'kdeconnect.systemvolume', 'kdeconnect.telephony.request_mute']
+last-connection='lan://192.168.178.143:1716'
+name='Galaxy S23 Ultra'
+outgoing-capabilities=['kdeconnect.battery', 'kdeconnect.clipboard', 'kdeconnect.clipboard.connect', 'kdeconnect.connectivity_report', 'kdeconnect.contacts.response_uids_timestamps', 'kdeconnect.contacts.response_vcards', 'kdeconnect.digitizer', 'kdeconnect.digitizer.session', 'kdeconnect.findmyphone.request', 'kdeconnect.mousepad.echo', 'kdeconnect.mousepad.keyboardstate', 'kdeconnect.mousepad.request', 'kdeconnect.mpris', 'kdeconnect.mpris.request', 'kdeconnect.notification', 'kdeconnect.notification.request', 'kdeconnect.ping', 'kdeconnect.presenter', 'kdeconnect.runcommand.request', 'kdeconnect.sftp', 'kdeconnect.share.request', 'kdeconnect.shareinputdevices', 'kdeconnect.sms.attachment_file', 'kdeconnect.sms.messages', 'kdeconnect.systemvolume.request', 'kdeconnect.telephony']
+paired=true
+supported-plugins=['battery', 'clipboard', 'connectivity_report', 'contacts', 'findmyphone', 'mousepad', 'mpris', 'notification', 'ping', 'presenter', 'runcommand', 'sftp', 'share', 'sms', 'systemvolume', 'telephony']
+type='phone'
+
+[extensions/gsconnect/device/d2e92ffa10dd4e1a994871ace1e2b1e9/plugin/battery]
+custom-battery-notification-value=uint32 80
+
+[extensions/gsconnect/device/d2e92ffa10dd4e1a994871ace1e2b1e9/plugin/notification]
+applications='{"Printers":{"iconName":"org.gnome.Settings-printers-symbolic","enabled":true},"Events and Tasks Reminders":{"iconName":"org.gnome.Evolution-alarm-notify","enabled":true},"Shelly":{"iconName":"shelly","enabled":true},"Disks":{"iconName":"org.gnome.DiskUtility","enabled":true},"Software":{"iconName":"org.gnome.Software","enabled":true},"Date & Time":{"iconName":"org.gnome.Settings-time-symbolic","enabled":true},"NetworkManager Applet":{"iconName":"nm-device-wireless","enabled":true},"Ghostty":{"iconName":"com.mitchellh.ghostty","enabled":true},"Online Accounts":{"iconName":"org.gnome.goa-daemon-symbolic","enabled":true},"Disk Usage Analyzer":{"iconName":"org.gnome.baobab","enabled":true},"Power":{"iconName":"org.gnome.Settings-power-symbolic","enabled":true},"Console":{"iconName":"org.gnome.Console","enabled":true},"Color Management":{"iconName":"org.gnome.Settings-color-symbolic","enabled":true},"Spotify":{"iconName":"com.spotify.Client","enabled":true},"Files":{"iconName":"org.gnome.Nautilus","enabled":true},"Clocks":{"iconName":"org.gnome.clocks","enabled":true},"Zenity":{"iconName":"application-x-executable","enabled":true},"Geary":{"iconName":"org.gnome.Geary","enabled":true},"Déjà Dup Backups":{"iconName":"org.gnome.DejaDup","enabled":true}}'
+
+[extensions/gsconnect/device/d2e92ffa10dd4e1a994871ace1e2b1e9/plugin/share]
+receive-directory='/home/wtfaq/Downloads'
+
+[extensions/gsconnect/preferences]
+window-maximized=false
+window-size=(806, 550)
+
+[extensions/just-perfection]
+animation=5
+quick-settings-airplane-mode=false
+quick-settings-dark-mode=false
+quick-settings-do-not-disturb=false
+quick-settings-night-light=false
+startup-status=0
+theme=true
+world-clock=false
+
+[world-clocks]
+locations=@av []

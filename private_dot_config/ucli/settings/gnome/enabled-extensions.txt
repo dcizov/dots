@@ -1,0 +1,11 @@
+blur-my-shell@aunetx
+just-perfection-desktop@just-perfection
+dash-to-dock@micxgx.gmail.com
+gnome-ui-tune@itstime.tech
+copyous@boerdereinar.dev
+logomenu@aryan_k
+BetterTrayIcons@nexaknight.com
+appindicatorsupport@rgcjonas.gmail.com
+gsconnect@andyholmes.github.io
+caffeine@patapon.info
+user-accent-colors@fabito02
