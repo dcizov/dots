@@ -38,7 +38,7 @@ esac
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
-source "$script_dir/../../packages.bash"
+source "$HOME/.config/ucli/packages.bash"
 
 # Resolve the AUR helper (distro-aware; cached in /etc/ucli/aur-helper).
 aur_helper="$("$script_dir/install-aur-helper.sh")"

@@ -29,7 +29,7 @@ esac
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
-source "$script_dir/../../packages.bash"
+source "$HOME/.config/ucli/packages.bash"
 
 # Package groups per DE, each with a description and whether it's installed.
 declare -A groups=()

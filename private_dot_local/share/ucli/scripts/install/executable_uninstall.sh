@@ -36,7 +36,7 @@ confirm() {
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$script_dir/../../packages.bash"
+source "$HOME/.config/ucli/packages.bash"
 
 HOME_TARGETS=(
   # chezmoi-managed dotfiles (private_dot_* -> ~/.*, dot_* -> ~/.*)

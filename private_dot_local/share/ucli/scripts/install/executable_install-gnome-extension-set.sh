@@ -25,9 +25,9 @@ mode="${1:-system}"
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$script_dir/../../packages.bash"
+source "$HOME/.config/ucli/packages.bash"
 # shellcheck source=/dev/null
-source "$script_dir/../lib/detect.sh"
+source "$HOME/.config/ucli/scripts/lib/detect.sh"
 
 if ! command -v gnome-extensions >/dev/null 2>&1; then
   echo "gnome-extensions not found; install gnome-shell-extensions first" >&2
