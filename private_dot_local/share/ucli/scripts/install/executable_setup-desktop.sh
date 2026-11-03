@@ -88,9 +88,9 @@ install_desktop_with_replacements() {
   local -a all_pkgs=()
   case "$de" in
     gnome)
-      all_pkgs=(gnome-shell gdm nautilus gnome-control-center gnome-session gnome-keyring
-                gnome-tweaks gnome-boxes gdm-settings
-                nautilus-admin-gtk4 nautilus-my-computer nautilus-open-any-terminal)
+      # Use DESKTOP_GNOME_BASE which already includes `gnome` (full group)
+      # + gnome-tweaks. Skip/replace logic below still applies on top.
+      all_pkgs=("${DESKTOP_GNOME_BASE[@]}")
       ;;
     hyprland)
       all_pkgs=(hyprland uwsm xdg-desktop-portal-hyprland sddm
@@ -139,8 +139,8 @@ if (( choose )); then
 
   case "$desktop" in
     gnome)
-      groups[core]="GNOME shell + core apps (required)"
-      pkgs[core]="gnome-shell gdm nautilus gnome-control-center gnome-session gnome-keyring"
+      groups[core]="GNOME full desktop + core apps (required)"
+      pkgs[core]="${DESKTOP_GNOME_BASE[*]}"
       groups[tweaks]="Appearance customization (gnome-tweaks)"
       pkgs[tweaks]="gnome-tweaks"
       groups[vms]="Virtual machine manager (gnome-boxes — remove if unused)"
