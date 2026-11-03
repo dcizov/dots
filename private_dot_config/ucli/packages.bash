@@ -165,19 +165,36 @@ GAMING=(
 # GNOME
 # -----------------------------
 
-# ArchWiki: the gnome group contains the base GNOME desktop and core apps.
-# Core: gnome (shell, core apps), gdm (display manager).
-# Optional / removable if you don't need them:
-#   gnome-tweaks              -- appearance customization (remove if you don't tweak)
-#   gnome-boxes               -- VM manager (remove if you don't use VMs)
-#   gdm-settings              -- GDM theme/config (remove if you leave defaults)
-#   nautilus-* extensions     -- file manager extras (remove if you don't use Nautilus)
+# GNOME desktop packages — Arch Linux package group `gnome` (59 packages)
+# Source: https://archlinux.org/groups/x86_64/gnome/
+#
+# ArchWiki: "gnome contains the base GNOME desktop and the well-integrated
+# core applications" — https://wiki.archlinux.org/title/GNOME
+#
+# Full group includes: baobab decibels epiphany gdm gnome-backgrounds
+# gnome-calculator gnome-calendar gnome-characters gnome-clocks
+# gnome-color-manager gnome-connections gnome-console gnome-contacts
+# gnome-control-center gnome-disk-utility gnome-font-viewer gnome-keyring
+# gnome-logs gnome-maps gnome-menus gnome-music gnome-remote-desktop
+# gnome-session gnome-settings-daemon gnome-shell gnome-software
+# gnome-system-monitor gnome-text-editor gnome-tour gnome-user-docs
+# gnome-user-share gnome-weather grilo-plugins gst-thumbnailers gvfs
+# gvfs-afc gvfs-dnssd gvfs-goa gvfs-gphoto2 gvfs-mtp gvfs-nfs gvfs-onedrive
+# gvfs-smb gvfs-wsdd loupe malcontent nautilus orca papers rygel showtime
+# simple-scan snapshot sushi tecla xdg-desktop-portal-gnome xdg-user-dirs-gtk yelp
+#
+# If you want a debloated GNOME, replace `gnome` below with only the packages
+# you actually need (see `pacman -Qe | grep gnome` for what's installed).
+# Core essentials you almost certainly want: gnome-shell gdm nautilus
+# gnome-control-center gnome-session gnome-keyring xdg-desktop-portal-gnome
 DESKTOP_GNOME_BASE=(
   gnome
   gnome-tweaks
 )
 
-# Repo-packaged default extensions. Non-repo defaults are installed by API script.
+# ArchWiki: "gnome-shell-extensions package provides a set of very useful
+# extensions maintained as part of the GNOME project."
+# https://wiki.archlinux.org/title/GNOME#Advanced_settings
 GNOME_SYSTEM_EXTENSION_PACKAGES=(
   gnome-shell-extensions
   gnome-shell-extension-caffeine
@@ -202,14 +219,22 @@ GNOME_SYSTEM_EXTENSION_UUIDS=(
   search-light@icedman.github.com
 )
 
+# ArchWiki: gnome-boxes, gdm-settings, nautilus-* are all optional — remove
+# any you don't use to debloat your GNOME install.
+# https://wiki.archlinux.org/title/GNOME
 GNOME_APP_OVERRIDES=(
   ghostty
-  gnome-boxes
-  gdm-settings
-  nautilus-admin-gtk4
-  nautilus-my-computer
-  nautilus-open-any-terminal
+  gnome-boxes            # VM manager — remove if you don't use VMs
+  gdm-settings           # GDM theme/config — remove if defaults are OK
+  nautilus-admin-gtk4    # Nautilus extension — remove if you don't use Nautilus
+  nautilus-my-computer   # Nautilus extension — remove if you don't use Nautilus
+  nautilus-open-any-terminal  # Nautilus extension — remove if you don't use Nautilus
 )
+
+# ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"
+# https://wiki.archlinux.org/title/GNOME#Advanced_settings
+# ArchWiki: gnome-shell-extensions — extensions maintained as part of GNOME
+# https://wiki.archlinux.org/title/GNOME#Advanced_settings
 
 # extensions.gnome.org primary keys for personal extensions.
 # just-perfection, logo-menu, coverflow-alt-tab, copyous, rounded-window-corners-reborn, gnome-ui-tune
@@ -235,6 +260,8 @@ GNOME_SHELL_OVERRIDES=(
   gnome-rounded-blur
 )
 
+# ArchWiki: gdm is the display manager included in the gnome group.
+# https://wiki.archlinux.org/title/GNOME#Starting
 SERVICES_GNOME=(
   gdm
 )
