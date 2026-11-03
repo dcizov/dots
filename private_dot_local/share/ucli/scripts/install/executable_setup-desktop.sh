@@ -106,20 +106,15 @@ install_desktop_with_replacements() {
     final_pkgs+=("$pkg")
   done
 
-  # Add replacements (non-flatpak)
-  for pkg in "${replace_pkgs[@]}"; do
-    # Avoid duplicates
-    local exists=0
-    for e in "${final_pkgs[@]}"; do
-      if [[ "$e" == "$pkg" ]]; then exists=1; break; fi
-    done
-    (( exists )) || final_pkgs+=("$pkg")
+  # Install base packages one by one. AUR-only packages (not in repos)
+  # are skipped here — they are handled by apply_replacements via the AUR helper.
+  for pkg in "${final_pkgs[@]}"; do
+    if pacman -Si "$pkg" >/dev/null 2>&1; then
+      sudo pacman -S --needed --noconfirm "$pkg"
+    else
+      echo "  skipping $pkg: not in repos (handled by AUR helper if it's a replacement)"
+    fi
   done
-
-  if (( ${#final_pkgs[@]} > 0 )); then
-    # shellcheck disable=SC2086
-    sudo pacman -S --needed --noconfirm "${final_pkgs[@]}"
-  fi
 
   # Install replacement flatpaks
   if (( ${#replace_flatpaks[@]} > 0 )); then
@@ -219,8 +214,13 @@ if (( choose )); then
     install_pkgs+=(${pkgs[$gname]})
   done
 
-  # shellcheck disable=SC2086
-  sudo pacman -S --needed --noconfirm "${install_pkgs[@]}"
+  for pkg in "${install_pkgs[@]}"; do
+    if pacman -Si "$pkg" >/dev/null 2>&1; then
+      sudo pacman -S --needed --noconfirm "$pkg"
+    else
+      echo "  skipping $pkg: not in repos"
+    fi
+  done
 else
   # Install full desktop package set via the package resolver,
   # applying the replacement matrix (skip + replace).
@@ -278,7 +278,12 @@ apply_replacements() {
         if [[ "$aur_helper" == "paru" ]] && command -v paru >/dev/null 2>&1; then
           runuser -u "$real_user" -- paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
         elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
-          runuser -u "$real_user" -- shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+          # shelly install = repos, shelly aur install = AUR
+          if pacman -Si "${replace_with[$i]}" >/dev/null 2>&1; then
+            runuser -u "$real_user" -- shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+          else
+            runuser -u "$real_user" -- shelly aur install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+          fi
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
             echo "  warning: ${replace_with[$i]} not in repos; install an AUR helper (ucli devmode) for AUR packages" >&2
