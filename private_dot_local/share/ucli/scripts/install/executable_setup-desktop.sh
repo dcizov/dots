@@ -310,9 +310,11 @@ apply_replacements() {
 
 apply_replacements "$desktop"
 
-# GNOME extensions are handled by the extension-set script.
+# GNOME extensions are handled by the extension-set script via gext.
+# System extensions first, then user/personal overrides.
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" system || true
+  "$script_dir/install-gnome-extension-set.sh" overrides || true
 fi
 
 # Create a snapshot capturing the DE-installed state.

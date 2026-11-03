@@ -28,14 +28,8 @@ _restore-extensions dir:
 _restore-desktop dir:
     @~/.local/share/ucli/scripts/gnome/gnome-settings.sh restore-desktop "{{dir}}"
 
-# Install Better Tray Icons.
-_better-tray-icons:
-    @~/.local/share/ucli/scripts/gnome/install-better-tray-icons.sh --update --enable
-
-# Install ChromaLeon.
-_chromaleon:
-    @~/.local/share/ucli/scripts/gnome/install-gnome-extension.sh --pk 10070 --enable --force
-
-# Install user-managed GNOME extensions.
+# Install user-managed GNOME extensions via gnome-extensions-cli (gext).
+# Installs personal extensions (BetterTrayIcons, user-accent-colors,
+# just-perfection, copyous, gnome-ui-tune, logomenu, etc.)
 _user-extensions:
-    @~/.local/share/ucli/scripts/gnome/install-gnome-user-extensions.sh
+    @~/.local/share/ucli/scripts/install/install-gnome-user-extensions.sh

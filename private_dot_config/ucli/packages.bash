@@ -217,21 +217,40 @@ GNOME_SYSTEM_EXTENSION_PKS=(
   307
   517
   1319
-  9975
   3193
   5489
-  10070
 )
 
 GNOME_SYSTEM_EXTENSION_UUIDS=(
   dash-to-dock@micxgx.gmail.com
   caffeine@patapon.info
   appindicatorsupport@rgcjonas.gmail.com
-  BetterTrayIcons@nexaknight.com
   blur-my-shell@aunetx
   gsconnect@andyholmes.github.io
-  user-accent-colors@fabito02
   search-light@icedman.github.com
+)
+
+# Personal extensions (not system UX) — installed via gext by install-gnome-extension-set.sh overrides
+GNOME_OVERRIDE_EXTENSION_PKS=(
+  3843
+  4451
+  97
+  8834
+  7048
+  4158
+  9975
+  10070
+)
+
+GNOME_OVERRIDE_EXTENSION_UUIDS=(
+  just-perfection-desktop@just-perfection
+  logomenu@aryan_k
+  CoverflowAltTab@palatis.blogspot.com
+  copyous@boerdereinar.dev
+  rounded-window-corners@fxgn
+  gnome-ui-tune@itstime.tech
+  BetterTrayIcons@nexaknight.com
+  user-accent-colors@fabito02
 )
 
 # ArchWiki: gnome-boxes, gdm-settings, nautilus-* are all optional — remove
