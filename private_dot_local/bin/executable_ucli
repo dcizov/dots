@@ -16,12 +16,14 @@ for a in "$@"; do
   esac
 done
 
+JUST_DIR="$(dirname "$JUSTFILE")"
+
 if [ "${choose:-0}" = 1 ]; then
   if [ ! -t 0 ]; then
     printf 'ucli: --choose needs a terminal (try `ucli usage` for the plain list)\n' >&2
     exit 2
   fi
-  exec just --justfile "$JUSTFILE" --working-directory "$HOME" --choose
+  exec just --justfile "$JUSTFILE" --working-directory "$JUST_DIR" --choose
 fi
 
-exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$@"
+exec just --justfile "$JUSTFILE" --working-directory "$JUST_DIR" "$@"
