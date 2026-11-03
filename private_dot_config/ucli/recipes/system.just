@@ -49,6 +49,14 @@ _arch-snapper-limine:
 _fresh-snapshot:
     sudo ~/.config/ucli/scripts/system/snapshot-fresh-install.sh
 
+# Install a desktop environment and snapshot afterwards.
+# Usage: just setup-desktop           (prompts for gnome/hyprland/kde)
+#        just setup-desktop --set desktop=gnome
+# For Arch minimal: run after chezmoi apply, before ucli devmode/apps.
+[group('System')]
+setup-desktop:
+    sudo ~/.config/ucli/scripts/install/setup-desktop.sh "${desktop:-}"
+
 # Validate all package arrays.
 _validate-all:
     ~/.config/ucli/scripts/install/validate-packages.sh --all

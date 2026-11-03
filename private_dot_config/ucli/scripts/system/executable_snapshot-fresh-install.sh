@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+description="Fresh Arch Linux Installation"
+if [ $# -ge 1 ]; then
+  description="$1"
+fi
+
 if (( EUID != 0 )); then
-  echo "Run as root: sudo $0" >&2
+  echo "Run as root: sudo $0 <description>" >&2
   exit 1
 fi
 
@@ -17,13 +22,13 @@ if [[ ! -f /etc/snapper/configs/root ]]; then
 fi
 
 SNAP_ID=$(snapper --no-dbus -c root create --print-number \
-  --description "Fresh Arch Linux Installation" \
+  --description "$description" \
   --userdata "important=yes")
 
 mkdir -p /etc/ucli
 echo "$SNAP_ID" > /etc/ucli/installation-snapshot
 
-echo "Created fresh-install snapshot: $SNAP_ID"
+echo "Created snapshot ($SNAP_ID): $description"
 
 if command -v limine-snapper-sync >/dev/null 2>&1; then
   limine-snapper-sync || true
