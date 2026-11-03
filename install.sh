@@ -114,14 +114,15 @@ install_arch_requirements() {
   )
 
   if (( DRY_RUN )); then
-    log "[dry-run] would run: sudo pacman -Syu --needed ${packages[*]}"
+    log "[dry-run] would run: sudo pacman -S --needed ${packages[*]}"
     return 0
   fi
 
   log "Installing bootstrap packages with pacman"
-  # Full system upgrade (-Syu) during bootstrap: review what will change first.
-  # Use --needed to avoid reinstalling already-satisfied packages.
-  sudo pacman -Syu --needed "${packages[@]}"
+  # Install only needed bootstrap packages without a full system upgrade.
+  # A full -Syu during bootstrap can pull in unrelated changes and break
+  # the system. Update the system separately after bootstrap completes.
+  sudo pacman -S --needed "${packages[@]}"
 }
 
 install_requirements() {

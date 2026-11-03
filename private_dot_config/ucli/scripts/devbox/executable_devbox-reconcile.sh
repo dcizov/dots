@@ -55,7 +55,15 @@ log()  { [ "${QUIET:-0}" = "1" ] && return 0
          printf '\n%s==> devbox: %s%s\n' "$BOLD" "$*" "$RST"; }
 say()  { [ "${QUIET:-0}" = "1" ] || printf '    %s%s%s\n' "$DIM" "$*" "$RST"; }
 warn() { printf '%s[warn]%s %s\n' "$YEL" "$RST" "$*" >&2; }
-die()  { printf '%s[error]%s %s\n' "$RED" "$RST" "$*" >&2; exit 1; }
+die()  {
+  if [ "$SPIN_PID" != "0" ]; then
+    kill "$SPIN_PID" 2>/dev/null || true
+    wait "$SPIN_PID" 2>/dev/null || true
+    SPIN_PID=0
+    printf '%s' "$CLR"
+  fi
+  printf '%s[error]%s %s\n' "$RED" "$RST" "$*" >&2; exit 1;
+}
 
 # one status line, redrawn in place while a host-side command runs
 status_start() {
@@ -276,7 +284,7 @@ wait_for_init_ready() {
   warn "distrobox-init in '$BOX' still busy after ${timeout}s - last output:"
   tail -n 10 "$logfile" | sed -u -e 's/\r$//' -e 's/^/    /' >&2 || true
   rm -f "$logfile"
-  return 0
+  return 1
 }
 
 console_debian_major() {

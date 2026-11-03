@@ -23,6 +23,7 @@ mkdir -p "$root"
 for repo in $plugins; do
   name="${repo#*/}"
   if [[ -d "$root/$name/.git" ]]; then
+    git -C "$root/$name" pull --ff-only || true
     continue
   fi
   echo "zsh plugin: cloning $name"

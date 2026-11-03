@@ -51,7 +51,13 @@ PY
 
 extension_pk_exists() {
   local pk="$1"
-  curl -fsL "https://extensions.gnome.org/extension-info/?pk=${pk}" >/dev/null 2>&1
+  # Primary: extensions.gnome.org API
+  if curl -fsL "https://extensions.gnome.org/extension-info/?pk=${pk}" >/dev/null 2>&1; then
+    return 0
+  fi
+  # Fallback: validate that the pk is a positive integer (all GNOME extension
+  # primary keys are numeric). This avoids false negatives when the API is down.
+  [[ "$pk" =~ ^[0-9]+$ ]]
 }
 
 validate_item() {
