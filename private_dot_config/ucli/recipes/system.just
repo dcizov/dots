@@ -4,35 +4,11 @@ setup-snapshots:
     # create Btrfs subvolume, configure snapper, limine-snapper-sync
     @sudo ~/.config/ucli/scripts/system/executable_arch-snapper-limine.sh
 
-# System menu.
+# System menu. Use `ucli --choose` to pick a system recipe interactively.
 [group('System')]
 system:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    items=(
-      'check|Show system status'
-      'snapshots-dry-run|Dry-run snapshot setup'
-      'detect|Show detected system facts'
-      'paths|Print config paths'
-      'validate-all|Validate all package arrays'
-      'logs-this-boot|Show journal from this boot'
-      'logs-last-boot|Show journal from last boot'
-    )
-    if command -v fzf >/dev/null 2>&1; then
-      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='system>' --with-nth=1,2 --delimiter='|')" || exit 0
-      choice="${choice%%|*}"
-    else
-      select item in "${items[@]}"; do choice="${item%%|*}"; break; done
-    fi
-    case "$choice" in
-      check) ~/.config/ucli/scripts/system/executable_system-check.sh ;;
-      snapshots-dry-run) sudo ~/.config/ucli/scripts/system/executable_arch-snapper-limine.sh --dry-run ;;
-      detect) just --justfile "$HOME/.config/ucli/justfile" --working-directory "$HOME" profile ;;
-      paths) just --justfile "$HOME/.config/ucli/justfile" --working-directory "$HOME" _paths ;;
-      validate-all) ~/.config/ucli/scripts/install/executable_validate-packages.sh --all ;;
-      logs-this-boot) journalctl --no-hostname -b 0 ;;
-      logs-last-boot) journalctl --no-hostname -b -1 ;;
-    esac
+    # show system status
+    @~/.config/ucli/scripts/system/executable_system-check.sh
 
 # Show system status.
 _check:

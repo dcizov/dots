@@ -11,8 +11,6 @@ import 'recipes/inventory.just'
 import 'recipes/devbox.just'
 import 'recipes/maintenance.just'
 
-# List recipes. ujust-style: a docs pointer, then the grouped list.
+# Run the interactive chooser by default (like ujust with no args).
 _default:
-    @printf '%s\n' 'https://github.com/dcizov/dots#ucli'
-    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" \
-        --list --unsorted --list-heading $'Available commands:\n'
+    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" --choose

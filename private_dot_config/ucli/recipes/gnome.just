@@ -1,47 +1,8 @@
-# GNOME menu.
+# GNOME menu. Use `ucli --choose` to pick a GNOME recipe interactively.
 [group('GNOME')]
 gnome:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    items=(
-      'extensions|Install/enable default GNOME extensions'
-      'apply-settings|Apply managed GNOME dconf settings profile'
-      'analyze|Analyze GNOME package/extension state'
-      'settings-backup|Backup GNOME settings'
-      'restore-shell|Restore GNOME Shell settings from dir'
-      'restore-extensions|Restore GNOME extension settings from dir'
-      'restore-desktop|Restore GNOME desktop settings from dir'
-      'better-tray-icons|Install Better Tray Icons'
-      'chromaleon|Install ChromaLeon'
-      'user-extensions|Install user-managed GNOME extensions'
-    )
-    if command -v fzf >/dev/null 2>&1; then
-      choice="$(printf '%s\n' "${items[@]}" | fzf --prompt='gnome>' --with-nth=1,2 --delimiter='|')" || exit 0
-      choice="${choice%%|*}"
-    else
-      select item in "${items[@]}"; do choice="${item%%|*}"; break; done
-    fi
-    case "$choice" in
-      extensions) ~/.config/ucli/scripts/install/executable_install-gnome-extension-set.sh system ;;
-      apply-settings) ~/.config/ucli/scripts/install/executable_apply-gnome-settings.sh ;;
-      analyze) ~/.config/ucli/scripts/gnome/executable_gnome-analyze.sh ;;
-      settings-backup) ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh backup ;;
-      restore-shell)
-        read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-shell "$dir"
-        ;;
-      restore-extensions)
-        read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-extensions "$dir"
-        ;;
-      restore-desktop)
-        read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-desktop "$dir"
-        ;;
-      better-tray-icons) ~/.config/ucli/scripts/gnome/executable_install-better-tray-icons.sh --update --enable ;;
-      chromaleon) ~/.config/ucli/scripts/gnome/executable_install-gnome-extension.sh --pk 10070 --enable --force ;;
-      user-extensions) ~/.config/ucli/scripts/gnome/executable_install-gnome-user-extensions.sh ;;
-    esac
+    # apply managed GNOME dconf settings profile
+    @~/.config/ucli/scripts/install/executable_apply-gnome-settings.sh
 
 # Apply managed GNOME dconf settings profile.
 _apply-settings:

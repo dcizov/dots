@@ -137,29 +137,11 @@ report:
     printf 'wrote %s (%s lines)\n' "$out" "$(wc -l <"$out")"
     printf 'no env, no keys, no tokens collected\n'
 
-# System logs: menu over this boot, last boot and the devbox provisioning log.
+# Show system logs. Use `ucli --choose` to pick a log source interactively.
 [group('Maintenance')]
 logs:
-    # view system logs: this boot / last boot / devbox / pacman
-    #!/usr/bin/env bash
-    set -euo pipefail
-    . "$HOME/.config/ucli/scripts/lib/choose.sh"
-    have() { command -v "$1" >/dev/null 2>&1; }
-    have journalctl || { printf 'journalctl not found\n' >&2; exit 1; }
-    what="$(ui_choose 'logs' \
-      'this-boot|all messages from the current boot' \
-      'last-boot|all messages from the previous boot' \
-      'devbox|/var/log/devbox-provision.log inside the dev box' \
-      'pacman|recent package transactions')" || exit 0
-    case "$what" in
-      this-boot) show journalctl -b --no-pager ;;
-      last-boot) show journalctl -b -1 --no-pager ;;
-      devbox)    distrobox enter dev -- sudo tail -n 200 /var/log/devbox-provision.log ;;
-      pacman)
-        [ -r /var/log/pacman.log ] || { printf 'no /var/log/pacman.log on this machine\n' >&2; exit 1; }
-        show grep -E '^\[.*\] \[ALPM\] (upgraded|installed|removed) ' /var/log/pacman.log
-        ;;
-    esac
+    # show journal from this boot
+    journalctl --no-hostname -b 0
 
 # Reboot into the firmware settings (dual boot, boot order, secure boot).
 [group('Maintenance')]
@@ -167,11 +149,8 @@ bios:
     # reboot into BIOS/UEFI firmware settings
     #!/usr/bin/env bash
     set -euo pipefail
-    . "$HOME/.config/ucli/scripts/lib/choose.sh"
     [ -d /sys/firmware/efi ] || { printf 'legacy BIOS: reboot and press the firmware key\n' >&2; exit 1; }
-    if ui_confirm "Reboot into the BIOS/UEFI settings now?"; then
-      systemctl reboot --firmware-setup
-    fi
+    systemctl reboot --firmware-setup
 
 # Show firmware/board details.
 [group('Maintenance')]

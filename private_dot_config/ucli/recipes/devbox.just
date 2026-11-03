@@ -14,34 +14,11 @@
 # The reconcile reads the Debian version from `image=debian:<N>` in dev.ini and
 # the box name from its `[section]`, so dev.ini is the single source of truth.
 
-# Everything the box can do, in one menu (fzf → gum → plain select).
+# Dev box menu. Use `ucli --choose` to pick a devbox recipe interactively.
 [group('Dev box')]
 devbox:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    . "$HOME/.config/ucli/scripts/lib/choose.sh"
-    ucli_bin="$(command -v ucli || printf '%s' "$HOME/.local/bin/ucli")"
-    action="$(ui_choose 'devbox>' \
-      'reconcile|create or update the box — instant no-op when nothing changed' \
-      'shell|open an interactive shell inside dev' \
-      'versions|debian / node / npm / php / composer inside the box' \
-      'log|tail /var/log/devbox-provision.log from the last run' \
-      'reprovision|re-run provisioning, keep the container' \
-      'recreate|rebuild the container (image / volumes / init_hooks)' \
-      'dry-run|print the distrobox-assemble command for this manifest' \
-      'vscode-doctor|diagnose why Remote-SSH cannot bootstrap in the box' \
-      'vscode-bisect|find the profile file that eats stdin')" || exit 0
-    case "$action" in
-      reconcile)     exec "$ucli_bin" devbox-reconcile ;;
-      shell)         exec "$ucli_bin" devbox-shell ;;
-      versions)      exec "$ucli_bin" _devbox-versions ;;
-      log)           exec "$ucli_bin" _devbox-log ;;
-      reprovision)   exec "$ucli_bin" _devbox-reprovision ;;
-      recreate)      exec "$ucli_bin" _devbox-recreate ;;
-      dry-run)       exec "$ucli_bin" _devbox-dry-run ;;
-      vscode-doctor) exec "$ucli_bin" _devbox-vscode-doctor ;;
-      vscode-bisect) exec "$ucli_bin" _devbox-vscode-bisect ;;
-    esac
+    # open an interactive shell inside dev
+    @distrobox enter dev
 
 # Open an interactive shell inside dev.
 [group('Dev box')]
