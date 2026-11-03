@@ -129,7 +129,7 @@ DEV=(
   docker-buildx
   podman-desktop
   vscodium-bin
-  vscodium-marketplace-bin
+  vscodium-bin-marketplace
 )
 
 GAMING=(
