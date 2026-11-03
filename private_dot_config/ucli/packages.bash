@@ -86,6 +86,7 @@ GPU_NVIDIA=(
 
 SYSTEM_SUPPORT=(
   gufw
+  ufw
   fprintd
 )
 
@@ -202,20 +203,33 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 )
 
 # extensions.gnome.org primary keys for Bluefin-like default UX.
-# dash-to-dock, gsconnect, blur-my-shell, search-light
+# PK→UUID mapping (must stay parallel):
+#   307  → dash-to-dock@micxgx.gmail.com
+#   517  → caffeine@patapon.info
+#   1319 → appindicatorsupport@rgcjonas.gmail.com
+#   9975 → BetterTrayIcons@nexaknight.com
+#   3193 → blur-my-shell@aunetx
+#   5489 → gsconnect@andyholmes.github.io
+#   10070 → user-accent-colors@fabito02
+# search-light@icedman.github.com has no PK (UUID-only enable)
 GNOME_SYSTEM_EXTENSION_PKS=(
   307
+  517
   1319
+  9975
   3193
   5489
+  10070
 )
 
 GNOME_SYSTEM_EXTENSION_UUIDS=(
+  dash-to-dock@micxgx.gmail.com
   caffeine@patapon.info
   appindicatorsupport@rgcjonas.gmail.com
-  dash-to-dock@micxgx.gmail.com
-  gsconnect@andyholmes.github.io
+  BetterTrayIcons@nexaknight.com
   blur-my-shell@aunetx
+  gsconnect@andyholmes.github.io
+  user-accent-colors@fabito02
   search-light@icedman.github.com
 )
 
