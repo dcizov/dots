@@ -264,7 +264,6 @@ APPS=(
 
   shelly
   shelly-flatpak-backend
-  vesktop
 )
 
 MANUAL_AUR=()
