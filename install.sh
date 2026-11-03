@@ -161,7 +161,11 @@ print_next_steps() {
 
 Done.
 
-Next recommended flow:
+Important: zsh is now your default shell (chsh was run). Re-login so your
+new shell picks up ~/.zshrc and the PATH from ~/.config/zsh/conf.d/00-env.zsh
+(including $HOME/.local/bin).
+
+Next recommended flow (after re-login):
 
   ucli profile
   ucli doctor
