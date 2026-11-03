@@ -26,3 +26,6 @@ install.sh
 {{- if ne $role "dev" -}}
 .config/distrobox/
 {{- end -}}
+
+# Background images: not deployed by default; remove the lambda theme.
+.local/share/backgrounds/
