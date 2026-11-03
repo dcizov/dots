@@ -3,15 +3,19 @@ set -euo pipefail
 
 REPO="${WTFAQ_REPO:-https://github.com/dcizov/dots.git}"
 BRANCH="${WTFAQ_BRANCH:-}"
-APPLY=1
+APPLY=0
 YES=0
 DRY_RUN=0
 
 usage() {
   cat <<'USAGE'
-usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--yes] [--dry-run]
+usage: install.sh [--repo URL] [--branch BRANCH] [--apply] [--yes] [--dry-run]
 
 Bootstrap wtfaq chezmoi/ucli setup.
+
+By default, install.sh clones the dotfiles repo to ~/.local/share/chezmoi
+(chezmoi init) but does NOT apply. Run `chezmoi apply -v` or `ucli chezmoi-apply`
+after re-login to deploy the dotfiles.
 
 WARNING: The recommended install method pipes a remote script directly into bash
   (curl https://install.wtfaq.tech | bash). Verify the script contents before
@@ -21,6 +25,7 @@ Examples:
   curl -fsSL https://install.wtfaq.tech | bash
   curl -fsSL https://install.wtfaq.tech | bash -s -- --repo https://github.com/dcizov/dots.git
   curl -fsSL https://install.wtfaq.tech | bash -s -- --branch main
+  curl -fsSL https://install.wtfaq.tech | bash -s -- --apply   # init + apply in one step
 USAGE
 }
 
@@ -40,6 +45,10 @@ while (($#)); do
       ;;
     --branch=*)
       BRANCH="${1#*=}"
+      shift
+      ;;
+    --apply)
+      APPLY=1
       shift
       ;;
     --no-apply)
@@ -161,11 +170,17 @@ print_next_steps() {
 
 Done.
 
-Important: zsh is now your default shell (chsh was run). Re-login so your
-new shell picks up ~/.zshrc and the PATH from ~/.config/zsh/conf.d/00-env.zsh
-(including $HOME/.local/bin).
+The dotfiles repo is now cloned to ~/.local/share/chezmoi (chezmoi init) but
+NOT applied. Re-login so your new shell picks up ~/.zshrc and the PATH from
+~/.config/zsh/conf.d/00-env.zsh (including $HOME/.local/bin).
 
-Next recommended flow (after re-login):
+Then apply the dotfiles:
+
+  chezmoi apply -v
+  # or:
+  ucli chezmoi-apply
+
+Next recommended flow (after apply + re-login):
 
   ucli profile
   ucli doctor
@@ -187,7 +202,7 @@ Browse commands:
 
 Direct tools remain direct:
 
-  chezmoi diff && chezmoi apply -v
+  chezmoi diff
   distrobox assemble create --file ~/.config/distrobox/dev.ini
   cd ~/.config/dev-services && docker compose up -d
 
