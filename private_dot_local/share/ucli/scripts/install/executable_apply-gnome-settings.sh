@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-settings_dir="${1:-$HOME/.config/ucli/settings/gnome}"
+settings_dir="${1:-$HOME/.local/share/ucli/settings/gnome}"
 
 if [[ ! -d "$settings_dir" ]]; then
   echo "No GNOME settings profile found: $settings_dir"
