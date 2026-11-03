@@ -52,7 +52,7 @@ usage:
 # Show configured and detected profile data.
 [group('Help')]
 profile:
-    @~/.local/share/ucli/scripts/system/executable_detect.sh
+    @~/.local/share/ucli/scripts/system/detect.sh
 
 # Check setup health.
 [group('Help')]
@@ -100,7 +100,7 @@ doctor:
 # Validate package arrays.
 [group('Help')]
 validate:
-    @~/.local/share/ucli/scripts/install/executable_validate-packages.sh
+    @~/.local/share/ucli/scripts/install/validate-packages.sh
 
 # Print config paths.
 _paths:

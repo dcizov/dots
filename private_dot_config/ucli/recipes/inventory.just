@@ -2,4 +2,4 @@
 [group('Inventory')]
 inventory:
     # list installed packages, apps, and settings
-    @~/.local/share/ucli/scripts/inventory/executable_inventory.sh
+    @~/.local/share/ucli/scripts/inventory/inventory.sh

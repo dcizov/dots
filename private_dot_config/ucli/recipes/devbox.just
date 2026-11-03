@@ -3,13 +3,13 @@
 # Box lifecycle IS managed in this source tree — nothing needs to be recreated
 # by hand, and `chezmoi apply` reconciles an existing box in place:
 #   manifest     -> private_dot_config/distrobox/dev.ini
-#   provisioner  -> private_dot_config/distrobox/executable_provision-dev.sh
+#   provisioner  -> private_dot_config/distrobox/provision-dev.sh
 #   tunables     -> private_dot_config/distrobox/devbox.env   (node/php channel)
-#   reconcile    -> private_dot_config/ucli/scripts/devbox/executable_devbox-reconcile.sh
+#   reconcile    -> private_dot_config/ucli/scripts/devbox/devbox-reconcile.sh
 #   (no hook)    -> chezmoi ships these files only; nothing in run_* starts,
 #                   stops or enters a container
 #   compose file -> private_dot_config/dev-services/compose.yml
-#   vscodium ext -> private_dot_config/ucli/scripts/install/executable_install-vscodium-extensions.sh
+#   vscodium ext -> private_dot_config/ucli/scripts/install/install-vscodium-extensions.sh
 #
 # The reconcile reads the Debian version from `image=debian:<N>` in dev.ini and
 # the box name from its `[section]`, so dev.ini is the single source of truth.
@@ -30,7 +30,7 @@ devbox-shell:
 # Silent and instant when dev.ini / provision-dev.sh / devbox.env are unchanged.
 [group('Dev box')]
 devbox-reconcile:
-    @~/.local/share/ucli/scripts/devbox/executable_devbox-reconcile.sh
+    @~/.local/share/ucli/scripts/devbox/devbox-reconcile.sh
 
 # The container is discarded; $HOME, ~/.nvm, ~/.vscode-server and your repos
 # survive, and provisioning runs automatically afterwards.
@@ -38,7 +38,7 @@ devbox-reconcile:
 _devbox-recreate:
     #!/usr/bin/env bash
     set -euo pipefail
-    DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
+    DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Versions inside the box (what the rest of the tooling assumes).
 _devbox-versions:
@@ -54,7 +54,7 @@ _devbox-log:
 _devbox-reprovision:
     #!/usr/bin/env bash
     set -euo pipefail
-    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
+    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Print the exact command assemble would run for this manifest.
 _devbox-dry-run:
@@ -65,9 +65,9 @@ _devbox-dry-run:
 # Walks auth -> login shell -> prereqs -> the exact `bash -l` pipeline.
 # Diagnose why Remote-SSH cannot bootstrap its server in the box.
 _devbox-vscode-doctor *ARGS:
-    ~/.local/share/ucli/scripts/devbox/executable_devbox-vscode-doctor.sh {{ARGS}}
+    ~/.local/share/ucli/scripts/devbox/devbox-vscode-doctor.sh {{ARGS}}
 
 # and prove the host-spawn guard fixes it before you install it.
 # Bisect the `bash -l` profile chain for the file that eats stdin.
 _devbox-vscode-bisect *ARGS:
-    ~/.local/share/ucli/scripts/devbox/executable_devbox-vscode-bisect.sh {{ARGS}}
+    ~/.local/share/ucli/scripts/devbox/devbox-vscode-bisect.sh {{ARGS}}

@@ -43,7 +43,7 @@ update:
     fi
 
     step "dev box"
-    "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
+    "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
 
     step "done"
     printf 'A reboot is only needed for kernel/driver updates.\n'
