@@ -13,7 +13,7 @@
 # (rewrite the network and disk stack; do those by hand).
 
 # Update everything: pacman, AUR, flatpaks, mise runtimes, then the dev box.
-[group('System')]
+[group('Maintenance')]
 update:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -42,14 +42,14 @@ update:
     fi
 
     step "dev box"
-    "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
 
     step "done"
     printf 'A reboot is only needed for kernel/driver updates.\n'
 
 # Named volumes are NEVER touched — dev_pgdata / dev_mysql hold your databases.
 # Reclaim space: dangling images, unused flatpaks, old package cache.
-[group('System')]
+[group('Maintenance')]
 clean-system:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -97,7 +97,7 @@ clean-system:
     fi
 
 # Collect machine + toolchain facts into a file you can paste into an issue.
-[group('System')]
+[group('Maintenance')]
 report:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -136,7 +136,7 @@ report:
     printf 'no env, no keys, no tokens collected\n'
 
 # System logs: menu over this boot, last boot and the devbox provisioning log.
-[group('System')]
+[group('Maintenance')]
 logs:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -159,7 +159,7 @@ logs:
     esac
 
 # Reboot into the firmware settings (dual boot, boot order, secure boot).
-[group('System')]
+[group('Maintenance')]
 bios:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -170,7 +170,7 @@ bios:
     fi
 
 # Show firmware/board details.
-[group('System')]
+[group('Maintenance')]
 bios-info:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -198,7 +198,7 @@ bios-info:
     exit 1
 
 # Packages changed in the most recent pacman transaction.
-[group('System')]
+[group('Maintenance')]
 changelogs:
     #!/usr/bin/env bash
     set -euo pipefail

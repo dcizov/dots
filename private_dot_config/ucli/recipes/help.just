@@ -6,43 +6,57 @@ _choose:
 [group('Help')]
 usage:
     @printf '%s\n' 'Day to day:'
-    @printf '%s\n' '  ucli update    # pacman + AUR + flatpaks + dev box'
-    @printf '%s\n' '  ucli logs      # this boot / last boot / devbox / pacman'
+    @printf '%s\n' '  ucli update      # pacman + AUR + flatpaks + dev box'
+    @printf '%s\n' '  ucli logs        # this boot / last boot / devbox / pacman'
     @printf '%s\n' '  ucli clean-system'
     @printf '%s\n' ''
     @printf '%s\n' 'Setup:'
-    @printf '%s\n' '  chezmoi init/apply'
-    @printf '%s\n' '  ucli setup-snapshots'
-    @printf '%s\n' '  ucli setup-desktop        # install DE + snapshot (Arch minimal)'
-    @printf '%s\n' '  ucli debloat-desktop      # remove unwanted DE packages'
-    @printf '%s\n' '  ucli backup-gnome-settings  # backup dconf settings + extensions'
-    @printf '%s\n' '  ucli restore-gnome-settings # restore dconf settings + extensions'
-    @printf '%s\n' '  ucli setup-system'
-    @printf '%s\n' '  ucli devbox-reconcile'
+    @printf '%s\n' '  ucli setup-snapshots   # snapper + limine (skips CachyOS)'
+    @printf '%s\n' '  ucli setup-desktop     # install DE + snapshot (Arch minimal)'
+    @printf '%s\n' '  ucli debloat-desktop   # remove DE packages you do not need'
+    @printf '%s\n' '  ucli setup-system      # base packages + shell'
+    @printf '%s\n' '  ucli cli               # shell CLI experience'
+    @printf '%s\n' '  ucli devmode           # developer tools (+ dev box)'
+    @printf '%s\n' '  ucli gaming            # gaming profile'
+    @printf '%s\n' '  ucli apps              # personal apps and overrides'
+    @printf '%s\n' '  ucli install-paru      # AUR helper (idempotent)'
+    @printf '%s\n' '  ucli vscodium-extensions'
+    @printf '%s\n' '  ucli chezmoi-apply     # deploy dotfiles'
+    @printf '%s\n' '  ucli devbox-reconcile  # create/update dev box'
+    @printf '%s\n' ''
+    @printf '%s\n' 'GNOME:'
+    @printf '%s\n' '  ucli gnome             # extensions, settings backup/restore'
+    @printf '%s\n' '  ucli backup-gnome-settings'
+    @printf '%s\n' '  ucli restore-gnome-settings'
+    @printf '%s\n' ''
+    @printf '%s\n' 'System:'
+    @printf '%s\n' '  ucli setup-snapshots   # snapper + limine'
+    @printf '%s\n' '  ucli system            # checks and maintenance helpers'
+    @printf '%s\n' ''
+    @printf '%s\n' 'Maintenance:'
+    @printf '%s\n' '  ucli update            # full system upgrade'
+    @printf '%s\n' '  ucli clean-system      # dangling images, old cache'
+    @printf '%s\n' '  ucli report            # machine facts to file'
+    @printf '%s\n' '  ucli bios / bios-info  # firmware settings'
+    @printf '%s\n' '  ucli changelogs        # last pacman transaction'
+    @printf '%s\n' ''
+    @printf '%s\n' 'Inventory:'
+    @printf '%s\n' '  ucli inventory         # packages, apps, settings'
+    @printf '%s\n' ''
+    @printf '%s\n' 'Dev box:'
+    @printf '%s\n' '  ucli devbox            # menu: reconcile, shell, versions, …'
     @printf '%s\n' ''
     @printf '%s\n' 'Browse commands:'
     @printf '%s\n' '  ucli --choose'
     @printf '%s\n' ''
-    @printf '%s\n' 'Optional:'
-    @printf '%s\n' '  ucli cli       # shell CLI experience'
-    @printf '%s\n' '  ucli devmode   # developer tools'
-    @printf '%s\n' '  ucli gaming    # gaming profile'
-    @printf '%s\n' '  ucli apps      # personal apps and overrides'
-    @printf '%s\n' '  ucli extras    # everything else: shell, paru, overrides, full setup'
-    @printf '%s\n' '  ucli system    # checks and maintenance helpers'
-    @printf '%s\n' '  ucli gnome     # GNOME helpers'
-    @printf '%s\n' '  ucli devbox    # box menu: reconcile, shell, versions, log, recreate …'
-    @printf '%s\n' ''
     @printf '%s\n' 'Direct tools:'
     @printf '%s\n' '  chezmoi diff && chezmoi apply -v'
-    @printf '%s\n' '  ucli devbox-reconcile    # creates or updates the box'
-    @printf '%s\n' '  ucli devbox              # menu, incl. recreate on a new Debian base'
     @printf '%s\n' '  cd ~/.config/dev-services && docker compose up -d'
 
 # Show configured and detected profile data.
 [group('Help')]
 profile:
-    ~/.config/ucli/scripts/system/detect.sh
+    @~/.config/ucli/scripts/system/executable_detect.sh
 
 # Check setup health.
 [group('Help')]
@@ -90,11 +104,7 @@ doctor:
 # Validate package arrays.
 [group('Help')]
 validate:
-    ~/.config/ucli/scripts/install/validate-packages.sh
-
-# Show detected system facts.
-_detect:
-    ~/.config/ucli/scripts/system/detect.sh
+    @~/.config/ucli/scripts/install/executable_validate-packages.sh
 
 # Print config paths.
 _paths:

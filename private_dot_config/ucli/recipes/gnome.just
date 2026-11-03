@@ -22,59 +22,59 @@ gnome:
       select item in "${items[@]}"; do choice="${item%%|*}"; break; done
     fi
     case "$choice" in
-      extensions) ~/.config/ucli/scripts/install/install-gnome-extension-set.sh system ;;
-      apply-settings) ~/.config/ucli/scripts/install/apply-gnome-settings.sh ;;
-      analyze) ~/.config/ucli/scripts/gnome/gnome-analyze.sh ;;
-      settings-backup) ~/.config/ucli/scripts/gnome/gnome-settings.sh backup ;;
+      extensions) ~/.config/ucli/scripts/install/executable_install-gnome-extension-set.sh system ;;
+      apply-settings) ~/.config/ucli/scripts/install/executable_apply-gnome-settings.sh ;;
+      analyze) ~/.config/ucli/scripts/gnome/executable_gnome-analyze.sh ;;
+      settings-backup) ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh backup ;;
       restore-shell)
         read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-shell "$dir"
+        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-shell "$dir"
         ;;
       restore-extensions)
         read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-extensions "$dir"
+        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-extensions "$dir"
         ;;
       restore-desktop)
         read -r -p 'settings backup dir: ' dir
-        ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-desktop "$dir"
+        ~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-desktop "$dir"
         ;;
-      better-tray-icons) ~/.config/ucli/scripts/gnome/install-better-tray-icons.sh --update --enable ;;
-      chromaleon) ~/.config/ucli/scripts/gnome/install-gnome-extension.sh --pk 10070 --enable --force ;;
-      user-extensions) ~/.config/ucli/scripts/gnome/install-gnome-user-extensions.sh ;;
+      better-tray-icons) ~/.config/ucli/scripts/gnome/executable_install-better-tray-icons.sh --update --enable ;;
+      chromaleon) ~/.config/ucli/scripts/gnome/executable_install-gnome-extension.sh --pk 10070 --enable --force ;;
+      user-extensions) ~/.config/ucli/scripts/gnome/executable_install-gnome-user-extensions.sh ;;
     esac
 
 # Apply managed GNOME dconf settings profile.
 _apply-settings:
-    ~/.config/ucli/scripts/install/apply-gnome-settings.sh
+    @~/.config/ucli/scripts/install/executable_apply-gnome-settings.sh
 
 # Analyze GNOME package/extension state.
 _analyze:
-    ~/.config/ucli/scripts/gnome/gnome-analyze.sh
+    @~/.config/ucli/scripts/gnome/executable_gnome-analyze.sh
 
 # Backup GNOME settings.
 _settings-backup:
-    ~/.config/ucli/scripts/gnome/gnome-settings.sh backup
+    @~/.config/ucli/scripts/gnome/executable_gnome-settings.sh backup
 
 # Restore GNOME Shell settings.
 _restore-shell dir:
-    ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-shell "{{dir}}"
+    @~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-shell "{{dir}}"
 
 # Restore GNOME extension settings.
 _restore-extensions dir:
-    ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-extensions "{{dir}}"
+    @~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-extensions "{{dir}}"
 
 # Restore GNOME desktop settings.
 _restore-desktop dir:
-    ~/.config/ucli/scripts/gnome/gnome-settings.sh restore-desktop "{{dir}}"
+    @~/.config/ucli/scripts/gnome/executable_gnome-settings.sh restore-desktop "{{dir}}"
 
 # Install Better Tray Icons.
 _better-tray-icons:
-    ~/.config/ucli/scripts/gnome/install-better-tray-icons.sh --update --enable
+    @~/.config/ucli/scripts/gnome/executable_install-better-tray-icons.sh --update --enable
 
 # Install ChromaLeon.
 _chromaleon:
-    ~/.config/ucli/scripts/gnome/install-gnome-extension.sh --pk 10070 --enable --force
+    @~/.config/ucli/scripts/gnome/executable_install-gnome-extension.sh --pk 10070 --enable --force
 
 # Install user-managed GNOME extensions.
 _user-extensions:
-    ~/.config/ucli/scripts/gnome/install-gnome-user-extensions.sh
+    @~/.config/ucli/scripts/gnome/executable_install-gnome-user-extensions.sh

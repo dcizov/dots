@@ -52,7 +52,7 @@ devbox-shell:
 # Silent and instant when dev.ini / provision-dev.sh / devbox.env are unchanged.
 [group('Dev box')]
 devbox-reconcile:
-    @~/.config/ucli/scripts/devbox/devbox-reconcile.sh
+    @~/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh
 
 # The container is discarded; $HOME, ~/.nvm, ~/.vscode-server and your repos
 # survive, and provisioning runs automatically afterwards.
@@ -60,7 +60,7 @@ devbox-reconcile:
 _devbox-recreate:
     #!/usr/bin/env bash
     set -euo pipefail
-    DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
 
 # Versions inside the box (what the rest of the tooling assumes).
 _devbox-versions:
@@ -76,7 +76,7 @@ _devbox-log:
 _devbox-reprovision:
     #!/usr/bin/env bash
     set -euo pipefail
-    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/executable_devbox-reconcile.sh"
 
 # Print the exact command assemble would run for this manifest.
 _devbox-dry-run:
@@ -87,9 +87,9 @@ _devbox-dry-run:
 # Walks auth -> login shell -> prereqs -> the exact `bash -l` pipeline.
 # Diagnose why Remote-SSH cannot bootstrap its server in the box.
 _devbox-vscode-doctor *ARGS:
-    ~/.config/ucli/scripts/devbox/devbox-vscode-doctor.sh {{ARGS}}
+    ~/.config/ucli/scripts/devbox/executable_devbox-vscode-doctor.sh {{ARGS}}
 
 # and prove the host-spawn guard fixes it before you install it.
 # Bisect the `bash -l` profile chain for the file that eats stdin.
 _devbox-vscode-bisect *ARGS:
-    ~/.config/ucli/scripts/devbox/devbox-vscode-bisect.sh {{ARGS}}
+    ~/.config/ucli/scripts/devbox/executable_devbox-vscode-bisect.sh {{ARGS}}

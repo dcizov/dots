@@ -3,7 +3,7 @@ set dotenv-load := false
 # ujust parity: never echo comment lines from recipe bodies.
 set ignore-comments
 
-import 'recipes/core.just'
+import 'recipes/help.just'
 import 'recipes/install.just'
 import 'recipes/system.just'
 import 'recipes/gnome.just'
