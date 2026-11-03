@@ -111,10 +111,11 @@ install_desktop_with_replacements() {
     final_pkgs+=("$pkg")
   done
 
-  # Install base packages one by one. AUR-only packages (not in repos)
-  # are skipped here — they are handled by apply_replacements via the AUR helper.
+  # Install base packages one by one. Handles both individual packages
+  # and package groups (e.g. 'gnome' group with 59 packages). AUR-only
+  # packages are skipped here — handled by apply_replacements via AUR helper.
   for pkg in "${final_pkgs[@]}"; do
-    if pacman -Si "$pkg" >/dev/null 2>&1; then
+    if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
       sudo pacman -S --needed --noconfirm "$pkg"
     else
       echo "  skipping $pkg: not in repos (handled by AUR helper if it's a replacement)"
@@ -220,7 +221,7 @@ if (( choose )); then
   done
 
   for pkg in "${install_pkgs[@]}"; do
-    if pacman -Si "$pkg" >/dev/null 2>&1; then
+    if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
       sudo pacman -S --needed --noconfirm "$pkg"
     else
       echo "  skipping $pkg: not in repos"
