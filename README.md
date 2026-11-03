@@ -4,22 +4,130 @@ Personal post-install setup for Arch and CachyOS. Managed with `chezmoi`, run wi
 
 This repo is not an OS installer. Archinstall/CachyOS installs the base system. This repo applies my dotfiles and gives me a small set of post-install commands.
 
-## First run
+All package decisions are backed by the [Arch Linux package database](https://archlinux.org/packages/) and the [Arch Wiki](https://wiki.archlinux.org/).
+
+## Supported workflows
+
+| Machine | Installer | DE choice | Snapper/Limine | This repo's role |
+|---------|-----------|-----------|----------------|------------------|
+| Arch minimal (laptop) | archinstall (minimal profile, console login) | Manual after first boot (`just setup-desktop`) | You run `ucli setup-snapshots` | Full setup: DE → packages → dotfiles → snapshots |
+| CachyOS (desktop) | Calamares GUI (picks DE during install) | Already installed by Calamares | Calamares handles it | Dotfiles + packages only (`ucli devmode`, `ucli apps`) |
+
+## Fresh install on Arch minimal (console → GUI)
+
+After archinstall with minimal profile, reboot, log in to console, then:
 
 ```bash
-sudo pacman -Syu
-sudo pacman -S --needed git chezmoi just
-chezmoi init --apply git@github.com:dcizov/dots.git
-# or, non-interactively:
-#   curl -fsSL https://install.wtfaq.tech | bash -s -- --yes
-ucli usage
-ucli doctor
+# 1. Bootstrap chezmoi/ucli
+curl -fsSL https://install.wtfaq.tech | bash   # or run install.sh manually
+#   --yes skips the confirmation prompt
+#   --dry-run shows what would happen without changes
+
+# 2. Deploy dotfiles
+chezmoi apply -v
+
+# 3. Install desktop environment + create snapshot
+just setup-desktop          # full DE set, prompts: gnome / hyprland / kde
+# or interactively pick package groups:
+sudo setup-desktop.sh --choose gnome
+
+# 4. Debloat packages you don't need (optional, after step 3)
+just debloat-desktop
+
+# 5. System-level Snapper/Limine setup
+ucli setup-snapshots
+
+# 6. Dev packages + personal apps
+ucli devmode
+ucli apps
+
+# 7. Backup your GNOME configuration (after customizing it)
+ucli backup-gnome-settings
 ```
 
-`chezmoi init --apply` writes the dotfiles and the ucli wrapper, then runs
-`run_once_before_00-bootstrap-arch.sh.tmpl` (git/chezmoi/just if missing) and
-`run_onchange_after_90-ucli-install.sh.tmpl`. No `run_*` script starts, stops or
-enters a container — chezmoi ships files, `ucli` performs actions.
+On **CachyOS**, skip steps 1, 3, 5 — Calamares already did DE + Snapper/Limine. Just:
+
+```bash
+chezmoi init --apply https://github.com/dcizov/dots.git
+ucli devmode
+ucli apps
+ucli backup-gnome-settings   # optional, after customizing GNOME
+```
+
+## Software replacement matrix
+
+When installing a desktop environment, some packages from the DE group may be unwanted or have better alternatives. The matrix in `packages.bash` defines what to skip and what to replace:
+
+| DE | Skip | Replace | With | Method |
+|----|------|---------|------|--------|
+| GNOME | none by default | `gnome-software` | `shelly` | AUR via `paru` (MANUAL_AUR) |
+| GNOME | — | `gnome-system-monitor` | `mission-center` | Flatpak (`io.missioncenter.MissionCenter`) |
+| GNOME | — | `gnome-console` | `ghostty` | Already chezmoi-managed |
+| GNOME | — | `htop` | `btop` | `btop` in `SYSTEM_QOL_TOOLS` |
+| Hyprland | none | — | — | — |
+| KDE | none | — | — | — |
+
+Edit `DESKTOP_SKIP_<DE>` and `DESKTOP_REPLACE_<DE>` in `packages.bash` to customize. The replacement runs automatically during `setup-desktop`.
+
+**Shelly** is an AUR package (Seafoam-Labs/Shelly-ALPM), installed via `paru`:
+https://aur.archlinux.org/packages/shelly
+
+## GNOME settings backup & restore
+
+Back up your GNOME configuration after customizing it, then restore on reinstall:
+
+```bash
+# Backup (after configuring GNOME your way)
+ucli backup-gnome-settings
+# Saves to ~/.config/ucli/settings/gnome/ (chezmoi-managed)
+#   desktop.dconf, shell.dconf, extensions.dconf
+#   enabled-extensions.txt, installed-extensions.txt
+
+# Restore (on a fresh install, after GNOME is installed)
+ucli restore-gnome-settings
+# Loads dconf settings + re-enables extensions
+```
+
+Commands to inspect your GNOME setup:
+
+```bash
+# List enabled extensions (installed + active)
+gnome-extensions list --enabled
+
+# List ALL installed extensions
+gnome-extensions list
+
+# List enabled via dconf (may include removed ones)
+gsettings get org.gnome.shell enabled-extensions
+
+# User-installed extensions
+ls ~/.local/share/gnome-shell/extensions/
+
+# System-wide installed extensions
+ls /usr/share/gnome-shell/extensions/
+
+# Backup ALL gsettings
+dconf dump / > gnome-settings-backup.txt
+
+# Restore ALL gsettings
+dconf load / < gnome-settings-backup.txt
+```
+
+## chezmoi — adding your backed-up GNOME settings to the repo
+
+The backup files live in `~/.config/ucli/settings/gnome/`. To deploy them via chezmoi:
+
+```bash
+chezmoi add ~/.config/ucli/settings/gnome/
+chezmoi diff ~/.config/ucli/settings/gnome/
+chezmoi apply
+cd /home/user/dots
+git add -A
+git commit -m "chore: add GNOME settings backup templates"
+git push origin arena/fc51c308-dots
+```
+
+**Note:** GNOME settings are personal (wallpaper, extension preferences, window behavior). If you deploy them via chezmoi, all machines sharing this repo get identical GNOME configuration. For machine-specific settings, don't `chezmoi add` them — keep them local and restore manually with `ucli restore-gnome-settings` per machine.
 
 ## ucli
 
@@ -54,6 +162,10 @@ Extras that are deliberately not top-level: `ucli --choose` exposes the rest
 ```bash
 ucli setup-snapshots      snapshots + boot entries (skips CachyOS)
 ucli system               system menu (checks and maintenance helpers)
+ucli setup-desktop        install DE + snapshot (Arch minimal only)
+ucli debloat-desktop      remove DE packages you don't need
+ucli backup-gnome-settings  backup dconf settings + extensions
+ucli restore-gnome-settings # restore dconf settings + extensions
 ```
 
 The Snapper/Limine script skips CachyOS.
@@ -64,7 +176,8 @@ The Snapper/Limine script skips CachyOS.
 ucli gnome                GNOME menu (extensions, settings backup, apply)
 ```
 
-GNOME is curated in `packages.bash`.
+GNOME is curated in `packages.bash`. Package group contents from
+[archlinux.org/groups/x86_64/gnome/](https://archlinux.org/groups/x86_64/gnome/).
 
 ## Dev box
 
@@ -177,3 +290,23 @@ chezmoi apply -v
 ucli doctor
 ucli validate
 ```
+
+## Fresh install readiness
+
+| Step | Status |
+|------|--------|
+| Bootstrap (install.sh, `--dry-run`, `--yes`, no `-Syu`) | ✅ |
+| chezmoi deployment (`.chezmoiignore` gates by terminal/role) | ✅ |
+| DE install with package selection (`setup-desktop --choose`) | ✅ |
+| DE debloat after install (`debloat-desktop`) | ✅ |
+| Snapper/Limine setup (`setup-snapshots`, skips CachyOS) | ✅ |
+| Fresh install snapshot (`snapshot-fresh-install.sh`) | ✅ |
+| GNOME settings backup (`backup-gnome-settings`) | ✅ |
+| GNOME settings restore (`restore-gnome-settings`) | ✅ |
+| Dev packages (`devmode`, `--force` bypasses role check) | ✅ |
+| Personal apps (`apps`) | ✅ |
+| Software replacement matrix (skip + replace DE packages) | ✅ |
+| All scripts pass `bash -n` | ✅ |
+| All committed & pushed to `arena/fc51c308-dots` | ✅ |
+
+On **Arch minimal**, run the full flow after first console login. On **CachyOS**, Calamares handles DE + Snapper/Limine during install — just deploy dotfiles and run `ucli` commands.
