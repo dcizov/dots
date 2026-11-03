@@ -28,8 +28,12 @@ esac
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+# When run via sudo, $HOME is root's home; use the invoking user's home instead.
+real_user="${SUDO_USER:-$USER}"
+real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+
 # shellcheck source=/dev/null
-source "$HOME/.config/ucli/packages.bash"
+source "$real_home/.config/ucli/packages.bash"
 
 # Package groups per DE, each with a description and whether it's installed.
 declare -A groups=()
