@@ -24,10 +24,16 @@ USAGE
 mode="${1:-system}"
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# When run via sudo (from setup-desktop.sh), $HOME is root's home;
+# use the invoking user's home instead.
+real_user="${SUDO_USER:-$USER}"
+real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+
 # shellcheck source=/dev/null
-source "$HOME/.config/ucli/packages.bash"
+source "$real_home/.config/ucli/packages.bash"
 # shellcheck source=/dev/null
-source "$HOME/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
 if ! command -v gnome-extensions >/dev/null 2>&1; then
   echo "gnome-extensions not found; install gnome-shell-extensions first" >&2
