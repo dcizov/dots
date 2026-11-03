@@ -54,6 +54,46 @@ ucli apps
 ucli backup-gnome-settings   # optional, after customizing GNOME
 ```
 
+## Snapshot-only path (skip chezmoi initially)
+
+If you want to create a fresh-install snapshot **before** deploying dotfiles (e.g. right after archinstall, before `chezmoi apply`), you can run the snapshot setup directly without chezmoi:
+
+```bash
+# After archinstall + reboot, as root:
+sudo arch-snapper-limine.sh --yes
+
+# This sets up Snapper (Btrfs subvolume check, config, timers),
+# configures mkinitcpio hooks + Limine, and creates snapshot #1
+# ("Fresh Arch Linux Installation").
+```
+
+If snapper is already configured (`/etc/snapper/configs/root` exists), you can create just the snapshot:
+
+```bash
+sudo snapshot-fresh-install.sh "Fresh Arch Install"
+```
+
+Scripts live in `~/.local/share/ucli/scripts/system/` after chezmoi deploy, or can be run directly from the repo before chezmoi apply.
+
+**Snapshot-only flow:**
+
+```bash
+# 1. archinstall, reboot
+# 2. Create snapshot (before chezmoi apply)
+sudo arch-snapper-limine.sh --yes
+
+# 3. Later, deploy dotfiles and continue:
+chezmoi init --apply https://github.com/dcizov/dots.git
+# or without apply:
+chezmoi init https://github.com/dcizov/dots.git
+chezmoi apply -v
+
+# 4. Continue with ucli:
+ucli setup-system
+ucli devmode
+ucli apps
+```
+
 ## Software replacement matrix
 
 When installing a desktop environment, some packages from the DE group may be unwanted or have better alternatives. The matrix in `packages.bash` defines what to skip and what to replace:
