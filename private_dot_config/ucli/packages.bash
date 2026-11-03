@@ -127,11 +127,9 @@ DEV=(
   docker
   docker-compose
   docker-buildx
-  dbeaver
   podman-desktop
-  podman-tui
-  vscodium
-  vscodium-marketplace
+  vscodium-bin
+  vscodium-marketplace-bin
 )
 
 GAMING=(
