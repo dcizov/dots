@@ -7,8 +7,8 @@ set -euo pipefail
 #   Arch/other: ask the user — paru or shelly — then install the chosen one.
 #
 # The chosen helper name is printed to stdout and stored in
-# /etc/ucli/aur-helper so subsequent runs (e.g. setup-desktop.sh as root)
-# reuse the same selection without re-prompting.
+# $HOME/.local/share/ucli/aur-helper so subsequent runs reuse the same
+# selection without re-prompting. Userspace only — no /etc writes.
 
 usage() {
   cat <<'USAGE'
@@ -33,7 +33,7 @@ done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-STATE_FILE="/etc/ucli/aur-helper"
+STATE_FILE="${HOME:-$(getent passwd "${USER:-root}" | cut -d: -f6)}/.local/share/ucli/aur-helper"
 
 get_stored_helper() {
   [ -r "$STATE_FILE" ] && cat "$STATE_FILE" || printf ''

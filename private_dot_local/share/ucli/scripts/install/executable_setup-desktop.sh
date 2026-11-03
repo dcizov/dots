@@ -49,10 +49,6 @@ source "$real_home/.config/ucli/packages.bash"
 aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
 
-# Cache the AUR helper choice system-wide (root can write to /etc/ucli).
-mkdir -p /etc/ucli 2>/dev/null || true
-printf '%s\n' "$aur_helper" > /etc/ucli/aur-helper 2>/dev/null || true
-
 # Enable GDM for GNOME desktop.
 if [[ "$desktop" == "gnome" ]]; then
   systemctl enable gdm.service 2>/dev/null || true
