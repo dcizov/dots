@@ -324,11 +324,14 @@ APPS=(
   fuse2
   libinput-tools
 
-  shelly
   shelly-flatpak-backend
 )
 
-MANUAL_AUR=()
+# Shelly is an AUR package (Seafoam-Labs/Shelly-ALPM), not a Flatpak.
+# https://aur.archlinux.org/packages/shelly
+MANUAL_AUR=(
+  shelly
+)
 
 # -----------------------------
 # Software replacement matrix
@@ -344,7 +347,7 @@ MANUAL_AUR=()
 # is listed, the package is simply not installed (debloat).
 #
 # Examples:
-#   - gnome-software → shelly (flatpak: com.ranfdev.DistroShelf in DEV_FLATPAKS)
+#   - gnome-software → shelly (AUR package: shelly in MANUAL_AUR)
 #   - gnome-system-monitor → mission-center (flatpak: io.missioncenter.MissionCenter in GNOME_FLATPAKS)
 #   - htop → btop (btop in SYSTEM_QOL_TOOLS)
 #   - gnome-console → ghostty (already configured via chezmoi)
@@ -409,7 +412,6 @@ KDE_FLATPAKS=()
 
 DEV_FLATPAKS=(
   me.iepure.devtoolbox
-  com.ranfdev.DistroShelf
 )
 
 GAMING_FLATPAKS=()

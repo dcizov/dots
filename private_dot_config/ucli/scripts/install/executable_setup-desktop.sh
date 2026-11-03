@@ -253,7 +253,10 @@ apply_replacements() {
     fi
   done
 
-  # Replace original packages with alternatives
+  # Replace original packages with alternatives.
+  # Non-flatpak replacements: try pacman first (repo packages), then paru (AUR).
+  # ArchWiki: AUR packages require an AUR helper like paru
+  # https://wiki.archlinux.org/title/Arch_User_Repository
   for i in "${!replace_orig[@]}"; do
     local orig="${replace_orig[$i]}"
     if pacman -Q "$orig" >/dev/null 2>&1; then
@@ -263,7 +266,12 @@ apply_replacements() {
     if [[ ${#replace_with[@]} -gt $i ]] && [[ -n "${replace_with[$i]:-}" ]]; then
       if ! pacman -Q "${replace_with[$i]}" >/dev/null 2>&1; then
         echo "installing replacement: ${replace_with[$i]}"
-        sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
+        if command -v paru >/dev/null 2>&1; then
+          paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
+        else
+          sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
+            echo "  warning: ${replace_with[$i]} not in repos; install paru (ucli devmode) for AUR packages" >&2
+        fi
       fi
     fi
   done
