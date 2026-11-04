@@ -213,7 +213,7 @@ select_desktop() {
 }
 
 # The browser is desktop-agnostic; the terminal follows the desktop (GNOME and
-# Hyprland get ghostty, KDE gets kitty — see packages.bash for why). On a machine
+# Hyprland get ghostty, KDE gets kwi — see packages.bash for why). On a machine
 # with no desktop at all neither is added: a TTY-only box gets ucli and nothing
 # else, and ~/.config/<terminal> is not deployed for a program that is not there
 # (.chezmoiignore asks lookPath).

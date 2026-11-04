@@ -117,7 +117,7 @@ This is the one big compound step. `install-profile.sh` runs these in order:
 |---|---|---|
 | 1 | preflight | warns (and asks, on a TTY) when there is no snapper config |
 | 2 | restore point | `before setup-system` — the same snapshot script as every other step |
-| 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools, fonts, `UCLI_RUNTIME` (gum + python-pipx), base flatpaks |
+| 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools, fonts, `UCLI_RUNTIME` (gum + python-pipx) — no flatpaks yet |
 | 4 | the desktop | the DE package set through the skip/replace matrix in `packages.bash` (`gnome` group, `plasma`, or the Hyprland set) |
 | 5 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE |
 | 6 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
