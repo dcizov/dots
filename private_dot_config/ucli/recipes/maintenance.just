@@ -17,12 +17,12 @@
 update:
     # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -uo pipefail
     step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
     have() { command -v "$1" >/dev/null 2>&1; }
 
     step "pacman: system upgrade"
-    sudo pacman -Syu --noconfirm
+    sudo pacman -Syu --noconfirm || true
 
     if have paru; then
     step "paru: AUR upgrades"
@@ -34,7 +34,7 @@ update:
 
     if have flatpak; then
     step "flatpak: updates"
-    flatpak update -y
+    flatpak update -y || true
     fi
 
     if have mise; then
@@ -43,7 +43,11 @@ update:
     fi
 
     step "dev box"
-    "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    if [[ -x "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
+    "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" || true
+    else
+    step "dev box: skipped (devbox-reconcile.sh not found)"
+    fi
 
     step "done"
     printf 'A reboot is only needed for kernel/driver updates.\n'

@@ -4,11 +4,13 @@
 # Usage:
 #   install-firefox-extensions.sh <extensions-file>
 #
-# Downloads XPI files from addons.mozilla.org and installs them into each
-# Firefox profile using `firefox --install-extension <xpi-path>`.
+# Downloads XPI files from addons.mozilla.org and places them in each
+# Firefox profile's extensions/ directory with the extension ID as filename.
+# Firefox detects and installs them on next startup.
 #
-# `firefox --install-extension <id>` does NOT work with extension IDs — it
-# expects XPI file paths. Downloading XPIs first is the reliable method.
+# This is the reliable userspace method — firefox --install-extension does not
+# work with extension IDs (it expects XPI paths) and is finicky with --profile.
+# Direct placement into extensions/<id>.xpi is Firefox's documented behavior.
 #
 # Source: https://dev.to/alanwest/how-to-programmatically-install-firefox-extensions-and-why-it-breaks-2b01
 set -uo pipefail
@@ -125,7 +127,7 @@ if ((${#xpi_map[@]} == 0)); then
   exit 1
 fi
 
-# Install each XPI into each profile using firefox --install-extension
+# Place each XPI into each profile's extensions/ dir with extension ID as filename
 total_installed=0
 total_failed=0
 
@@ -135,11 +137,13 @@ for ext_id in "${!xpi_map[@]}"; do
 
   installed_any=0
   for prof_dir in "${profile_dirs[@]}"; do
-    if firefox --profile "$prof_dir" --install-extension "$xpi_file" >/dev/null 2>&1; then
-      echo "    installed to $prof_dir"
+    ext_dir="$prof_dir/extensions"
+    mkdir -p "$ext_dir"
+    if cp -f "$xpi_file" "$ext_dir/${ext_id}.xpi" 2>/dev/null; then
+      echo "    placed in $ext_dir/${ext_id}.xpi"
       installed_any=1
     else
-      echo "    WARNING: failed to install $ext_id to $prof_dir" >&2
+      echo "    WARNING: failed to place $ext_id in $prof_dir" >&2
     fi
   done
 
