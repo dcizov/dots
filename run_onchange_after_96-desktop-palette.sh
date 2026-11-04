@@ -16,9 +16,8 @@ set_key() {  # <schema> <key> <value>
   gsettings set "$1" "$2" "$3" 2>/dev/null || true
 }
 
-# Background images (.local/share/backgrounds/) are excluded from chezmoi
-# deployment (.chezmoiignore). Only the solid palette colour is applied so
-# there are no dangling references to missing image files.
+# The repo ships no background images, so only the solid palette colour is set:
+# pointing at a file that is not there would leave GNOME with a broken picture.
 set_key org.gnome.desktop.background color-shading-type 'solid'
 set_key org.gnome.desktop.background primary-color      '#1c1c1f'
 set_key org.gnome.desktop.background secondary-color    '#1c1c1f'

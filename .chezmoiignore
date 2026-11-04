@@ -34,7 +34,8 @@ install.sh
 {{- end }}
 
 # Terminals: only the one that is installed (or named in .chezmoi.toml).
-# ghostty — gnome/hyprland; kitty — kde.
+# ghostty — gnome/hyprland; kwi — kde (its colours come from the Plasma scheme,
+# so it has no dotfiles here); kitty stays for anyone who prefers it.
 {{- if not (or (lookPath "ghostty") (eq $terminal "ghostty")) }}
 .config/ghostty/
 {{- end }}
@@ -54,6 +55,3 @@ install.sh
 {{- if ne $role "dev" }}
 .config/distrobox/
 {{- end }}
-
-# Background images: not deployed by default; remove the lambda theme.
-.local/share/backgrounds/

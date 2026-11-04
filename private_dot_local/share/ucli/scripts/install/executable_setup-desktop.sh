@@ -363,7 +363,8 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" ucli-runtime || true
 fi
 
-# Fonts and themes needed by backed-up settings (Ghostty, Adwaita, Papirus)
+# Fonts and themes the shipped configs and dconf profile reference (JetBrains
+# Mono / Nerd Font for ghostty + VSCodium, adw-gtk3 for GTK3 apps, Adwaita icons)
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" fonts
 fi

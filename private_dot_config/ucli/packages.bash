@@ -134,11 +134,24 @@ SNAPSHOT_LIMINE=(
   limine-mkinitcpio-hook
 )
 
+# The font set is not taste here: it is what the shipped configs ask for.
+#   ghostty            font-family = JetBrainsMono Nerd Font
+#   VSCodium editor    'Adwaita Mono', 'Cantarell Mono', 'JetBrains Mono'
+#   VSCodium terminal  JetBrainsMono Nerd Font
+# so both the plain and the Nerd Font variant are required. Nerd glyphs are what
+# starship and the oh-my-zsh themes draw with; without the patched variant they
+# render as boxes.
+#
+# Icons stay Adwaita + its legacy fallback, which is what Bluefin ships
+# (adwaita-icon-theme + adwaita-icon-theme-legacy): Adwaita alone has very few
+# third-party app icons. A full third-party set (Papirus, MoreWaita, …) is a
+# taste — it lives in PERSONAL_PKGS and needs its own dconf value, since the
+# shipped GNOME profile now points at Adwaita.
 FONTS_THEMES=(
   ttf-jetbrains-mono
   ttf-jetbrains-mono-nerd
   adw-gtk-theme
-  papirus-icon-theme
+  adwaita-icon-theme-legacy
 )
 
 # -----------------------------
@@ -197,6 +210,8 @@ DEV_CLI=(
 
 DEV=(
   base-devel
+  tailscale        # installed only; enable with: systemctl enable --now tailscaled
+                   # (Bluefin ships it in the image, this is the Arch equivalent)
   podman
   distrobox
   docker
@@ -268,12 +283,20 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
   gsound                                     # Copyous: clipboard sound feedback
 )
 
+# The layout set: what makes GNOME behave like the desktop this repo configures
+# for. Bluefin's equivalent list is dash-to-dock, appindicator, gsconnect,
+# blur-my-shell and search-light; the four at the end are "make it calm" tweaks
+# that belong to the same opinion, not to one person.
 GNOME_SYSTEM_EXTENSIONS=(
   "307:dash-to-dock@micxgx.gmail.com"                        # Ubuntu-like dock
   "3193:blur-my-shell@aunetx"                                # blur behind shell UI
   "1319:gsconnect@andyholmes.github.io"                      # phone integration
   "5489:search-light@icedman.github.com"                     # Spotlight-style Super+Space
   "8834:copyous@boerdereinar.dev"                            # clipboard history
+  "3843:just-perfection-desktop@just-perfection"             # hide what GNOME shows by default
+  "4451:logomenu@aryan_k"                                    # app-menu button
+  "4158:gnome-ui-tune@itstime.tech"                          # overview tweaks
+  "9975:BetterTrayIcons@nexaknight.com"                      # consistent tray icon sizes
 )
 
 # Personal extension sets, personal apps/flatpaks and extra dev packages live in

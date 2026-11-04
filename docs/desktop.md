@@ -60,6 +60,10 @@ ships a variation of:
 | 1319 | `gsconnect@andyholmes.github.io` | phone integration (KDE Connect protocol) |
 | 5489 | `search-light@icedman.github.com` | Spotlight-style launcher on Super+Space |
 | 8834 | `copyous@boerdereinar.dev` | clipboard history (needs `libgda6` + `gsound`) |
+| 3843 | `just-perfection-desktop@just-perfection` | hide the shell furniture GNOME shows by default |
+| 4451 | `logomenu@aryan_k` | app-menu button in the panel |
+| 4158 | `gnome-ui-tune@itstime.tech` | overview tweaks |
+| 9975 | `BetterTrayIcons@nexaknight.com` | consistent tray icon sizes |
 
 Each entry is `"PK:UUID"` on one line: PK is what `gext install` takes, UUID is
 what GNOME enables. They used to be two parallel arrays, and they drifted badly —
@@ -69,10 +73,35 @@ cannot drift.
 
 #### The personal set
 
-Everything that is taste lives in `PERSONAL_GNOME_EXTENSIONS` in
-`~/.config/ucli/packages.local.bash` and is installed by the `personal` set
-(`ucli setup-extensions` runs both). The example file ships just-perfection,
-logo-menu, GNOME UI Tune, BetterTrayIcons and user-accent-colors.
+`PERSONAL_GNOME_EXTENSIONS` in `~/.config/ucli/packages.local.bash`, installed by
+the `personal` set (`ucli setup-extensions` runs both). The example ships one
+entry — `user-accent-colors` — because the rest of the taste set is opinionated
+and already lives in the table above.
+
+#### How Bluefin does it, and why this repo does not copy that
+
+Bluefin bakes extensions into the image: the extension directories ship in
+`/usr/share/gnome-shell/extensions` (some packaged as RPMs from their own COPR,
+some built at image build time), enabled through a **compiled GSettings default**
+in `/usr/share/glib-2.0/schemas/zz0-bluefin-modifications.gschema.override`
+(`[org.gnome.shell] enabled-extensions = [...]`), with per-extension settings in
+`/etc/dconf/db/distro.d/` keyfiles rebuilt by `dconf-update.service`, and
+hardware-specific bits applied per user by `ublue-user-setup.service`.
+
+That is a *system-wide default*, and it has a documented failure mode inside
+Bluefin itself: the moment a user toggles anything in Extension Manager, a
+user-level `enabled-extensions` value exists, and user values beat schema
+defaults — so the image's list silently stops applying. The Arch/ucli equivalent
+would also mean root-owned files that `ucli uninstall` has to clean up, for a
+tool that runs as one user after the fact.
+
+So this repo keeps the split: **packages** where Arch packages the extension
+(`GNOME_SYSTEM_EXTENSION_PACKAGES`, installed with the desktop), and **one merged
+dconf write** to the user's own `org.gnome.shell enabled-extensions` for the rest
+(`enable_uuids` in `install-gnome-extension-set.sh` — it appends to whatever is
+there, never replaces). gschema overrides and `distro.d` remain the right tool if
+you ever turn this into a multi-user image; on a single-user post-install they
+only add a second place where the truth can drift.
 
 ## GNOME settings backup & restore
 

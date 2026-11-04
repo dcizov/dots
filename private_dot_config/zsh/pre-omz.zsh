@@ -8,7 +8,7 @@
 # the same 16; Kwi follows the Plasma colour scheme instead). Only zsh-syntax-highlighting needs it in the shell: it paints
 # with hex, not with ANSI names.
 typeset -gA _lam=(
-  bg      '#1c1c1f'   # window background (matches GNOME Console)
+  bg      '#1c1c1f'   # window background (matches ghostty and the Adwaita dark scheme)
   surface '#2b3940'   # current line in fzf, selected row in the menu
   border  '#33424a'   # fzf borders
   dim     '#5b7683'   # comments, autosuggestion ghost text, fzf info

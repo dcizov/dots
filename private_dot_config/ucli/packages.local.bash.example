@@ -23,6 +23,8 @@ PERSONAL_PKGS=(
   bitwarden            # password manager (and its browser extension below)
   fragments            # torrent client
   neovim               # the editor I use; `vim` is in DEV_CLI as the fallback
+  papirus-icon-theme   # third-party icon set; the shipped profile points at Adwaita,
+                       # so set org.gnome.desktop.interface icon-theme after install
 )
 
 # --- extra dev packages ------------------------------------------------------
@@ -46,12 +48,10 @@ PERSONAL_FLATPAKS=(
 )
 
 # --- GNOME extensions (extensions.gnome.org) ---------------------------------
-# Not the layout set — that is GNOME_SYSTEM_EXTENSIONS in packages.bash. These
-# only adjust a shell that is already Ubuntu-like.
+# Not the layout set — that is GNOME_SYSTEM_EXTENSIONS in packages.bash, which
+# already ships dash-to-dock, blur-my-shell, gsconnect, search-light, copyous,
+# just-perfection, logo-menu, gnome-ui-tune and BetterTrayIcons. Everything here
+# is a genuine personal pick.
 PERSONAL_GNOME_EXTENSIONS=(
-  "3843:just-perfection-desktop@just-perfection"   # hide UI elements
-  "4451:logomenu@aryan_k"                          # app-menu button
-  "4158:gnome-ui-tune@itstime.tech"                # overview tweaks
-  "9975:BetterTrayIcons@nexaknight.com"            # panel icon sizing
   "10070:user-accent-colors@fabito02"              # accent colour per app
 )

@@ -45,7 +45,7 @@ color-scheme='prefer-dark'
 enable-animations=true
 enable-hot-corners=false
 gtk-theme='adw-gtk3-dark'
-icon-theme='Papirus-Dark'
+icon-theme='Adwaita'
 
 [notifications]
 application-children=['org-gnome-software', 'com-shellyorg-shelly', 'org-gnome-shell-extensions-gsconnect', 'firefox', 'gnome-power-panel']

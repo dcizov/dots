@@ -68,7 +68,6 @@ HOME_TARGETS=(
   "$HOME/.config/VSCodium"
   "$HOME/.config/zsh"
   "$HOME/.local/bin/ucli"
-  "$HOME/.local/share/backgrounds"
   # kwi (KDE's terminal) runtime data, if it ever ships one
   "$HOME/.local/share/kwi"
   # chezmoi runtime state
