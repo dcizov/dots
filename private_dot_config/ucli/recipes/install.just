@@ -10,11 +10,12 @@ cli:
     # opt-in shell CLI experience (atuin, fd, bat, eza, starship, …)
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
-# Set up developer tools (interactive wizard, like `ujust devmode`).
+# `ucli devmode` flags:
+#   ucli devmode           wizard on a TTY, everything otherwise
+#   ucli devmode --all     every item, no menu
+#   ucli devmode --status  marker + version gates
 # Re-running offers "add more tools?" and preselects the previous picks.
-#   ucli devmode          # wizard on a TTY, everything otherwise
-#   ucli devmode --all    # every item, no menu
-#   ucli devmode --status # marker + version gates
+# Set up developer tools (interactive wizard, like `ujust devmode`).
 [group('Install')]
 devmode *ARGS:
     # opt-in dev-cli + developer packages (vscodium, podman, distrobox, …)

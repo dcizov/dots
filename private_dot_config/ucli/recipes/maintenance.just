@@ -15,8 +15,8 @@
 # Update everything: pacman, AUR, flatpaks, mise runtimes, then the dev box.
 [group('Maintenance')]
 update:
-    # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     #!/usr/bin/env bash
+    # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     set -uo pipefail
     step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
     have() { command -v "$1" >/dev/null 2>&1; }
@@ -66,8 +66,8 @@ update:
     fi
 
     step "dev box"
-    if [[ -x "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
-    "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" || true
+    if [[ -x "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
+    "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" || true
     else
     step "dev box: skipped (devbox-reconcile.sh not found)"
     fi
@@ -79,8 +79,8 @@ update:
 # Reclaim space: dangling images, unused flatpaks, old package cache.
 [group('Maintenance')]
 clean-system:
-    # prune dangling images, unused flatpaks, old package cache (asks first)
     #!/usr/bin/env bash
+    # prune dangling images, unused flatpaks, old package cache (asks first)
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/choose.sh"
     have() { command -v "$1" >/dev/null 2>&1; }
@@ -173,8 +173,8 @@ logs:
 # Reboot into the firmware settings (dual boot, boot order, secure boot).
 [group('Maintenance')]
 bios:
-    # reboot into BIOS/UEFI firmware settings
     #!/usr/bin/env bash
+    # reboot into BIOS/UEFI firmware settings
     set -euo pipefail
     [ -d /sys/firmware/efi ] || { printf 'legacy BIOS: reboot and press the firmware key\n' >&2; exit 1; }
     systemctl reboot --firmware-setup
@@ -182,8 +182,8 @@ bios:
 # Show firmware/board details.
 [group('Maintenance')]
 bios-info:
-    # show motherboard/BIOS firmware details
     #!/usr/bin/env bash
+    # show motherboard/BIOS firmware details
     set -euo pipefail
     # /sys/class/dmi/id is world-readable, so this needs neither dmidecode nor
     # sudo. dmidecode is only a fallback for kernels without dmi-id.
@@ -208,12 +208,12 @@ bios-info:
     printf 'no /sys/class/dmi/id and dmidecode is not installed\n' >&2
     exit 1
 
-# Show ucli state: versioned setup gates (lib/version-script.sh) and the
-# devmode marker. Handy when a step "did not run" — the gate tells you why.
+# Handy when a step "did not run": the gate tells you why.
+# Show ucli state: versioned setup gates (lib/version-script.sh) and the devmode marker.
 [group('Maintenance')]
 state:
-    # versioned setup gates + devmode marker
     #!/usr/bin/env bash
+    # versioned setup gates + devmode marker
     set -euo pipefail
     . "$HOME/.config/ucli/scripts/lib/version-script.sh"
     statedir="${XDG_STATE_HOME:-$HOME/.local/state}/ucli"
@@ -237,8 +237,8 @@ state:
 # Packages changed in the most recent pacman transaction.
 [group('Maintenance')]
 changelogs:
-    # show packages changed in the last pacman transaction
     #!/usr/bin/env bash
+    # show packages changed in the last pacman transaction
     set -euo pipefail
     log=/var/log/pacman.log
     [ -r "$log" ] || { printf '%s not readable\n' "$log" >&2; exit 1; }
