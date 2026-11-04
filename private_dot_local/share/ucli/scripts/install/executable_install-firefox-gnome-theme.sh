@@ -26,9 +26,7 @@ fi
 PROFILE_DIR="$real_home/.mozilla/firefox"
 if [[ ! -d "$PROFILE_DIR" ]]; then
   echo "no Firefox profile found at $PROFILE_DIR; skipping firefox-gnome-theme" >&2
-  echo "  launch Firefox once to create a profile, then run:"
-  echo "    git clone https://github.com/rafaelmardojai/firefox-gnome-theme.git"
-  echo "    cd firefox-gnome-theme && ./scripts/install.sh -f $PROFILE_DIR" >&2
+  echo "  launch Firefox once to create a profile, then re-run: ucli apps" >&2
   exit 0
 fi
 

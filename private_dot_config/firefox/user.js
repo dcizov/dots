@@ -213,25 +213,57 @@ user_pref("findbar.highlightAll", true);
 /****************************************************************************
  * START: MY OVERRIDES                                                      *
 ****************************************************************************/
-// User's Betterfox choices:
-//   - Tracking Protection: strict (Betterfox default, no override needed)
-//   - Firefox Sync: disabled
-//   - Password manager: disabled (use Bitwarden/1Password)
-//   - Secure DNS: Max Protection
+// User's Betterfox choices (v152 -> v154 migration):
+//   - Tracking Protection: strict (custom features string, -lvl2 for less breakage)
+//   - Location requests: allowed (permissions.default.geo = 0)
+//   - Unified search button: disabled
+//   - Container tabs: enabled
+//   - Login manager: disabled (use Bitwarden)
+//   - Address/credit card manager: disabled
+//   - Passkeys: disabled
+//   - Secure DNS: Max Protection (mode 3) — custom URI removed (didn't work)
+//   - New tab: hide topsites, weather, dropdown suggestions
+//   - Certificate pinning: strict (level 2)
 //   - Sanitize on close: cookies + cache only (keep history)
-//   - JavaScript: disable optimizing compiler
+//   - Service workers: disabled in Private Browsing
+//   - JavaScript: disable optimizing compiler + wasm optimizing JIT
+//   - GTK kinetic scroll: pixel-based scrolling tuned
+//   - Firefox GNOME theme: kept (userChrome.css / userContent.css import it)
 
-// --- Firefox Sync: disabled ---
-user_pref("identity.fxaccounts.enabled", false);
+// --- Tracking Protection: strict, less aggressive (-lvl2 removed) ---
+user_pref("browser.contentblocking.features.strict", "tp,tpPrivate,cookieBehavior5,cookieBehaviorPBM5,cryptoTP,fp,stp,emailTP,emailTPPrivate,-consentmanagerSkip,-consentmanagerSkipPrivate,-lvl2,rp,rpTop,qps,qpsPBM,fpp,fppPrivate,btp,lna");
 
-// --- Password manager: disabled ---
+// --- Location requests: allowed ---
+user_pref("permissions.default.geo", 0);
+
+// --- Unified search button: disabled ---
+user_pref("browser.urlbar.scotchBonnet.enableOverride", false);
+
+// --- Container tabs: enabled ---
+user_pref("privacy.userContext.enabled", true);
+
+// --- Login manager: disabled ---
 user_pref("signon.rememberSignons", false);
+
+// --- Address & credit card manager: disabled ---
 user_pref("extensions.formautofill.addresses.enabled", false);
 user_pref("extensions.formautofill.creditCards.enabled", false);
+
+// --- Passkeys: disabled ---
 user_pref("security.webauth.webauthn", false);
 
-// --- Secure DNS: Max Protection ---
+// --- Secure DNS: Max Protection (mode 3) ---
+// NOTE: custom network.trr.uri removed — did not work with current config.
+// Firefox will use its built-in DoH provider.
 user_pref("network.trr.mode", 3);
+
+// --- New tab: hide topsites, weather, dropdown suggestions ---
+user_pref("browser.newtabpage.activity-stream.feeds.topsites", false);
+user_pref("browser.newtabpage.activity-stream.showWeather", false);
+user_pref("browser.urlbar.suggest.topsites", false);
+
+// --- Certificate pinning: strict (level 2) ---
+user_pref("security.cert_pinning.enforcement_level", 2);
 
 // --- Sanitize on close: cookies + cache only (keep history) ---
 user_pref("privacy.sanitize.sanitizeOnShutdown", true);
@@ -241,8 +273,42 @@ user_pref("privacy.clearOnShutdown_v2.browsingHistoryAndDownloads", false);
 user_pref("privacy.clearOnShutdown_v2.downloads", false);
 user_pref("privacy.clearOnShutdown_v2.formdata", true);
 
-// --- JavaScript: disable optimizing compiler ---
+// --- Service workers: disabled in Private Browsing ---
+user_pref("dom.serviceWorkers.privateBrowsing.enabled", false);
+
+// --- JavaScript: disable optimizing compiler + wasm optimizing JIT ---
 user_pref("javascript.options.ion", false);
+user_pref("javascript.options.wasm_optimizingjit", false);
+
+// --- GTK kinetic scroll: pixel-based scrolling (Mozilla Bug 1753033 / 1752862) ---
+user_pref("apz.overscroll.enabled", true);
+user_pref("general.smoothScroll", true);
+user_pref("mousewheel.min_line_scroll_amount", 10);
+user_pref("general.smoothScroll.mouseWheel.durationMinMS", 80);
+user_pref("general.smoothScroll.currentVelocityWeighting", "0.15");
+user_pref("general.smoothScroll.stopDecelerationWeighting", "0.6");
+user_pref("apz.gtk.kinetic_scroll.delta_mode", 2);
+user_pref("apz.gtk.pangesture.delta_mode", 2);
+user_pref("apz.gtk.kinetic_scroll.pixel_delta_mode_multiplier", 25);
+user_pref("apz.gtk.pangesture.pixel_delta_mode_multiplier", 25);
+user_pref("apz.fling_friction", 0.004);
+
+// --- Firefox GNOME theme (kept — userChrome.css / userContent.css import it) ---
+user_pref("gnomeTheme.hideSingleTab", true);
+user_pref("gnomeTheme.normalWidthTabs", false);
+user_pref("gnomeTheme.swapTabClose", false);
+user_pref("gnomeTheme.bookmarksToolbarUnderTabs", false);
+user_pref("gnomeTheme.tabsAsHeaderbar", false);
+user_pref("gnomeTheme.tabAlignLeft", false);
+user_pref("gnomeTheme.activeTabContrast", true);
+user_pref("gnomeTheme.closeOnlySelectedTabs", false);
+user_pref("gnomeTheme.symbolicTabIcons", false);
+user_pref("gnomeTheme.allTabsButton", false);
+user_pref("gnomeTheme.allTabsButtonOnOverflow", true);
+user_pref("gnomeTheme.hideWebrtcIndicator", false);
+user_pref("gnomeTheme.oledBlack", false);
+user_pref("gnomeTheme.noThemedIcons", false);
+user_pref("gnomeTheme.bookmarksOnFullscreen", false);
 
 /****************************************************************************
  * END: BETTERFOX                                                           *
