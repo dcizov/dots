@@ -11,3 +11,9 @@ source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
 "$script_dir/install-packages.sh" apps
 "$script_dir/install-flatpaks.sh" apps
+
+if [[ "$desktop" == "gnome" ]]; then
+  "$script_dir/install-gnome-extension-set.sh" overrides || true
+  # Firefox GNOME theme — only makes sense on GNOME desktop
+  "$script_dir/install-firefox-gnome-theme.sh" || true
+fi
