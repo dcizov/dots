@@ -37,8 +37,17 @@ if [[ -z "$PROFILE_DIR" ]]; then
   exit 0
 fi
 
+# user.js is chezmoi-managed and only deployed once firefox exists
+# (.chezmoiignore asks lookPath), so a machine that just installed firefox in this
+# very run has the binary but not the file. Deploy that one target first.
+if [[ ! -f "$SOURCE_USER_JS" ]] && command -v chezmoi >/dev/null 2>&1; then
+  echo "firefox config not deployed yet; running: chezmoi apply -- $SOURCE_USER_JS"
+  chezmoi apply -- "$SOURCE_USER_JS" >/dev/null 2>&1 || true
+fi
+
 if [[ ! -f "$SOURCE_USER_JS" ]]; then
   echo "Betterfox user.js not found at $SOURCE_USER_JS; skipping" >&2
+  echo "  deploy it first: ucli chezmoi-apply" >&2
   exit 0
 fi
 

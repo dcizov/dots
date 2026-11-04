@@ -22,6 +22,24 @@ section() { printf '\n== %s ==\n' "$1"; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# A desktop exists once one of its session binaries does. Before that the box is a
+# console install: .chezmoiignore keeps the shell/terminal/browser config out of
+# $HOME by design, so their absence is the expected state, not a fault.
+desktop_epoch=0
+for _de_bin in gnome-shell plasmashell Hyprland hyprland startplasma-wayland; do
+  have "$_de_bin" && desktop_epoch=1 && break
+done
+
+# Same line, different weight: MISSING before a desktop exists is noise, because
+# .chezmoiignore is deliberately holding those files back until the program lands.
+miss_or_note() {
+  if (( desktop_epoch )); then
+    miss "$1"
+  else
+    info "$1 — expected on a console-only box"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 section "dotfiles"
 if have chezmoi; then
@@ -39,13 +57,25 @@ if have chezmoi; then
 else
   miss "chezmoi (run install.sh)"
 fi
-for path in "$real_home/.zshrc" "$zsh_dir/plugins.txt" "$config_dir/justfile"; do
+if [[ -e "$config_dir/justfile" ]]; then
+  ok ".config/ucli/justfile"
+else
+  miss ".config/ucli/justfile (run: install.sh, or: ucli chezmoi-apply)"
+fi
+# The shell layer is deployed by .chezmoiignore only once zsh exists, so on a
+# console-only machine these two are supposed to be missing.
+for path in "$real_home/.zshrc" "$zsh_dir/plugins.txt"; do
   if [[ -e "$path" ]]; then
     ok "${path#"$real_home"/}"
   else
-    miss "${path#"$real_home"/} (run: ucli chezmoi-apply)"
+    miss_or_note "${path#"$real_home"/} (run: ucli chezmoi-apply)"
   fi
 done
+if [[ -e "$real_home/.bash_profile" ]] && grep -q '.local/bin' "$real_home/.bash_profile" 2>/dev/null; then
+  ok ".bash_profile puts ~/.local/bin on PATH"
+else
+  miss "~/.bash_profile with ~/.local/bin on PATH (run: ucli chezmoi-apply)"
+fi
 
 # ---------------------------------------------------------------------------
 section "shell"
@@ -60,7 +90,7 @@ if have zsh; then
   done
   [[ $zsh_bad -eq 0 ]] && ok "zsh parses ~/.zshrc, pre-omz.zsh and conf.d"
 else
-  miss "zsh (run: ucli cli)"
+  miss_or_note "zsh (run: ucli cli)"
 fi
 
 login_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
@@ -69,13 +99,13 @@ if [[ "$login_shell" == *zsh ]]; then
 elif have zsh; then
   warn "login shell is $login_shell (chsh -s \"$(command -v zsh)\", or re-run: ucli cli)"
 else
-  warn "login shell is $login_shell (run: ucli cli)"
+  miss_or_note "login shell is $login_shell (run: ucli cli)"
 fi
 
 if [[ -r "$real_home/.oh-my-zsh/oh-my-zsh.sh" ]]; then
   ok "oh-my-zsh"
 else
-  miss "~/.oh-my-zsh (run: ucli cli)"
+  miss_or_note "~/.oh-my-zsh (run: ucli cli)"
 fi
 
 if have starship; then
@@ -85,7 +115,7 @@ if have starship; then
     warn "starship installed but ~/.config/starship.toml missing (default prompt)"
   fi
 else
-  miss "starship (run: ucli cli)"
+  miss_or_note "starship (run: ucli cli)"
 fi
 
 # expected plugins come from the one shared list; compare with what is on disk

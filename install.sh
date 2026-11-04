@@ -11,7 +11,16 @@ usage() {
   cat <<'USAGE'
 usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--yes] [--dry-run]
 
-Bootstrap wtfaq chezmoi/ucli setup.
+Bootstrap wtfaq chezmoi/ucli setup on a console-only machine.
+
+Installs git, chezmoi and just, then deploys the ucli runtime only: ~/.local/bin/ucli,
+~/.config/ucli, ~/.local/share/ucli and a ~/.bash_profile that puts ~/.local/bin on
+PATH. Everything desktop-shaped — zsh, oh-my-zsh, starship, ~/.config/ghostty,
+~/.config/firefox — is deliberately left to `ucli setup-system`, so a fresh install
+stays small enough to snapshot.
+
+  ucli setup-snapshots          # snapper + limine, snapshot #1
+  ucli setup-system gnome       # base + desktop + shell + dotfiles + snapshot
 
 WARNING: The recommended install method pipes a remote script directly into bash
   (curl https://install.wtfaq.tech | bash). Verify the script contents before
@@ -102,15 +111,15 @@ ensure_local_bin() {
 }
 
 install_arch_requirements() {
+  # Only what this script and chezmoi itself need. zsh is NOT here: it belongs to
+  # the shell tier (`install-packages.sh shell-tools`) which runs with the desktop
+  # step, so a console-only box does not carry a shell it will never log into.
   local packages=(
     ca-certificates
     curl
     git
     chezmoi
     just
-    zsh
-    openssh
-    nano
   )
 
   if (( DRY_RUN )); then
@@ -143,42 +152,63 @@ run_chezmoi_init() {
   local args=(init)
 
   [[ -n "$BRANCH" ]] && args+=(--branch "$BRANCH")
-  (( APPLY )) && args+=(--apply)
-
   args+=("$REPO")
 
   if (( DRY_RUN )); then
     log "[dry-run] would run: chezmoi ${args[*]}"
+    log "[dry-run] would run: chezmoi apply -v ${CONSOLE_TARGETS[*]}"
     return 0
   fi
 
   log "Running: chezmoi ${args[*]}"
   chezmoi "${args[@]}"
+
+  (( APPLY )) || return 0
+  apply_console_dotfiles
+}
+
+# The console epoch: ucli itself, its recipes/scripts, and a PATH. That is the
+# whole point of stopping here — `chezmoi apply` with no arguments on a TTY-only
+# box would also deploy ~/.config/atuin, bat, eza, distrobox, … for programs that
+# are not installed; the guard for that is .chezmoiignore, and the minimal
+# request is this target list.
+CONSOLE_TARGETS=(
+  "$HOME/.local/bin/ucli"
+  "$HOME/.config/ucli"
+  "$HOME/.local/share/ucli"
+  "$HOME/.bash_profile"
+)
+
+apply_console_dotfiles() {
+  log "Deploying the ucli runtime (the desktop step brings the rest)"
+  chezmoi apply -v "${CONSOLE_TARGETS[@]}" \
+    || warn "chezmoi apply failed; run 'ucli chezmoi-apply' once ucli is on PATH"
 }
 
 print_next_steps() {
   cat <<'EOF'
 
-Done.
+Done. This machine now has ucli, and ~/.local/bin on PATH from ~/.bash_profile.
 
-Important: zsh is now your default shell (chsh was run). Re-login so your
-new shell picks up ~/.zshrc and the PATH from ~/.config/zsh/conf.d/00-env.zsh
-(including $HOME/.local/bin).
+No shell tier, no terminal config, no browser config yet: those arrive with the
+desktop, because ~/.zshrc, ~/.config/zsh, starship.toml, ~/.config/ghostty and
+~/.config/firefox are only deployed once the programs exist (.chezmoiignore asks
+lookPath on every apply). That keeps the fresh-install snapshot small.
 
-Next recommended flow (after re-login):
+Next, in this order:
 
-  ucli profile
-  ucli doctor
-  ucli validate
+  ucli setup-snapshots        # snapper + limine + snapshot #1 (btrfs)
+  ucli setup-system gnome     # base packages, DE, terminal, firefox, shell,
+                              # GNOME extensions, then the dotfiles, then a snapshot
+  ucli doctor                 # what is still missing
 
-  ucli setup-snapshots
-  ucli setup-system
+Then log out and back in: zsh becomes your login shell and GNOME extensions load.
 
 Optional later:
 
-  ucli cli
-  ucli devmode
-  ucli apps
+  ucli cli                    # shell cosmetics (eza, bat, zoxide, atuin, …)
+  ucli apps                   # personal apps, flatpaks, Firefox config
+  ucli devmode                # dev tools + dev box
   ucli gaming
 
 Browse commands:
@@ -189,7 +219,6 @@ Direct tools remain direct:
 
   chezmoi diff && chezmoi apply -v
   distrobox assemble create --file ~/.config/distrobox/dev.ini
-  cd ~/.config/dev-services && docker compose up -d
 
 EOF
 }

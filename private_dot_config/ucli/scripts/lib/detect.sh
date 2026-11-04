@@ -198,10 +198,11 @@ detect_terminal() {
     return 0
   fi
   desktop="$(detect_desktop 2>/dev/null || echo none)"
+  # Same rule as DESKTOP_TERMINAL_<DE> in packages.bash: ghostty on GNOME and
+  # Hyprland (GTK4/Wayland), kitty on Plasma (Qt, no GTK theme dragged in).
   case "$desktop" in
-    gnome) printf 'ghostty\n' ;;
-    hyprland) printf 'kitty\n' ;;
-    kde) printf 'kwi\n' ;;
+    gnome|hyprland) printf 'ghostty\n' ;;
+    kde|plasma) printf 'kitty\n' ;;
     *) printf 'none\n' ;;
   esac
 }

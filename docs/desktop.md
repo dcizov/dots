@@ -15,6 +15,18 @@ When installing a desktop environment, some packages from the DE group may be un
 
 Edit `DESKTOP_SKIP_<DE>` and `DESKTOP_REPLACE_<DE>` in `packages.bash` to customize. The replacement runs automatically during `setup-desktop`.
 
+### The terminal is chosen per desktop
+
+`setup-desktop` installs firefox everywhere, and then one terminal:
+
+| Desktop | Terminal array | Why |
+|---|---|---|
+| GNOME | `DESKTOP_TERMINAL_GNOME` → `ghostty` | GTK4 + native Wayland; GNOME already ships that stack, and `~/.config/ghostty` is the config in this repo |
+| Hyprland | `DESKTOP_TERMINAL_HYPRLAND` → `ghostty` | first-class wlroots client that honours Hyprland window rules, so kitty is not installed as well |
+| KDE | `DESKTOP_TERMINAL_KDE` → `kitty` | Plasma is Qt; kitty needs no GTK theme and no portal round-trip |
+
+A machine with no desktop installs neither. `~/.config/ghostty` / `~/.config/kitty` are only deployed once that binary exists, so a console install never carries a terminal config.
+
 **Shelly** is an AUR package (Seafoam-Labs/Shelly-ALPM), installed via `paru`:
 https://aur.archlinux.org/packages/shelly
 

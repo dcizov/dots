@@ -45,6 +45,7 @@ source "$HOME/.config/ucli/packages.bash"
 HOME_TARGETS=(
   # chezmoi-managed dotfiles (private_dot_* -> ~/.*, dot_* -> ~/.*)
   "$HOME/.zshrc"
+  "$HOME/.bash_profile"
   "$HOME/.atuin"
   "$HOME/.vscode-oss"
   "$HOME/.config/atuin"
@@ -53,6 +54,7 @@ HOME_TARGETS=(
   "$HOME/.config/direnv"
   "$HOME/.config/distrobox"
   "$HOME/.config/fd"
+  "$HOME/.config/firefox"
   "$HOME/.config/ghostty"
   "$HOME/.config/glow"
   "$HOME/.config/kitty"
@@ -65,7 +67,6 @@ HOME_TARGETS=(
   "$HOME/.config/zsh"
   "$HOME/.local/bin/ucli"
   "$HOME/.local/share/backgrounds"
-  "$HOME/.local/share/kwi"
   # chezmoi runtime state
   "$HOME/.local/share/chezmoi"
   "$HOME/.config/chezmoi"

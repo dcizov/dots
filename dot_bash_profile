@@ -1,0 +1,11 @@
+# Login shells that are still bash.
+#
+# A machine that just came out of archinstall has no zsh: the shell tier arrives
+# with `ucli setup-system` / `ucli setup-desktop`. Until then this file is what
+# makes `ucli` reachable — the zsh side does the same in
+# ~/.config/zsh/conf.d/00-env.zsh. Kept for later, too: ssh sessions, recovery
+# TTYs and `su -` all start bash, where a missing ~/.local/bin matters most.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac

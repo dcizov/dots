@@ -24,12 +24,15 @@ ucli gaming               gaming profile
 ucli apps                 personal apps and overrides
 ```
 
-Four package tiers live in `private_dot_config/ucli/packages.bash`:
+Every package list lives in `private_dot_config/ucli/packages.bash`:
 
 | Tier | What it is | Installed by |
 |---|---|---|
 | `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
-| `DESKTOP_ESSENTIALS` | `ghostty` + `firefox` — the terminal and browser the dotfiles assume | `desktop` mode → `ucli setup-system`/`setup-desktop`; also `ucli apps` |
+| `DESKTOP_BROWSER` | `firefox` — the browser the dotfiles configure (Betterfox `user.js`, extension list, GNOME theme) | `desktop` mode → `ucli setup-system`/`setup-desktop`; `ucli apps` always, even when no desktop is detected |
+| `DESKTOP_TERMINAL_GNOME` | `ghostty` — GTK4, already inside the Adwaita stack | same, plus `ucli apps` when the desktop is known |
+| `DESKTOP_TERMINAL_HYPRLAND` | `ghostty` — native wlroots/Wayland client, honours window rules; `kitty` is no longer in `DESKTOP_HYPRLAND_BASE` | same, plus `ucli apps` when the desktop is known |
+| `DESKTOP_TERMINAL_KDE` | `kitty` — a Qt desktop gets a terminal that needs nothing from GTK | same, plus `ucli apps` when the desktop is known |
 | `SHELL_TOOLS` | the shell tier: `zsh`, `git`, `curl`, `starship` — what `install-shell.sh` needs to build oh-my-zsh, clone the plugins and initialise the prompt | `ucli setup-system`/`setup-desktop` and `ucli cli` |
 | `CLI` | shell cosmetics on top: `eza bat zoxide atuin tealdeer glow fzf` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
@@ -45,12 +48,22 @@ curl, starship), so it works on a machine that never ran `ucli setup-system`.
 `ucli full-profile` (a.k.a. `install-packages.sh full`) is
 `base + cli + dev + gaming`.
 
+**The terminal follows the desktop, the browser does not.** `select_essentials`
+in `install-packages.sh` adds `DESKTOP_BROWSER` plus the one
+`DESKTOP_TERMINAL_<DE>` array, so GNOME and Hyprland get ghostty, KDE gets kitty,
+and a machine with no desktop gets neither. `~/.config/ghostty` and
+`~/.config/kitty` follow the same rule on the dotfiles side (`.chezmoiignore`
+asks `lookPath`), so you never end up with a terminal config for a terminal you
+do not have. Want one terminal everywhere? Point all three arrays at it.
+
 `base` does not install a desktop: `setup-desktop.sh` owns that step, so the
-skip/replace matrix, ghostty/firefox, the extension set and the snapshot all
+skip/replace matrix, firefox + terminal, the extension set and the snapshot all
 happen in one place. `install-packages.sh full` still includes `desktop`.
 
 `base` installs the zsh *binary* (it is in `BOOTSTRAP`, and the dev box and the
-dotfiles expect it) but takes no opinion on your login shell — oh-my-zsh,
+dotfiles expect it) but takes no opinion on your login shell. The bootstrap
+script in `install.sh` deliberately does not: a console-only box gets git,
+chezmoi and just, and nothing else until `ucli setup-system` runs — oh-my-zsh,
 plugins and `chsh` belong to `ucli cli`. Without it, `~/.zshrc` still works: it
 sources oh-my-zsh only when present and prints a hint otherwise.
 

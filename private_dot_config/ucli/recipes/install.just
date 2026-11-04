@@ -1,4 +1,4 @@
-# Set up the machine: base packages + desktop (DE, ghostty, firefox, snapshot).
+# Set up the machine: base packages + desktop (DE, firefox, terminal, shell, snapshot).
 [group('Install')]
 setup-system *ARGS:
     # base packages + desktop step (pass gnome/kde/hyprland, or omit to prompt)
@@ -21,7 +21,7 @@ setup-cli:
 # Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
 [group('Install')]
 setup-apps *ARGS:
-    # alias of `ucli apps`: ghostty/firefox + personal apps, flatpaks, Firefox config
+    # alias of `ucli apps`: firefox + terminal + personal apps, flatpaks, Firefox config
     @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
 # `ucli devmode` flags:

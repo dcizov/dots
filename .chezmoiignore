@@ -1,10 +1,18 @@
 {{- $terminal := index . "terminal" | default "none" -}}
 {{- $desktop := index . "desktop" | default "none" -}}
 {{- $role := index . "role" | default "dev" -}}
+{{- /* A desktop, any desktop: the binaries exist only once one is installed. */ -}}
+{{- $de := or (lookPath "gnome-shell") (lookPath "plasmashell") (lookPath "Hyprland") -}}
 
-# Only paths this repo actually ships are listed here. If you add a terminal- or
-# desktop-specific tree later (kitty/ghostty/hypr/gtk/kde), gate it on
-# `$terminal` / `$desktop` from .chezmoi.toml.tmpl the same way.
+# Only paths this repo actually ships are listed here.
+#
+# The rule for program-specific config: deploy it only when the program is
+# installed (or was explicitly asked for in .chezmoi.toml). `lookPath` is
+# evaluated on every apply, so the answer tracks the machine itself: a TTY-only
+# box straight out of archinstall gets ~/.local/bin/ucli and nothing else, and
+# the desktop step's apply — which runs after the packages land — is what
+# suddenly writes ~/.zshrc, starship.toml, ~/.config/ghostty and ~/.config/firefox.
+# Ignoring never deletes: files already in $HOME stay there, unmanaged.
 README.md
 AGENT_HANDOFF.md
 docs/
@@ -15,18 +23,34 @@ docs/
 # Bootstrap installer, served by install.wtfaq.tech
 install.sh
 
-# Terminal-specific configs: only deploy the terminal you actually use.
-{{- if ne $terminal "ghostty" -}}
+# Shell tier: zsh + its config arrive with the desktop step (install-shell.sh
+# chsh's and installs oh-my-zsh), not with the console bootstrap.
+{{- if not (lookPath "zsh") }}
+.zshrc
+.config/zsh/
+{{- end }}
+{{- if not (lookPath "starship") }}
+.config/starship.toml
+{{- end }}
+
+# Terminals: only the one that is installed (or named in .chezmoi.toml).
+# ghostty — gnome/hyprland; kitty — kde.
+{{- if not (or (lookPath "ghostty") (eq $terminal "ghostty")) }}
 .config/ghostty/
-{{- end -}}
-{{- if ne $terminal "kitty" -}}
+{{- end }}
+{{- if not (or (lookPath "kitty") (eq $terminal "kitty")) }}
 .config/kitty/
-{{- end -}}
+{{- end }}
+
+# Firefox config (user.js, extension lists) — desktop tier with the browser.
+{{- if not (or $de (lookPath "firefox")) }}
+.config/firefox/
+{{- end }}
 
 # Dev box: only deploy distrobox config if the role is dev.
-{{- if ne $role "dev" -}}
+{{- if ne $role "dev" }}
 .config/distrobox/
-{{- end -}}
+{{- end }}
 
 # Background images: not deployed by default; remove the lambda theme.
 .local/share/backgrounds/

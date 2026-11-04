@@ -17,9 +17,9 @@ Modes:
   cpu             CPU microcode
   gpu             GPU support
   fonts           fonts/themes
-  desktop         desktop environment packages (+ ghostty, firefox)
-  essentials      ghostty + firefox only (used by setup-desktop)
-  apps            desktop essentials (ghostty, firefox) + personal apps and overrides
+  desktop         desktop environment packages (+ that desktop's terminal & firefox)
+  essentials      firefox + the terminal for the chosen desktop (used by setup-desktop)
+  apps            firefox + that desktop's terminal + personal apps and overrides
   shell-overrides explicit shell override packages
   dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
@@ -183,10 +183,22 @@ select_desktop() {
     *) echo "Unsupported desktop: $desktop" >&2; exit 1 ;;
   esac
 
-  # ghostty + firefox: desktop-agnostic, and the dotfiles assume both exist.
-  if [[ "$desktop" != none && -n "$desktop" ]]; then
-    add_array DESKTOP_ESSENTIALS
-  fi
+  select_essentials
+}
+
+# The browser is desktop-agnostic; the terminal follows the desktop (GNOME and
+# Hyprland get ghostty, KDE gets kitty — see packages.bash for why). On a machine
+# with no desktop at all neither is added: a TTY-only box gets ucli and nothing
+# else, and ~/.config/<terminal> is not deployed for a program that is not there
+# (.chezmoiignore asks lookPath).
+select_essentials() {
+  case "$desktop" in
+    gnome)     add_array DESKTOP_TERMINAL_GNOME ;;
+    hyprland)  add_array DESKTOP_TERMINAL_HYPRLAND ;;
+    kde|plasma) add_array DESKTOP_TERMINAL_KDE ;;
+    none|"")   return 0 ;;
+  esac
+  add_array DESKTOP_BROWSER
 }
 
 select_packages() {
@@ -220,10 +232,12 @@ select_packages() {
       case "$gpu" in amd) add_array GPU_AMD ;; intel) add_array GPU_INTEL ;; nvidia) add_array GPU_NVIDIA ;; *) echo "Unknown GPU: $gpu" >&2 ;; esac
       ;;
     fonts) add_array FONTS_THEMES ;;
-    essentials) add_array DESKTOP_ESSENTIALS ;;
+    essentials) select_essentials ;;
     desktop) select_desktop ;;
     apps)
-      add_array DESKTOP_ESSENTIALS   # ghostty + firefox, idempotent with desktop mode
+      select_essentials              # the desktop's terminal, idempotent with desktop mode
+      add_array DESKTOP_BROWSER      # firefox is desktop-agnostic: `ucli apps` gets a
+                                     # browser even when the desktop cannot be detected
       add_array APPS
       add_array MANUAL_AUR       # shelly (AUR) — installed via the AUR helper
       case "$desktop" in gnome) add_array GNOME_APP_OVERRIDES ;; esac
@@ -253,7 +267,7 @@ select_packages() {
       ;;
     base|first-install)
       # No desktop here: setup-desktop.sh owns that step (replacement matrix,
-      # ghostty/firefox, GNOME extensions, snapshot). `ucli setup-system` chains
+      # firefox + terminal, GNOME extensions, snapshot). `ucli setup-system` chains
       # into it; `install-packages.sh desktop` remains for manual use.
       select_packages ucli-runtime
       select_packages bootstrap

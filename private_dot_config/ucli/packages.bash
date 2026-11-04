@@ -284,15 +284,34 @@ GNOME_OVERRIDE_EXTENSION_UUIDS=(
 # ArchWiki: gnome-boxes, gdm-settings, nautilus-* are all optional — remove
 # any you don't use to debloat your GNOME install.
 # https://wiki.archlinux.org/title/GNOME
-# Installed with every desktop (`setup-desktop`/`ucli setup-system`) and by
-# `ucli apps`, on gnome/hyprland/kde alike. Both are baked into the dotfiles:
-# ~/.config/ghostty is the only terminal config here, and Firefox carries the
-# Betterfox user.js, the extension list and the GNOME theme. Treating them as
-# "personal apps" meant a fresh `setup-system` machine had no browser and no
-# terminal until `ucli apps` ran.
-DESKTOP_ESSENTIALS=(
-  ghostty
+# The browser is desktop-agnostic, the terminal is not. Both are owned by the
+# desktop step (`setup-desktop`/`ucli setup-system`) and repeated by `ucli apps`
+# so a machine that skipped the desktop still gets them: Firefox carries the
+# Betterfox user.js, the extension list and the GNOME theme, and the terminal is
+# the one ~/.config/<terminal> is written for.
+DESKTOP_BROWSER=(
   firefox
+)
+
+# GNOME: ghostty. GTK4 + native Wayland, so it lands in the Adwaita/Libadwaita
+# stack GNOME already ships, and ~/.config/ghostty is the config this repo has.
+DESKTOP_TERMINAL_GNOME=(
+  ghostty
+)
+
+# Hyprland: ghostty as well, which is why `kitty` is no longer in
+# DESKTOP_HYPRLAND_BASE. Ghostty is a first-class wlroots/Wayland client, honours
+# Hyprland window rules, and one terminal config beats two. Swap this array for
+# `kitty` if you use kitty's scripting/session features.
+DESKTOP_TERMINAL_HYPRLAND=(
+  ghostty
+)
+
+# KDE: kitty. Plasma is a Qt desktop; Ghostty drags the GTK theme stack in and
+# looks foreign next to Konsole, while kitty needs nothing from the desktop.
+# Swap this for `ghostty` if you want one terminal on every machine.
+DESKTOP_TERMINAL_KDE=(
+  kitty
 )
 
 GNOME_APP_OVERRIDES=(
@@ -323,8 +342,8 @@ SERVICES_GNOME=(
 # Hyprland / KDE
 
 # Hyprland essentials: compositor + bar/launcher + portal + session tools.
+# The terminal is not here: DESKTOP_TERMINAL_HYPRLAND picks it (ghostty).
 # Optional / removable:
-#   kitty        -- terminal (replace with ghostty/alacritty/foot if preferred)
 #   dolphin      -- file manager (remove if you use another)
 #   wofi         -- app launcher (remove if you use rofi/wofi alternatives)
 #   grim/slurp   -- screenshot tools (remove if you don't screenshot)
@@ -333,7 +352,6 @@ SERVICES_GNOME=(
 DESKTOP_HYPRLAND_BASE=(
   hyprland
   dunst
-  kitty
   uwsm
   dolphin
   wofi
@@ -353,7 +371,16 @@ SERVICES_HYPRLAND=(
   sddm
 )
 
-DESKTOP_KDE_BASE=()
+# KDE essentials. The full `plasma` group brings the KDE application set that
+# most people never open (see DESKTOP_SKIP_KDE below); the terminal comes from
+# DESKTOP_TERMINAL_KDE.
+DESKTOP_KDE_BASE=(
+  plasma
+  plasma-wayland-session
+  dolphin
+  kate
+)
+
 DESKTOP_KDE_ADDITIONS=()
 
 SERVICES_KDE=(
@@ -364,7 +391,7 @@ SERVICES_KDE=(
 # Personal apps
 # -----------------------------
 
-# firefox moved to DESKTOP_ESSENTIALS: it belongs to the desktop, not to the
+# firefox lives in DESKTOP_BROWSER: it belongs to the desktop tier, not to the
 # optional personal-apps step.
 APPS=(
   bitwarden

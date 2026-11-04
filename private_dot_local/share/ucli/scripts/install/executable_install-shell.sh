@@ -38,6 +38,16 @@ done
 # WHICH plugins is not decided here: ~/.config/zsh/plugins.txt (chezmoi) is the
 # single list, also read by ~/.zshrc, the chezmoi repair hook and the dev box.
 plugins_file="${real_home}/.config/zsh/plugins.txt"
+# zsh was just installed, and zsh existing is exactly what .chezmoiignore waits
+# for before deploying the shell layer. A console box that runs `ucli cli` as its
+# first ucli command therefore has the binary but not the files: deploy them here
+# rather than telling the user to run chezmoi first.
+if [[ ! -r "$plugins_file" ]] && command -v chezmoi >/dev/null 2>&1; then
+  echo "shell config not deployed yet; running: chezmoi apply (shell layer)"
+  chezmoi apply -- "$real_home/.zshrc" "$real_home/.config/zsh" "$real_home/.config/starship.toml" \
+    >/dev/null 2>&1 \
+    || echo "warning: 'chezmoi apply' failed; run 'ucli chezmoi-apply' to deploy the shell layer" >&2
+fi
 if [[ ! -r "$plugins_file" ]]; then
   echo "error: $plugins_file missing — run 'ucli chezmoi-apply' first (it ships the plugin list)" >&2
   exit 1

@@ -83,12 +83,17 @@ CI runs the same script from `.github/workflows/check.yml` on every push and PR
 `ucli doctor` is the runtime counterpart
 (`~/.local/share/ucli/scripts/check/doctor.sh`). It walks the same layers the
 setup does and reports OK/MISSING/WARN per item: dotfiles (`chezmoi diff` empty,
-`.zshrc`, `plugins.txt`, justfile); shell (parses, login shell, oh-my-zsh,
-starship + `starship.toml`, plugins against `plugins.txt`, `local.zsh`, the
-available flags); ucli runtime (just/gum/pipx/gext/AUR helper/flatpak); apps
-(Firefox profile + Betterfox, snapper config, GNOME enabled-extension count);
-committed gates; dev box. Exit status is 1 when anything is MISSING; warnings
-alone do not fail it.
+justfile, `.bash_profile` PATH, `.zshrc`, `plugins.txt`); shell (parses, login
+shell, oh-my-zsh, starship + `starship.toml`, plugins against `plugins.txt`,
+`local.zsh`, the available flags, motd); ucli runtime (just/gum/pipx/gext/AUR
+helper/flatpak); apps (Firefox profile + Betterfox, snapper config, GNOME
+enabled-extension count); committed gates; dev box. Exit status is 1 when
+anything is MISSING; warnings alone do not fail it.
+
+On a console-only box (no desktop yet) the shell-tier items — `.zshrc`,
+`plugins.txt`, zsh, oh-my-zsh, starship — print as `—` with "expected on a
+console-only box" instead of MISSING: `.chezmoiignore` holds them back on purpose
+until `ucli setup-system` installs the programs they belong to.
 
 The heavier, network-bound checks stay manual:
 

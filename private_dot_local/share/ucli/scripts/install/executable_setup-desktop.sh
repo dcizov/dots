@@ -3,16 +3,19 @@
 #
 # Usage: sudo setup-desktop.sh <gnome|hyprland|kde>
 #
-# Installs the desktop package set, creates a Snapper snapshot named
-# "<DE> Setup", and leaves the system ready for ucli setup (devmode/apps).
+# Installs the desktop package set, then the firefox + terminal pair that desktop
+# is configured for, then the shell tier, then GNOME extensions, then applies the
+# dotfiles that need those programs to exist, then snapshots as "<DE> Setup".
 #
 # Intended for Arch minimal (archinstall) post-console-first-boot flow:
-#   1. sudo install.sh            # bootstrap chezmoi/ucli
-#   2. chezmoi apply              # deploy dotfiles
-#   3. sudo setup-desktop.sh gnome  # install DE + snapshot
-#   4. ucli setup-snapshots       # system-level snapper/limine (if not done)
-#   5. ucli devmode               # dev packages
-#   6. ucli apps                  # personal apps
+#   1. curl -fsSL https://install.wtfaq.tech | bash   # git, chezmoi, just, ucli
+#   2. ucli setup-snapshots        # snapper + limine, snapshot #1 (btrfs)
+#   3. ucli setup-system gnome     # base packages, then this script
+#   4. ucli devmode / ucli apps    # optional extras
+#
+# Everything a TTY-only machine needs before step 3 is ucli itself: until the
+# desktop exists, .chezmoiignore keeps ~/.zshrc, starship, ~/.config/ghostty and
+# ~/.config/firefox out of $HOME, so the fresh-install snapshot stays minimal.
 set -euo pipefail
 
 choose=0
@@ -112,11 +115,12 @@ install_desktop_with_replacements() {
       all_pkgs=("${DESKTOP_GNOME_BASE[@]}")
       ;;
     hyprland)
+      # No terminal here: install-packages.sh essentials picks it per desktop.
       all_pkgs=(hyprland uwsm xdg-desktop-portal-hyprland sddm
-                kitty dolphin wofi grim slurp dunst)
+                dolphin wofi grim slurp dunst)
       ;;
     kde)
-      all_pkgs=(plasma plasma-wayland-session sddm kwi dolphin kate)
+      all_pkgs=(plasma plasma-wayland-session sddm dolphin kate)
       ;;
   esac
 
@@ -173,8 +177,8 @@ if (( choose )); then
     hyprland)
       groups[core]="Hyprland compositor + session essentials (required)"
       pkgs[core]="hyprland uwsm xdg-desktop-portal-hyprland sddm"
-      groups[terminal]="Terminal (kitty — replace with ghostty if preferred)"
-      pkgs[terminal]="kitty"
+      groups[terminal]="Terminal (ghostty, the configured one)"
+      pkgs[terminal]="ghostty"
       groups[file-manager]="File manager (dolphin — remove if unused)"
       pkgs[file-manager]="dolphin"
       groups[launcher]="App launcher (wofi — remove if unused)"
@@ -187,8 +191,10 @@ if (( choose )); then
     kde)
       groups[core]="KDE Plasma desktop (required)"
       pkgs[core]="plasma plasma-wayland-session sddm"
-      groups[apps]="Core KDE apps (kwi dolphin kate)"
-      pkgs[apps]="kwi dolphin kate"
+      groups[apps]="Core KDE apps (dolphin kate)"
+      pkgs[apps]="dolphin kate"
+      groups[terminal]="Terminal (kitty, the configured one on Plasma)"
+      pkgs[terminal]="kitty"
       ;;
   esac
 
@@ -344,9 +350,10 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" fonts
 fi
 
-# The desktop's own apps: ghostty (the configured terminal) and firefox (the
-# configured browser). Desktop-agnostic, so they land on gnome/hyprland/kde; the
-# DE install above only covers DE packages and the replacement matrix.
+# The desktop's own apps: firefox (the configured browser, on every desktop) plus
+# the terminal that desktop is configured for — ghostty on gnome/hyprland, kitty
+# on kde. The DE install above only covers DE packages and the replacement
+# matrix, and it never installs a terminal it would then have two of.
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" essentials || true
 fi
@@ -359,6 +366,20 @@ fi
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" shell-tools || true
 fi
+
+# Deploy the dotfiles that only make sense now that the desktop exists: ~/.zshrc,
+# starship, ~/.config/<terminal>, ~/.config/firefox. .chezmoiignore checks for the
+# programs with lookPath, so a TTY-only box gets none of them — this is the apply
+# that makes them appear. Runs as the real user (root-owned $HOME would be wrong)
+# and is not fatal: a machine without chezmoi initialized still gets a desktop.
+if [[ -x "$(command -v chezmoi || true)" ]] && [[ -d "$real_home/.local/share/chezmoi" ]]; then
+  echo "Applying dotfiles for $real_user (shell, terminal, browser configs) ..."
+  runuser -u "$real_user" -- env HOME="$real_home" chezmoi apply -v \
+    || echo "warning: chezmoi apply failed; run 'ucli chezmoi-apply' as $real_user" >&2
+else
+  echo "note: chezmoi not initialized for $real_user; run 'ucli chezmoi-apply' after bootstrap." >&2
+fi
+
 if [[ -x "$script_dir/install-shell.sh" ]]; then
   echo "Setting up the shell (oh-my-zsh, plugins, starship) for $real_user ..."
   runuser -u "$real_user" -- env UCLI_SKIP_PACKAGES=1 "$script_dir/install-shell.sh" \
@@ -394,5 +415,5 @@ fi
   || echo "warning: snapshot skipped (no snapper config yet — run 'ucli setup-snapshots')" >&2
 
 echo "Desktop $desktop installed and snapshot created."
-echo "Next: run 'ucli setup-snapshots' (if not already done), then 'ucli devmode' and 'ucli apps'."
+echo "Next: log out and back in (zsh + extensions), then 'ucli devmode' and 'ucli apps'."
 echo "To backup GNOME settings: ucli backup-gnome-settings"
