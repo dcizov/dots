@@ -25,19 +25,13 @@ mirrors *ARGS:
     # rate-mirrors over /etc/pacman.d/mirrorlist (+ cachyos-mirrorlist), with a backup
     @~/.local/share/ucli/scripts/system/rate-mirrors.sh {{ARGS}}
 
-# System menu. Use `ucli --choose` to pick a system recipe interactively.
+# Show OS, CPU, disk and firmware facts — the quick "where am I" dump.
 [group('System')]
 system:
     # show system status
     @~/.local/share/ucli/scripts/system/system-check.sh
 
-# Show system status.
-_check:
-    @~/.local/share/ucli/scripts/system/system-check.sh
 
-# Dry-run snapshot setup.
-_snapshots-dry-run:
-    sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh --dry-run
 
 # Show or hide the login banner (fastfetch). on = login shells, always = every shell.
 [group('System')]
@@ -90,14 +84,12 @@ fingerprint *ARGS:
 #   ucli snapshot --dry-run             show what would happen
 # Same script every other step calls, so a snapshot taken here and one taken by
 # setup-desktop/setup-snapshots cannot drift apart.
+# Take a snapshot now, with an optional description.
 [group('System')]
 snapshot *ARGS:
     # create a snapper snapshot (description and flags pass straight through)
     @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh {{ARGS}}
 
-# Internal fresh-install snapshot helper. setup-snapshots calls this in its script.
-_fresh-snapshot:
-    @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh
 
 # Install a desktop environment and snapshot afterwards.
 # Usage: just setup-desktop                    (full DE set, prompts for gnome/hyprland/kde)
@@ -131,15 +123,3 @@ backup-gnome-settings:
 restore-gnome-settings:
     # restore dconf settings + re-enable extensions
     @~/.local/share/ucli/scripts/install/restore-gnome-settings.sh
-
-# Validate all package arrays.
-_validate-all:
-    @~/.local/share/ucli/scripts/install/validate-packages.sh --all
-
-# Show journal from this boot.
-_logs-this-boot:
-    journalctl --no-hostname -b 0
-
-# Show journal from last boot.
-_logs-last-boot:
-    journalctl --no-hostname -b -1

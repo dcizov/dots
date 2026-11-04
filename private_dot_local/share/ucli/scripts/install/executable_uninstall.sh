@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# yes_flag is read by confirm() in lib/common.sh, not in this file.
+# shellcheck disable=SC2034
 set -euo pipefail
 
 # Reverse what chezmoi/ucli deployed in this user's home directory.
@@ -43,11 +45,9 @@ if ! declare -F ui_confirm >/dev/null 2>&1; then
   ui_confirm() { local a; read -r -p "$1 [y/N] " a; [[ "${a:-}" == [yY]* ]]; }
 fi
 
-confirm() {
-  local prompt="$1"
-  (( yes_flag )) && return 0
-  ui_confirm "$prompt"
-}
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null

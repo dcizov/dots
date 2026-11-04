@@ -8,7 +8,7 @@
 #   ${XDG_STATE_HOME:-$HOME/.local/state}/ucli/gates/<scope>/<name>
 #
 # Usage:
-#   . "$HOME/.config/ucli/scripts/lib/version-script.sh"
+#   . "$HOME/.local/share/ucli/scripts/lib/version-script.sh"
 #   if vs_check gnome-extensions user 3; then
 #     do_the_work && vs_commit gnome-extensions user 3
 #   fi

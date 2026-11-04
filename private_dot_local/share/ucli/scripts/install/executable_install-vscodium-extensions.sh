@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ~/.local/share/ucli/scripts/install/executable_install-vscodium-extensions.sh
-#   # or via ucli:   ucli install-vscodium-ext
+#   # or via ucli:   ucli vscodium-extensions
 #
 # Lines starting with '#' are ignored.
 # ============================================================================
@@ -25,7 +25,7 @@ fi
 
 if ! command -v codium >/dev/null 2>&1; then
     echo "error: 'codium' not found on PATH." >&2
-    echo "       Install VSCodium first (see packages.bash: ucli install-dev)." >&2
+    echo "       Install VSCodium first: ucli devmode (or ucli setup-system) ships it." >&2
     exit 1
 fi
 
@@ -33,7 +33,7 @@ fi
 # the token is a hash of extensions.txt, so the slow `codium --install-extension`
 # loop only runs when the list actually changed. `--force` re-runs it anyway.
 # shellcheck source=/dev/null
-. "${HOME}/.config/ucli/scripts/lib/version-script.sh"
+. "${HOME}/.local/share/ucli/scripts/lib/version-script.sh"
 EXT_VERSION="$(vs_hash "$EXT_FILE")"
 FORCE=0
 [[ "${1:-}" == "--force" ]] && FORCE=1

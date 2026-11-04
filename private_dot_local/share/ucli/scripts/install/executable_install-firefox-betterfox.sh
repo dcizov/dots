@@ -21,7 +21,7 @@ if ! command -v firefox >/dev/null 2>&1; then
 fi
 
 # Where Firefox keeps its profiles (147+ XDG, legacy, flatpak) lives in one place.
-fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
 if [[ ! -r "$fx_lib" ]]; then
   echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
   exit 1
@@ -56,8 +56,8 @@ fi
 # copy only happens when Betterfox (or one of your overrides) actually changed.
 # --force re-copies into every profile.
 # shellcheck source=/dev/null
-if [[ -r "$real_home/.config/ucli/scripts/lib/version-script.sh" ]]; then
-  source "$real_home/.config/ucli/scripts/lib/version-script.sh"
+if [[ -r "$real_home/.local/share/ucli/scripts/lib/version-script.sh" ]]; then
+  source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
   force=0
   [[ "${1:-}" == "--force" ]] && force=1
   betterfox_version="$(vs_hash "$SOURCE_USER_JS")"

@@ -81,7 +81,7 @@ fi
 # The "ucli layer" on top of stock zsh (aliases, functions, fzf, prompt) is
 # chezmoi's: ~/.config/zsh/conf.d/*.zsh, pre-omz.zsh and ~/.config/starship.toml.
 if [[ ! -d "$real_home/.config/zsh/conf.d" ]]; then
-  echo "warning: ~/.config/zsh/conf.d not found — run 'ucli chezmoi-apply' to deploy the ucli shell layer" >&2
+  echo "warning: ~/.config/zsh/conf.d not found — run 'ucli chezmoi-apply' to deploy ucli's zsh layer" >&2
 fi
 if [[ ! -r "$real_home/.config/starship.toml" ]]; then
   echo "warning: ~/.config/starship.toml not found — starship will run with its default prompt (run 'ucli chezmoi-apply')" >&2

@@ -3,7 +3,7 @@
 #   ujust update          -> ucli update
 #   ujust clean-system    -> ucli clean-system   (dangling containers only)
 #   ujust device-info     -> ucli report         (written to a file, no pastebin)
-#   ujust logs-this-boot  -> ucli logs           (menu: this/last boot, devbox)
+#   ujust logs-this-boot  -> ucli logs           (menu: this/last boot, devbox, pacman)
 #   ujust bios, bios-info -> ucli bios, ucli bios-info
 #   ujust changelogs      -> ucli changelogs     (from /var/log/pacman.log)
 #   ujust check-local-overrides -> ucli config-audit (.pacnew + pacman -Qkk)
@@ -160,11 +160,32 @@ report:
     printf 'wrote %s (%s lines)\n' "$out" "$(wc -l <"$out")"
     printf 'no env, no keys, no tokens collected\n'
 
-# Show system logs. Use `ucli --choose` to pick a log source interactively.
+# The same source list the `ujust logs-this-boot` / `logs-last-boot` pair
+# exposed, as one entry: this boot, the boot before it, the dev box provisioning
+# log, the last pacman transaction. Non-interactive runs print this boot, so a
+# pipe never blocks on a menu.
+# Show the journal: this boot, last boot, dev box or the last pacman transaction.
 [group('Maintenance')]
 logs:
-    # show journal from this boot
-    journalctl --no-hostname -b 0
+    #!/usr/bin/env bash
+    set -euo pipefail
+    . "$HOME/.local/share/ucli/scripts/lib/ui.sh"
+    if ! ui_tty; then journalctl --no-hostname -b 0; exit 0; fi
+    # menu labels carry no comma: gum's --selected splits on it
+    src="$(ui_choose "Which log?" \
+      'boot|journal from this boot' \
+      'last|journal from the boot before it' \
+      'devbox|the dev box provisioning log (apt · nvm · php)' \
+      'pacman|packages changed in the last pacman transaction')" || exit 0
+    case "$src" in
+    boot) journalctl --no-hostname -b 0 ;;
+    last) journalctl --no-hostname -b -1 ;;
+    devbox)
+        command -v distrobox >/dev/null 2>&1 || { printf 'distrobox is not installed (ucli devmode)\n' >&2; exit 1; }
+        distrobox enter dev -- sudo tail -n 100 /var/log/devbox-provision.log
+        ;;
+    pacman) just --justfile "{{justfile()}}" changelogs ;;
+    esac
 
 # Reboot into the firmware settings (dual boot, boot order, secure boot).
 [group('Maintenance')]
@@ -175,8 +196,9 @@ bios:
     [ -d /sys/firmware/efi ] || { printf 'legacy BIOS: reboot and press the firmware key\n' >&2; exit 1; }
     systemctl reboot --firmware-setup
 
-# Show firmware/board details.
-[group('Maintenance')]
+# Board and firmware details — folded into `ucli system`; kept because it is
+# the one thing worth reading on a machine you are about to reflash.
+[private]
 bios-info:
     #!/usr/bin/env bash
     # show motherboard/BIOS firmware details
@@ -219,7 +241,7 @@ state:
     #!/usr/bin/env bash
     # versioned setup gates + devmode marker
     set -euo pipefail
-    . "$HOME/.config/ucli/scripts/lib/version-script.sh"
+    . "$HOME/.local/share/ucli/scripts/lib/version-script.sh"
     statedir="${XDG_STATE_HOME:-$HOME/.local/state}/ucli"
     printf 'state dir: %s\n\n' "$statedir"
 

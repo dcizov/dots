@@ -42,7 +42,7 @@ if (( ! take_snapshot )); then UCLI_NO_SNAPSHOT=1; fi
 export UCLI_NO_SNAPSHOT
 
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 
 # Preflight: the desktop step is the destructive one (packages, chsh, a snapshot

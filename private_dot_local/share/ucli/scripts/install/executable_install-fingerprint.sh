@@ -38,15 +38,13 @@ done
 
 pam_file="/etc/pam.d/system-auth"
 
-as_root() {
-  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then "$@"; else sudo "$@"; fi
-}
-
-have() { command -v "$1" >/dev/null 2>&1; }
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 has_reader() {
   # lib/detect.sh knows the vendor/product ids (138a, 06cb, 27c6, 08ff, 0483)
-  local lib="$real_home/.config/ucli/scripts/lib/detect.sh"
+  local lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
   if [[ -r "$lib" ]]; then
     # shellcheck source=/dev/null
     source "$lib"
@@ -66,7 +64,7 @@ enrolled_fingers() {
 }
 
 desktop_name() {
-  local lib="$real_home/.config/ucli/scripts/lib/detect.sh"
+  local lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
   if [[ -r "$lib" ]]; then
     # shellcheck source=/dev/null
     source "$lib"
@@ -76,7 +74,9 @@ desktop_name() {
   fi
 }
 
-ui_hint() {
+# Prints the desktop's own enrollment page. Named enroll_hint, not ui_hint:
+# ui_hint is the shared dim one-liner in lib/ui.sh.
+enroll_hint() {
   case "$(desktop_name)" in
     gnome) cat <<'GNOME'
     GNOME:  Settings → System → Users → Unlock → Fingerprint Login → + Add Fingerprint
@@ -106,7 +106,7 @@ if [[ "$mode" == status ]]; then
   fi
   printf 'PAM (system-auth): %s\n' "$(pam_wired && echo 'wired (login, sudo, unlock)' || echo 'not wired (--pam)')"
   echo
-  ui_hint
+  enroll_hint
   exit 0
 fi
 
@@ -199,7 +199,7 @@ fi
 
 echo
 echo "==> fingerprint reader ready"
-ui_hint
+enroll_hint
 cat <<'NOTES'
 
     Notes:

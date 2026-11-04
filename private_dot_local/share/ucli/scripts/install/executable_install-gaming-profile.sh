@@ -7,7 +7,7 @@ real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 distro="$(ucli_norm "$(detect_distro)")"
 if [[ "$distro" == "cachyos" ]]; then

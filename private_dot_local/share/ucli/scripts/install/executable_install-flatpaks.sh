@@ -50,12 +50,11 @@ if [[ -r "$personal_file" ]]; then
   source "$personal_file"
 fi
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
-norm() { tr '[:upper:]' '[:lower:]' <<<"${1:-}" | tr - _; }
-desktop="$(norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
-role="$(norm "$(detect_role)")"
-gaming="$(norm "$(detect_gaming)")"
+desktop="$(ucli_norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
+role="$(ucli_norm "$(detect_role)")"
+gaming="$(ucli_norm "$(detect_gaming)")"
 
 apps=()
 add_array() { local name="$1"; eval 'apps+=("${'"$name"'[@]:-}")'; }

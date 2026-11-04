@@ -28,7 +28,7 @@ for arg in "$@"; do
 done
 
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 # Detect desktop for gnome-only blocks (firefox-gnome-theme, gnome extensions)
 desktop="$(detect_desktop 2>/dev/null || echo none)"
@@ -36,7 +36,7 @@ desktop="$(detect_desktop 2>/dev/null || echo none)"
 "$script_dir/install-packages.sh" apps
 "$script_dir/install-flatpaks.sh" apps
 
-fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
 if [[ -r "$fx_lib" ]]; then
   # shellcheck source=/dev/null
   source "$fx_lib"

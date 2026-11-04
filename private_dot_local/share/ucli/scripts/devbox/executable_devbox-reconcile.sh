@@ -3,7 +3,7 @@
 # devbox-reconcile.sh — bring THIS machine's `dev` distrobox in line with the
 #                       chezmoi-managed files in ~/.config/distrobox.
 #
-# chezmoi-managed: edit private_dot_config/ucli/scripts/devbox/
+# chezmoi-managed: edit private_dot_local/share/ucli/scripts/devbox/
 #                  executable_devbox-reconcile.sh in the dotfiles repo.
 #
 # Division of labour: chezmoi applies files (this script, dev.ini, the

@@ -23,7 +23,9 @@ while (($#)); do
   esac
 done
 
-have() { command -v "$1" >/dev/null 2>&1; }
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 echo "== config drift =="
 

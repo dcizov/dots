@@ -37,7 +37,7 @@ fi
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
-fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
 if [[ ! -r "$fx_lib" ]]; then
   echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
   exit 1

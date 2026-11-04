@@ -33,9 +33,9 @@ for arg in "$@"; do
   esac
 done
 
-as_root() {
-  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then "$@"; else sudo "$@"; fi
-}
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 unit="syncthing@${real_user}.service"
 

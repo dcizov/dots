@@ -38,13 +38,9 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 0
 fi
 
-as_root() {
-  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    "$@"
-  else
-    sudo "$@"
-  fi
-}
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 in_docker_group() { id -nG "$real_user" 2>/dev/null | tr ' ' '\n' | grep -qx docker; }
 service_enabled() { systemctl is-enabled docker.service >/dev/null 2>&1; }

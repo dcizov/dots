@@ -19,7 +19,13 @@
 #      `add_array X` in install-packages.sh must exist in packages.bash. This is
 #      the check that catches a rename (SHELL_DEPS -> SHELL_TOOLS) on one side
 #      only.
-#   5. shellcheck (if installed), severity=warning: the repo is clean at that
+#   5. Stale verbs: every `ucli <word>` in the docs, the recipes and the scripts
+#      must still name a recipe. A removed or renamed recipe left behind in a
+#      doc, a comment or an `echo` is the failure mode this repo keeps hitting
+#      (the `gnome` menu, `devbox-shell` and `full-profile` verbs were all named
+#      in docs long after they stopped existing); the prose allowlist below is
+#      the same idea as shellcheck's disable comments, and it must stay short.
+#   6. shellcheck (if installed), severity=warning: the repo is clean at that
 #      level, and a warning is exactly the class of thing that turns into a bug
 #      later (unused state, word splitting, masked exit codes). Note the version
 #      gap: CI installs Ubuntu's shellcheck (0.9.x), a workstation may have 0.11,
@@ -73,13 +79,13 @@ echo
 # ---------------------------------------------------------------------------
 # 1. bash -n
 # ---------------------------------------------------------------------------
-# Two trees hold shell: ~/.local/share/ucli/scripts (run directly) and
-# ~/.config/ucli/scripts (the libs they source: detect, ui, choose,
-# version-script, firefox). The libs used to be skipped — a syntax error there
-# breaks every caller and nothing caught it.
+# One tree holds shell: ~/.local/share/ucli/scripts, both the scripts that run
+# directly and the libs they source (aur, detect, firefox, ui, version-script).
+# The libs used to be skipped — a syntax error there breaks every caller and
+# nothing caught it.
 bash_files=()
 while IFS= read -r f; do bash_files+=("$f"); done < <(
-  find "$scripts_dir" "$config_dir/scripts" -name '*.sh' -type f 2>/dev/null | sort
+  find "$scripts_dir" -name '*.sh' -type f 2>/dev/null | sort
 )
 for f in "${extra_shell[@]:-}"; do
   [[ -n "$f" ]] && bash_files+=("$f")
@@ -177,7 +183,56 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5. shellcheck (optional)
+# 5. stale verbs: `ucli <word>` in docs/recipes/scripts must name a recipe
+# ---------------------------------------------------------------------------
+justfile="$(find "$config_dir" -maxdepth 1 -name 'justfile' -type f | head -1)"
+recipes_dir=""
+[[ -n "$justfile" ]] && recipes_dir="$(dirname "$justfile")/recipes"
+
+if [[ -n "$justfile" && -r "$justfile" && -d "$recipes_dir" ]]; then
+  recipe_names="$(
+    {
+      sed -n 's/^\([A-Za-z_][A-Za-z0-9_-]*\)\([[:space:]][^:]*\)\?:[[:space:]]*$/\1/p' "$justfile"
+      for f in "$recipes_dir"/*.just; do
+        sed -n 's/^\([A-Za-z_][A-Za-z0-9_-]*\)\([[:space:]][^:]*\)\?:[[:space:]]*$/\1/p' "$f"
+      done
+    } | sort -u
+  )"
+
+  # Words that follow "ucli" in ordinary prose. None of these is a recipe —
+  # keep it that way, or the check stops being able to see a real rename.
+  prose="runtime scripts script wrapper itself step only layer is works tree
+  recipes recipe pacman packages on machine home command and"
+
+  mapfile -t scan_files < <(
+    find "$scripts_dir" "$config_dir" -type f \
+      \( -name '*.sh' -o -name '*.just' -o -name '*.bash' -o -name '*.md' -o -name '*.zsh' \) 2>/dev/null
+    [[ -f "$root/README.md" ]] && echo "$root/README.md"
+    [[ -d "$root/docs" ]] && find "$root/docs" -name '*.md' -type f
+  )
+
+  stale=0
+  while IFS= read -r hit; do
+    [[ -n "$hit" ]] || continue
+    tok="${hit##*ucli }"
+    grep -qxF -- "$tok" <<<"$recipe_names" && continue
+    for word in $prose; do
+      [[ "$tok" == "$word" ]] && continue 2
+    done
+    fail_msg x "ucli $tok is not a recipe (${hit#"$root"/})"
+    stale=1
+  done < <(
+    if ((${#scan_files[@]})); then
+      grep -HnoE '(^|[^[:alnum:]_./-])ucli [a-z][a-z0-9_-]*' "${scan_files[@]}" 2>/dev/null || true
+    fi
+  )
+  [[ $stale -eq 0 ]] && note "verbs" "$(wc -w <<<"$recipe_names") recipes, no stale \`ucli\` names"
+else
+  fail_msg x "cannot check stale verbs (justfile / recipes/ missing)"
+fi
+
+# ---------------------------------------------------------------------------
+# 6. shellcheck (optional)
 # ---------------------------------------------------------------------------
 if command -v shellcheck >/dev/null 2>&1; then
   sc_fail=0

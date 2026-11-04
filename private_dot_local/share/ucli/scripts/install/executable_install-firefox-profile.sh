@@ -38,7 +38,7 @@ if ! command -v firefox >/dev/null 2>&1; then
 fi
 
 # Profile locations (147+ XDG, legacy ~/.mozilla, flatpak) live in one place.
-fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
 if [[ ! -r "$fx_lib" ]]; then
   echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
   exit 1
@@ -93,7 +93,7 @@ ensure_firefox_profile
 # firefox-gnome-theme — only makes sense on GNOME, where it also needs the
 # user-theme extension to apply.
 desktop="none"
-detect_lib="$real_home/.config/ucli/scripts/lib/detect.sh"
+detect_lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
 if [[ -r "$detect_lib" ]]; then
   desktop="$( (
     # shellcheck source=/dev/null

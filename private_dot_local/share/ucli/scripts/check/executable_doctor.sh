@@ -21,7 +21,9 @@ warn() { printf '  %-10s %s\n' "WARN" "$1"; warned=$((warned + 1)); }
 info() { printf '  %-10s %s\n' "—" "$1"; }
 section() { printf '\n== %s ==\n' "$1"; }
 
-have() { command -v "$1" >/dev/null 2>&1; }
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 # A desktop exists once one of its session binaries does. Before that the box is a
 # console install: .chezmoiignore keeps the shell/terminal/browser config out of
@@ -187,9 +189,10 @@ section "apps"
 if have firefox; then
   # Firefox 147+ keeps profiles in ~/.config/mozilla/firefox; older installs stay in
   # ~/.mozilla/firefox. lib/firefox.sh knows which one this machine uses.
-  if [[ -r "$config_dir/scripts/lib/firefox.sh" ]]; then
+  lib_dir="$real_home/.local/share/ucli/scripts/lib"
+  if [[ -r "$lib_dir/firefox.sh" ]]; then
     # shellcheck source=/dev/null
-    source "$config_dir/scripts/lib/firefox.sh"
+    source "$lib_dir/firefox.sh"
     profiles="$(fx_profile_root "$real_home")"
     if [[ -f "$profiles/profiles.ini" ]]; then
       ok "firefox profile root: $(fx_short_root "$profiles" "$real_home")"
@@ -208,7 +211,7 @@ if have firefox; then
       warn "firefox has no profile yet (ucli apps creates one headlessly)"
     fi
   else
-    warn "$config_dir/scripts/lib/firefox.sh missing (run: ucli chezmoi-apply)"
+    warn "$lib_dir/firefox.sh missing (run: ucli chezmoi-apply)"
   fi
 else
   warn "firefox missing (run: ucli setup-system / ucli apps)"

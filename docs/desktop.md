@@ -37,7 +37,9 @@ https://aur.archlinux.org/packages/shelly
 ## GNOME
 
 ```bash
-ucli gnome                GNOME menu (extensions, settings backup, apply)
+ucli setup-extensions     install + enable the managed extension sets
+ucli backup-gnome-settings    dconf + extension list -> ~/.local/share/ucli/settings/gnome
+ucli restore-gnome-settings   put them back
 ```
 
 GNOME is curated in `packages.bash`. Package group contents from

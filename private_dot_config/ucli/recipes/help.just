@@ -17,13 +17,12 @@ usage:
     @printf '%s\n' ''
     @printf '%s\n' 'Each step is rerunnable and also manual:'
     @printf '%s\n' '  ucli setup-desktop [gnome|kde|hyprland]  # DE only (+ snapshot)'
-    @printf '%s\n' '  ucli setup-cli / setup-apps              # aliases of cli / apps'
+    @printf '%s\n' '  ucli setup-extensions  # GNOME only: managed extension sets'
     @printf '%s\n' ''
     @printf '%s\n' 'Snapshots: every step takes one from the same script; --no-snapshot'
     @printf '%s\n' '           (or UCLI_NO_SNAPSHOT=1) turns them all off.'
     @printf '%s\n' '  ucli devmode           # developer wizard: dev-cli + dev packages + dev box'
     @printf '%s\n' '  ucli gaming            # gaming profile'
-    @printf '%s\n' '  ucli install-paru      # AUR helper (idempotent)'
     @printf '%s\n' '  ucli vscodium-extensions'
     @printf '%s\n' '  ucli chezmoi-apply     # deploy dotfiles'
     @printf '%s\n' '  ucli devbox-reconcile  # create/update dev box'
@@ -34,13 +33,13 @@ usage:
     @printf '%s\n' '  ucli ms-fonts          # AUR ttf-ms-fonts (Arial, Times New Roman, …)'
     @printf '%s\n' ''
     @printf '%s\n' 'GNOME:'
-    @printf '%s\n' '  ucli gnome             # extensions, settings backup/restore'
+    @printf '%s\n' '  ucli setup-extensions  # managed extension sets (idempotent)'
     @printf '%s\n' '  ucli backup-gnome-settings'
     @printf '%s\n' '  ucli restore-gnome-settings'
     @printf '%s\n' ''
     @printf '%s\n' 'System:'
     @printf '%s\n' '  ucli setup-snapshots   # snapper + limine'
-    @printf '%s\n' '  ucli system            # checks and maintenance helpers'
+    @printf '%s\n' '  ucli system            # OS, CPU, disk, firmware facts'
     @printf '%s\n' '  ucli mirrors           # rank pacman mirrors (rate-mirrors, keeps a .bak)'
     @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
     @printf '%s\n' '  ucli motd [on|always|off]  # login banner (fastfetch)'
@@ -58,10 +57,11 @@ usage:
     @printf '%s\n' '  ucli inventory         # packages, apps, settings'
     @printf '%s\n' ''
     @printf '%s\n' 'Dev box:'
-    @printf '%s\n' '  ucli devbox            # menu: reconcile, shell, versions, …'
+    @printf '%s\n' '  ucli devbox            # enter the box (reconciles first)'
     @printf '%s\n' ''
     @printf '%s\n' 'Browse commands:'
-    @printf '%s\n' '  ucli --choose'
+    @printf '%s\n' '  ucli --choose          # fzf picker'
+    @printf '%s\n' '  ucli --list            # flat list for grep'
     @printf '%s\n' ''
     @printf '%s\n' 'Direct tools:'
     @printf '%s\n' '  chezmoi diff && chezmoi apply -v'
@@ -89,10 +89,3 @@ check:
 validate:
     @~/.local/share/ucli/scripts/install/validate-packages.sh
 
-# Print config paths.
-_paths:
-    @printf '%s\n' '~/.zshrc' '~/.config/zsh' '~/.config/ucli' \
-    '~/.config/distrobox/dev.ini' '~/.config/distrobox/devbox.env' \
-    '~/.config/distrobox/provision-dev.sh' \
-    '~/.config/dev-services/compose.yml' '~/.local/bin/ucli' \
-    '~/.local/share/chezmoi'

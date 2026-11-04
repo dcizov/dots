@@ -1,37 +1,65 @@
 #!/usr/bin/env bash
+# Machine facts: OS, kernel, desktop, CPU, memory, root filesystem (btrfs
+# subvolumes included) and firmware. `ucli profile` shows what ucli itself
+# configured; this shows what the machine actually is. Read-only, no sudo —
+# the btrfs subvolume count is the only root-read and it is skipped when the
+# sudo timestamp is cold.
 set -euo pipefail
 
-echo "== os-release =="
-cat /etc/os-release | sed -n '1,8p'
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/ui.sh
+. "$script_dir/../lib/ui.sh"
 
-echo
-printf 'CPU vendor: '
-grep -m1 'vendor_id' /proc/cpuinfo 2>/dev/null | awk -F': ' '{print $2}' || true
+field() { printf '  %-13s %s\n' "$1" "$2"; }
 
-echo
-printf 'Root fs: '
-findmnt -no FSTYPE /
-printf 'Root source: '
-findmnt -no SOURCE /
-printf 'Root options: '
-findmnt -no OPTIONS /
+ui_rule "os"
+field distro "$(. /etc/os-release && printf '%s %s' "$NAME" "$VERSION_ID")"
+field kernel "$(uname -r)"
+field arch "$(uname -m)"
+field desktop "${XDG_CURRENT_DESKTOP:-(console)}"
+field session "${XDG_SESSION_TYPE:-tty}"
 
-echo
-if [[ "$(findmnt -no FSTYPE /)" == btrfs ]]; then
-  echo "== btrfs subvolumes =="
-  sudo btrfs subvolume list / | sed -n '1,80p'
+ui_rule "cpu and memory"
+field cpu "$(grep -m1 'model name' /proc/cpuinfo | awk -F': ' '{ print $2 }')"
+field cores "$(nproc)"
+field memory "$(awk '/^MemTotal:/ { printf "%.1f GiB\n", $2 / 1048576 }' /proc/meminfo)"
+
+ui_rule "root filesystem"
+root_fs="$(findmnt -no FSTYPE /)"
+field type "$root_fs"
+field device "$(findmnt -no SOURCE /)"
+field options "$(findmnt -no OPTIONS /)"
+if [[ "$root_fs" == btrfs ]]; then
+  if sudo -n true 2>/dev/null; then
+    field subvolumes "$(sudo -n btrfs subvolume list / | grep -c .) (sudo btrfs subvolume list /)"
+  else
+    field subvolumes "unknown (sudo btrfs subvolume list /)"
+  fi
+fi
+
+ui_rule "firmware"
+# /sys/class/dmi/id is world-readable: no dmidecode, no sudo. dmidecode is only
+# a fallback for kernels built without dmi-id.
+dmi=/sys/class/dmi/id
+if [[ -d "$dmi" ]]; then
+  while IFS='|' read -r key label; do
+    [[ -r "$dmi/$key" ]] || continue
+    field "$label" "$(cat "$dmi/$key")"
+  done <<'PAIRS'
+sys_vendor|vendor
+product_name|product
+product_version|version
+board_name|board
+bios_vendor|bios
+bios_version|bios version
+bios_date|bios date
+PAIRS
 else
-  echo "root is not btrfs"
+  field firmware "dmi-id not available (no /sys/class/dmi/id)"
 fi
-
-echo
-if command -v snapper >/dev/null 2>&1; then
-  echo "== snapper configs =="
-  sudo snapper list-configs || true
+if [[ -d /sys/firmware/efi ]]; then
+  field boot "UEFI (ucli bios reboots into the setup screen)"
+else
+  field boot "legacy BIOS"
 fi
-
-echo
-if command -v limine-snapper-info >/dev/null 2>&1; then
-  echo "== limine snapper info =="
-  sudo limine-snapper-info || true
-fi
+printf '\n'

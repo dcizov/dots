@@ -35,7 +35,7 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 . "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../lib" && pwd)/ui.sh"
 # shellcheck source=/dev/null
-. "$real_home/.config/ucli/scripts/lib/version-script.sh"
+. "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
 
 DEVMODE_VERSION=1
 state_dir="${XDG_STATE_HOME:-$real_home/.local/state}/ucli"

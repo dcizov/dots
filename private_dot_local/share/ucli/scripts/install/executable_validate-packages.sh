@@ -14,7 +14,7 @@ done
 source "$HOME/.config/ucli/packages.bash"
 
 # shellcheck source=/dev/null
-source "$HOME/.config/ucli/scripts/lib/aur.sh"
+source "$HOME/.local/share/ucli/scripts/lib/aur.sh"
 
 status=0
 package_arrays=(

@@ -63,7 +63,7 @@ if [[ -r "$personal_file" ]]; then
   source "$personal_file"
 fi
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 # What this set installs, decided before anything else: an empty personal set
 # must not require gext (or a network) to print its note.
@@ -97,7 +97,7 @@ fi
 # extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
 # you disable an extension by hand and want the managed set back.
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/version-script.sh"
+source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
 gate_name="gnome-extensions-$mode"
 gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
 # The personal set is defined in the overlay, so its hash is part of the token.
@@ -226,4 +226,4 @@ done
 enable_uuids "${uuids[@]}"
 
 vs_commit "$gate_name" user "$gate_version"
-echo "done. run 'ucli gnome' or restart GNOME Shell (Alt+F2, r, Enter) to apply."
+echo "done. re-login, or restart GNOME Shell (Alt+F2, r, Enter), to apply."

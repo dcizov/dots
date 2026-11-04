@@ -7,7 +7,7 @@ same pipeline with what each step installs and how to configure it. This page is
 the reference.
 
 The pipeline, in order. Every step is idempotent and every step is also
-runnable on its own (`setup-desktop`, `setup-extensions`, `setup-apps`), so you
+runnable on its own (`setup-desktop`, `setup-extensions`, `apps`), so you
 can stop in between, inspect, and continue.
 
 ```bash
@@ -205,7 +205,7 @@ desktop-shaped lands in `$HOME` until step 4.
 
 ```bash
 ucli setup-snapshots      snapshots + boot entries (skips CachyOS)
-ucli system               system menu (checks and maintenance helpers)
+ucli system               OS, CPU, disk and firmware facts
 ucli setup-desktop        install DE + snapshot (Arch minimal only)
 ucli debloat-desktop      remove DE packages you don't need
 ucli backup-gnome-settings  backup dconf settings + extensions

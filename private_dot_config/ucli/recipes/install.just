@@ -12,14 +12,14 @@ cli:
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
 # Alias of `ucli cli`, for symmetry with setup-system/setup-desktop/setup-apps.
-[group('Install')]
+[private]
 setup-cli:
     # alias of `ucli cli`: shell tier (zsh, oh-my-zsh, plugins, starship) + cosmetics
     @~/.local/share/ucli/scripts/install/install-shell.sh
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
 # Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
-[group('Install')]
+[private]
 setup-apps *ARGS:
     # alias of `ucli apps`: firefox + terminal + personal apps, flatpaks, Firefox extensions
     @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
@@ -41,7 +41,7 @@ gaming:
     # opt-in gaming packages (steam, mangohud, gamemode, lib32-*)
     @~/.local/share/ucli/scripts/install/install-gaming-profile.sh
 
-# Install personal apps and overrides (`ucli setup-apps` is the same thing).
+# Install personal apps and overrides (the `apps` step of `ucli setup-system`).
 [group('Install')]
 apps *ARGS:
     # personal apps and desktop overrides (bitwarden, firefox, spotify flatpak, …)
@@ -76,7 +76,7 @@ ms-fonts:
     @~/.local/share/ucli/scripts/install/install-packages.sh --yes fonts-ms
 
 # Install paru idempotently (AUR helper).
-[group('Install')]
+[private]
 install-paru:
     # install paru with PGP signature verification
     @~/.local/share/ucli/scripts/install/install-paru.sh
@@ -89,7 +89,7 @@ vscodium-extensions *ARGS:
 
 # Install gnome-extensions-cli (gext) via pipx.
 # Required before running install-gnome-extension-set.sh.
-[group('Install')]
+[private]
 install-gnome-extensions-cli:
     # install gnome-extensions-cli (gext) for GNOME extension management
     @~/.local/share/ucli/scripts/install/install-gnome-extensions-cli.sh
@@ -107,26 +107,3 @@ uninstall *ARGS:
     # reverse chezmoi/ucli deployment (--no-snapshot skips the restore point)
     @~/.local/share/ucli/scripts/install/uninstall.sh {{ARGS}}
 
-# --- internal recipes (used by menus, not top-level) ---
-
-# Install desktop profile only.
-_setup-desktop:
-    @~/.local/share/ucli/scripts/install/install-desktop-profile.sh
-
-# Install shell setup (zsh + oh-my-zsh + plugins + starship).
-_shell:
-    @~/.local/share/ucli/scripts/install/install-shell.sh
-
-# Reinstall/enable default GNOME system extensions.
-_gnome-system-extensions:
-    @~/.local/share/ucli/scripts/install/install-gnome-extension-set.sh system
-
-# Reinstall/enable the personal set (packages.local.bash), if there is one.
-_gnome-personal-extensions:
-    @~/.local/share/ucli/scripts/install/install-gnome-extension-set.sh personal
-
-# Install full setup including opt-in cli/dev/gaming.
-_full-setup:
-    @~/.local/share/ucli/scripts/install/install-packages.sh full
-    @~/.local/share/ucli/scripts/install/install-shell.sh
-    @~/.local/share/ucli/scripts/install/install-flatpaks.sh full

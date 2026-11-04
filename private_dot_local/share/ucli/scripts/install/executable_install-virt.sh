@@ -35,11 +35,8 @@ done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-as_root() {
-  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then "$@"; else sudo "$@"; fi
-}
-
-has() { command -v "$1" >/dev/null 2>&1; }
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 # libvirt 9+ ships both the monolithic libvirtd and per-driver modular daemons.
 # Enabling the socket starts the daemon on first `virsh`/virt-manager use; the
@@ -65,7 +62,7 @@ kvm_state() {
 }
 
 net_state() {
-  if ! has virsh; then echo "virsh not installed"; return 0; fi
+  if ! have virsh; then echo "virsh not installed"; return 0; fi
   if as_root virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active:.*yes'; then
     echo "default network: active"
   else
@@ -74,12 +71,12 @@ net_state() {
 }
 
 if [[ "$mode" == status ]]; then
-  printf 'qemu        : %s\n' "$(has qemu-system-x86_64 && echo installed || echo MISSING)"
-  printf 'libvirt     : %s\n' "$(has virsh && echo installed || echo MISSING)"
-  printf 'virt-manager: %s\n' "$(has virt-manager && echo installed || echo MISSING)"
+  printf 'qemu        : %s\n' "$(have qemu-system-x86_64 && echo installed || echo MISSING)"
+  printf 'libvirt     : %s\n' "$(have virsh && echo installed || echo MISSING)"
+  printf 'virt-manager: %s\n' "$(have virt-manager && echo installed || echo MISSING)"
   printf 'kvm         : %s\n' "$(kvm_state)"
   printf 'libvirt grp : %s\n' "$(in_group libvirt && echo "yes ($real_user)" || echo "no — run 'ucli virt'")"
-  if has virsh; then
+  if have virsh; then
     unit="$(libvirt_unit)"
     printf 'daemon      : %s %s\n' "$unit" \
       "$(systemctl is-active "$unit" >/dev/null 2>&1 && echo active || echo inactive)"
@@ -125,7 +122,7 @@ fi
 
 # 5. libvirt's default NAT network (192.168.122.0/24) — guests get DHCP from it.
 #    Non-fatal: on a first run the daemon may still be starting.
-if (( take_service )) && has virsh; then
+if (( take_service )) && have virsh; then
   as_root virsh -c qemu:///system net-start default >/dev/null 2>&1 || true
   as_root virsh -c qemu:///system net-autostart default >/dev/null 2>&1 || true
   echo "$(net_state)"

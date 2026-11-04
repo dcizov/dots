@@ -3,8 +3,9 @@
 ## ucli
 
 ```bash
-ucli                      list every recipe (hidden `_`-prefixed ones omitted)
-ucli --choose             picker (gum → fzf → plain select)
+ucli                      grouped menu: every public recipe, sections are labels
+ucli --list               the same list as plain text, for grep and scripts
+ucli --choose             fzf picker (type-to-filter)
 ucli usage                the short version of the setup flow
 ucli profile              configured + detected profile facts
 ucli doctor               health check: dotfiles, shell, tools, apps, gates, dev box
@@ -103,8 +104,9 @@ would change what your typed pipelines do.
 `dev` mode selects `dev-cli` first, so the heavy stack always arrives with its
 plumbing. `ucli cli` runs `install-shell.sh` first (`SHELL_TOOLS`: zsh, git,
 curl, starship), so it works on a machine that never ran `ucli setup-system`.
-`ucli full-profile` (a.k.a. `install-packages.sh full`) is
-`base + cli + dev + gaming`.
+`install-packages.sh full` (alias `full-profile`) is `base + cli + dev +
+gaming`; there is no single `ucli` verb for it — `ucli setup-system`, `ucli cli`
+and `ucli devmode` in sequence are the same set.
 
 **The terminal follows the desktop, the browser does not.** `select_essentials`
 in `install-packages.sh` adds `DESKTOP_BROWSER` plus the one
@@ -148,8 +150,9 @@ ucli devmode --reset      # forget the marker, wizard from scratch
 `private_dot_config/ucli/packages.bash` is the package source of truth;
 `ucli validate` checks the arrays against it.
 
-Extras that are deliberately not top-level: `ucli --choose` exposes the rest
-(`shell`, `paru`, `full-setup`, …).
+Recipes that exist for other recipes or for the docs are `[private]`: they run
+when you name them (`ucli install-paru`, `ucli devbox-versions`, `ucli
+bios-info`) but stay out of `ucli --list`, the gum menu and `ucli --choose`.
 
 ### Per-machine overrides
 

@@ -12,7 +12,7 @@ ucli logs              # menu: this boot / last boot / devbox provision log / pa
 ucli changelogs        # what the last pacman transaction changed
 ucli state             # versioned setup gates + devmode marker
 ucli bios              # reboot into firmware settings (asks first)
-ucli bios-info         # board + firmware version
+ucli bios-info         # board + firmware version (hidden: also in ucli system)
 ucli config-audit      # unmerged .pacnew files + locally modified package files
 ucli sync              # Syncthing: folder sync between two machines
 ucli virt              # qemu/libvirt/virt-manager + libvirtd + the libvirt group
@@ -114,16 +114,22 @@ before upgrading — the Arch analogue of `ujust update` refusing to run while
 the bootc image has layered packages. `UCLI_YES=1` (or a non-interactive run)
 proceeds silently.
 
-Two shared helpers were ported from Bluefin and are reused across scripts:
+Six shared helpers live in one place — `~/.local/share/ucli/scripts/lib/`. The
+first two were ported from Bluefin; `common.sh` exists because the same four-line
+function had been copy-pasted into eight scripts:
 
 | File | What it gives you |
 |---|---|
-| `~/.local/share/ucli/scripts/lib/ui.sh` | the whole interactive grammar: `ui_title` / `ui_rule` / `ui_box` / `ui_summary`, `ui_choose` (single), `ui_choose_multi` (sections + preselect), `ui_confirm`, `ui_step` (block progress bar with ✓/✗) |
-| `~/.config/ucli/scripts/lib/version-script.sh` | `vs_check` / `vs_commit` / `vs_list` — a versioned hook gate: a step runs once per version token (counter or content hash) and is retried until it succeeds |
+| `lib/ui.sh` | the whole interactive grammar: `ui_title` / `ui_rule` / `ui_box` / `ui_summary`, `ui_choose` (single), `ui_choose_multi` (sections + preselect), `ui_confirm`, `ui_step` (block progress bar with ✓/✗) |
+| `lib/version-script.sh` | `vs_check` / `vs_commit` / `vs_list` — a versioned hook gate: a step runs once per version token (counter or content hash) and is retried until it succeeds |
+| `lib/detect.sh` | machine facts as functions — `detect_distro`, `detect_desktop`, `detect_root_fstype`, `detect_snapper_root`, `detect_limine`, … — so no script re-implements `/etc/os-release` parsing |
+| `lib/aur.sh` | `aur_exists` / `aur_provides` — AUR lookups (RPC, `git ls-remote` fallback, `provides=` resolution) shared by `install-packages.sh` and `validate-packages.sh`, which each used to carry their own copy |
+| `lib/firefox.sh` | `fx_profile_root` / `fx_profile_dirs` / `fx_config_dir` — the 147+ `~/.config/mozilla/firefox` vs `~/.mozilla/firefox` split, in one place |
+| `lib/common.sh` | `as_root` (sudo only when needed), `have`, `confirm` (honours the caller's `--yes`) — sourced by the service installers, `doctor`, `config-audit`, `uninstall` and `arch-snapper-limine` |
 
-`ui.sh` lives next to the scripts rather than in `~/.config` so a script running
-under sudo can load it from its own path (`$(dirname "$0")/../lib/ui.sh`); that
-is why `ucli devmode`, `ucli setup-desktop --choose`, `ucli debloat-desktop`,
+The libs live next to the scripts, not in `~/.config`, so a script running under
+sudo loads them from its own path (`source "$(dirname "$0")/../lib/ui.sh"`);
+that is why `ucli devmode`, `ucli setup-desktop --choose`, `ucli debloat-desktop`,
 `ucli mirrors`, `ucli update` and the `ucli` chooser all look and behave the
 same. Two rules for new menus: menu labels carry no commas (gum's `--selected`
 is comma-separated) and a category is a left-hand column, never a row you can
@@ -177,7 +183,8 @@ bash ~/.local/share/ucli/scripts/check/check.sh ~/dots   # or any checkout
 | `zsh -n` on `~/.zshrc`, `pre-omz.zsh`, `conf.d/*.zsh` | a broken shell config you would only notice by opening a terminal |
 | `just --list` | recipes that silently degrade to line-wise mode (a comment above the `#!` body) |
 | array consistency | a package array renamed in `packages.bash` but not in `validate-packages.sh`/`install-packages.sh` — `SHELL_DEPS` → `SHELL_TOOLS` was exactly this bug |
-| `shellcheck --severity=error` | real shell bugs, when it is installed |
+| stale verbs | a doc, comment or `echo` that still names a recipe which no longer exists (the `gnome` menu and `devbox-shell` verbs were both removed while docs kept naming them) — the prose allowlist in `check.sh` is deliberately tiny |
+| `shellcheck --severity=warning` | real shell bugs and the unused-state / word-splitting class, when it is installed |
 
 CI runs the same script from `.github/workflows/check.yml` on every push and PR
 (Ubuntu, with `just`, `zsh` and `shellcheck` installed).

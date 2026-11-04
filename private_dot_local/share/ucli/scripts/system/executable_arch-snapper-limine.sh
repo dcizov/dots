@@ -72,11 +72,9 @@ if ! declare -F ui_confirm >/dev/null 2>&1; then
   ui_confirm() { local a; read -r -p "$1 [y/N] " a; [[ "${a:-}" == [yY]* ]]; }
 fi
 
-confirm() {
-  local msg="$1"
-  (( yes_flag )) && return 0
-  ui_confirm "$msg"
-}
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/common.sh"
 
 if (( EUID != 0 )); then
   echo "Run as root: sudo $0" >&2

@@ -165,7 +165,7 @@ FONTS_MS=(
 # -----------------------------
 # ucli runtime — not optional
 # -----------------------------
-# Installed by `base`, so `ucli setup-system` always leaves ucli usable:
+# Installed by `base`, so `ucli setup-system` always leaves the CLI working:
 # without gum the menus silently degrade to a numbered list, and without pipx
 # `ucli install-gnome-extensions-cli` (gext) cannot run.
 UCLI_RUNTIME=(

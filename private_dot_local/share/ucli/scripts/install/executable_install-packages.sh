@@ -95,19 +95,18 @@ if [[ -r "$personal_file" ]]; then
 fi
 
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
+source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 # shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/aur.sh"
+source "$real_home/.local/share/ucli/scripts/lib/aur.sh"
 
-norm() { tr '[:upper:]' '[:lower:]' <<<"${1:-}" | tr - _; }
 
-distro="$(norm "${distro_override:-$(detect_distro)}")"
-cpu="$(norm "${cpu_override:-$(detect_cpu)}")"
-gpu="$(norm "${gpu_override:-$(detect_gpu)}")"
-desktop="$(norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
-role="$(norm "$(detect_role)")"
-gaming="$(norm "$(detect_gaming)")"
+distro="$(ucli_norm "${distro_override:-$(detect_distro)}")"
+cpu="$(ucli_norm "${cpu_override:-$(detect_cpu)}")"
+gpu="$(ucli_norm "${gpu_override:-$(detect_gpu)}")"
+desktop="$(ucli_norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
+role="$(ucli_norm "$(detect_role)")"
+gaming="$(ucli_norm "$(detect_gaming)")"
 
 case "$distro" in
   arch|archlinux|cachyos) ;;
