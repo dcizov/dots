@@ -11,27 +11,9 @@ font-family = JetBrainsMono Nerd Font
 font-size = 14
 background = #1c1c1f
 
-# Window
-window-size = 120 40
-maximise = false
-start-in-menu-bar = false
+# Window padding (valid Ghostty fields)
+window-padding-x = 4
+window-padding-y = 4
 
-# Transparency (Ghostty supports this natively)
-background-opacity = 0.95
-
-# Cursor
+# Cursor style
 cursor-style = block
-cursor-blink = false
-
-# Scrollback
-scrollback-limit = 10000
-
-# UI
-hide-mouse-when-typing = true
-
-# Copy on select (Wayland/X11)
-copy-on-select = false
-
-# Shell
-login-shell = true
-working-directory = home
