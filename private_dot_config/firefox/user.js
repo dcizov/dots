@@ -186,8 +186,7 @@ user_pref("full-screen-api.transition-duration.leave", "0 0");
  * SECTION: SMOOTHFOX                                                       *
 ****************************************************************************/
 // visit https://github.com/yokoffing/Betterfox/blob/main/Smoothfox.js
-// Enter your scrolling overrides below this line:
-
+// Option: SHARPEN SCROLLING (recommended for general use)
 user_pref("full-screen-api.warning.timeout", 0);
 
 /** URL BAR ***/
@@ -210,10 +209,23 @@ user_pref("browser.download.open_pdf_attachments_inline", true);
 user_pref("browser.bookmarks.openInTabClosesMenu", false);
 user_pref("findbar.highlightAll", true);
 
+/** Smoothfox: sharpen scrolling **/
+user_pref("apz.overscroll.enabled", true); // DEFAULT NON-LINUX
+user_pref("general.smoothScroll", true); // DEFAULT
+user_pref("mousewheel.min_line_scroll_amount", 10); // adjust this number to your liking; default=5
+user_pref("general.smoothScroll.mouseWheel.durationMinMS", 80); // default=50
+user_pref("general.smoothScroll.currentVelocityWeighting", "0.15"); // default=.25
+user_pref("general.smoothScroll.stopDecelerationWeighting", "0.6"); // default=.4
+user_pref("apz.gtk.kinetic_scroll.delta_mode", 2);
+user_pref("apz.gtk.pangesture.delta_mode", 2);
+user_pref("apz.gtk.kinetic_scroll.pixel_delta_mode_multiplier", 25);
+user_pref("apz.gtk.pangesture.pixel_delta_mode_multiplier", 25);
+user_pref("apz.fling_friction", 0.004);
+
 /****************************************************************************
  * START: MY OVERRIDES                                                      *
 ****************************************************************************/
-// User's Betterfox choices (v152 -> v154 migration):
+// User's Betterfox choices (v154):
 //   - Tracking Protection: strict (custom features string, -lvl2 for less breakage)
 //   - Location requests: allowed (permissions.default.geo = 0)
 //   - Unified search button: disabled
@@ -223,12 +235,11 @@ user_pref("findbar.highlightAll", true);
 //   - Passkeys: disabled
 //   - Secure DNS: Max Protection (mode 3) — custom URI removed (didn't work)
 //   - New tab: hide topsites, weather, dropdown suggestions
-//   - Certificate pinning: strict (level 2)
+//   - Certificate pinning: REMOVED (level 2 breaks with antivirus/captive portals)
 //   - Sanitize on close: cookies + cache only (keep history)
-//   - Service workers: disabled in Private Browsing
-//   - JavaScript: disable optimizing compiler + wasm optimizing JIT
-//   - GTK kinetic scroll: pixel-based scrolling tuned
-//   - Firefox GNOME theme: kept (userChrome.css / userContent.css import it)
+//   - Service workers: RE-ENABLED (was breaking PWAs/push notifications)
+//   - JavaScript JIT: RE-ENABLED (ion + wasm — Betterfox does not disable; too much breakage)
+//   - GTK kinetic scroll: pixel-based scrolling tuned (Smoothfox)
 
 // --- Tracking Protection: strict, less aggressive (-lvl2 removed) ---
 user_pref("browser.contentblocking.features.strict", "tp,tpPrivate,cookieBehavior5,cookieBehaviorPBM5,cryptoTP,fp,stp,emailTP,emailTPPrivate,-consentmanagerSkip,-consentmanagerSkipPrivate,-lvl2,rp,rpTop,qps,qpsPBM,fpp,fppPrivate,btp,lna");
@@ -262,9 +273,6 @@ user_pref("browser.newtabpage.activity-stream.feeds.topsites", false);
 user_pref("browser.newtabpage.activity-stream.showWeather", false);
 user_pref("browser.urlbar.suggest.topsites", false);
 
-// --- Certificate pinning: strict (level 2) ---
-user_pref("security.cert_pinning.enforcement_level", 2);
-
 // --- Sanitize on close: cookies + cache only (keep history) ---
 user_pref("privacy.sanitize.sanitizeOnShutdown", true);
 user_pref("privacy.clearOnShutdown_v2.cache", true);
@@ -272,26 +280,6 @@ user_pref("privacy.clearOnShutdown_v2.cookiesAndStorage", true);
 user_pref("privacy.clearOnShutdown_v2.browsingHistoryAndDownloads", false);
 user_pref("privacy.clearOnShutdown_v2.downloads", false);
 user_pref("privacy.clearOnShutdown_v2.formdata", true);
-
-// --- Service workers: disabled in Private Browsing ---
-user_pref("dom.serviceWorkers.privateBrowsing.enabled", false);
-
-// --- JavaScript: disable optimizing compiler + wasm optimizing JIT ---
-user_pref("javascript.options.ion", false);
-user_pref("javascript.options.wasm_optimizingjit", false);
-
-// --- GTK kinetic scroll: pixel-based scrolling (Mozilla Bug 1753033 / 1752862) ---
-user_pref("apz.overscroll.enabled", true);
-user_pref("general.smoothScroll", true);
-user_pref("mousewheel.min_line_scroll_amount", 10);
-user_pref("general.smoothScroll.mouseWheel.durationMinMS", 80);
-user_pref("general.smoothScroll.currentVelocityWeighting", "0.15");
-user_pref("general.smoothScroll.stopDecelerationWeighting", "0.6");
-user_pref("apz.gtk.kinetic_scroll.delta_mode", 2);
-user_pref("apz.gtk.pangesture.delta_mode", 2);
-user_pref("apz.gtk.kinetic_scroll.pixel_delta_mode_multiplier", 25);
-user_pref("apz.gtk.pangesture.pixel_delta_mode_multiplier", 25);
-user_pref("apz.fling_friction", 0.004);
 
 /****************************************************************************
  * END: BETTERFOX                                                           *
