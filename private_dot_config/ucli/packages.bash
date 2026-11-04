@@ -212,7 +212,6 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 #   3193 → blur-my-shell@aunetx
 #   5489 → gsconnect@andyholmes.github.io
 #   10070 → user-accent-colors@fabito02
-# search-light@icedman.github.com has no PK (UUID-only enable)
 GNOME_SYSTEM_EXTENSION_PKS=(
   307
   517
@@ -227,16 +226,13 @@ GNOME_SYSTEM_EXTENSION_UUIDS=(
   appindicatorsupport@rgcjonas.gmail.com
   blur-my-shell@aunetx
   gsconnect@andyholmes.github.io
-  search-light@icedman.github.com
 )
 
 # Personal extensions (not system UX) — installed via gext by install-gnome-extension-set.sh overrides
 GNOME_OVERRIDE_EXTENSION_PKS=(
   3843
   4451
-  97
   8834
-  7048
   4158
   9975
   10070
@@ -245,9 +241,7 @@ GNOME_OVERRIDE_EXTENSION_PKS=(
 GNOME_OVERRIDE_EXTENSION_UUIDS=(
   just-perfection-desktop@just-perfection
   logomenu@aryan_k
-  CoverflowAltTab@palatis.blogspot.com
   copyous@boerdereinar.dev
-  rounded-window-corners@fxgn
   gnome-ui-tune@itstime.tech
   BetterTrayIcons@nexaknight.com
   user-accent-colors@fabito02
@@ -270,26 +264,6 @@ GNOME_APP_OVERRIDES=(
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
 # ArchWiki: gnome-shell-extensions — extensions maintained as part of GNOME
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
-
-# extensions.gnome.org primary keys for personal extensions.
-# just-perfection, logo-menu, coverflow-alt-tab, copyous, rounded-window-corners-reborn, gnome-ui-tune
-GNOME_OVERRIDE_EXTENSION_PKS=(
-  3843
-  4451
-  97
-  8834
-  7048
-  4158
-)
-
-GNOME_OVERRIDE_EXTENSION_UUIDS=(
-  just-perfection-desktop@just-perfection
-  logomenu@aryan_k
-  CoverflowAltTab@palatis.blogspot.com
-  copyous@boerdereinar.dev
-  rounded-window-corners@fxgn
-  gnome-ui-tune@itstime.tech
-)
 
 GNOME_SHELL_OVERRIDES=(
   gnome-rounded-blur
@@ -428,7 +402,6 @@ APP_FLATPAKS=(
   com.warlordsoftwares.wallpaper-app-4kwall
   com.usebottles.bottles
   com.spotify.Client
-  com.vencord.Vesktop
   md.obsidian.Obsidian
 )
 
