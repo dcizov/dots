@@ -3,8 +3,10 @@ set -euo pipefail
 
 # Distro-aware AUR helper selection and installation.
 #
-#   CachyOS:   shelly is preinstalled; use it (no install needed).
-#   Arch/other: ask the user — paru or shelly — then install the chosen one.
+# Priority order:
+#   1. shelly (if already installed) — preferred for day-to-day use
+#   2. paru   (if already installed) — fallback
+#   3. install paru (default on Arch) — first-run bootstrap
 #
 # The chosen helper name is printed to stdout and stored in
 # $HOME/.local/share/ucli/aur-helper so subsequent runs reuse the same
@@ -15,7 +17,7 @@ usage() {
 usage: install-aur-helper.sh [--yes] [--print-only]
 
 Options:
-  --yes        non-interactive: install default (shelly on CachyOS, paru on Arch)
+  --yes        non-interactive: install default (paru on Arch, shelly on CachyOS)
   --print-only print the configured helper name without installing anything
 USAGE
 }
@@ -77,29 +79,40 @@ main() {
   local distro; distro="$(detect_distro_raw | tr '[:upper:]' '[:lower:]')"
   local stored; stored="$(get_stored_helper)"
 
-  # --print-only: just report the configured helper, don't install
+  # --print-only: just report the preferred helper, don't install
   if (( print_only )); then
-    if [[ -n "$stored" ]] && command -v "$stored" >/dev/null 2>&1; then
+    if command -v shelly >/dev/null 2>&1; then
+      printf 'shelly\n'
+    elif command -v paru >/dev/null 2>&1; then
+      printf 'paru\n'
+    elif [[ -n "$stored" ]]; then
       printf '%s\n' "$stored"
-      return 0
+    else
+      case "$distro" in
+        cachyos) printf 'shelly\n' ;;
+        *) printf 'paru\n' ;;
+      esac
     fi
-    # Fall back to distro default without installing
-    case "$distro" in
-      cachyos) printf 'shelly\n' ;;
-      *) printf 'paru\n' ;;
-    esac
     return 0
   fi
 
-  # If a helper is already stored and available, reuse it.
-  if [[ -n "$stored" ]] && command -v "$stored" >/dev/null 2>&1; then
-    printf '%s\n' "$stored"
+  # Priority: shelly (if installed) > paru (if installed) > install paru (default)
+  if command -v shelly >/dev/null 2>&1; then
+    store_helper shelly
+    printf 'shelly\n'
     return 0
   fi
 
+  if command -v paru >/dev/null 2>&1; then
+    store_helper paru
+    printf 'paru\n'
+    return 0
+  fi
+
+  # Neither helper is installed. Install paru as the default bootstrap helper.
   case "$distro" in
     cachyos)
-      # Shelly is preinstalled on CachyOS; use it.
+      # Shelly is preinstalled on CachyOS; if we got here it's missing.
       if command -v shelly >/dev/null 2>&1; then
         store_helper shelly
         printf 'shelly\n'
@@ -111,33 +124,22 @@ main() {
       fi
       ;;
     arch|archlinux|*)
-      # Ask the user which AUR helper to use.
-      if [[ -z "$stored" ]]; then
-        if (( yes_flag )); then
-          # Non-interactive: default to paru (mature, widely used)
-          echo "Non-interactive mode: installing paru..." >&2
-          install_paru "${yes_flag:+--yes}"
-          store_helper paru
-          printf 'paru\n'
-        else
-          echo "No AUR helper configured." >&2
-          echo "1) paru  — mature AUR helper (default)" >&2
-          echo "2) shelly — modern AUR helper (preinstalled on CachyOS)" >&2
-          read -rp "Choose AUR helper (1/2): " choice
-          case "$choice" in
-            1|paru|"") install_paru "${yes_flag:+--yes}"; store_helper paru; printf 'paru\n' ;;
-            2|shelly) install_shelly "${yes_flag:+--yes}"; store_helper shelly; printf 'shelly\n' ;;
-            *) echo "Invalid choice" >&2; exit 2 ;;
-          esac
-        fi
+      if (( yes_flag )); then
+        # Non-interactive: default to paru (mature, widely used)
+        echo "Non-interactive mode: installing paru..." >&2
+        install_paru "${yes_flag:+--yes}"
+        store_helper paru
+        printf 'paru\n'
       else
-        # Stored helper exists but isn't available; try to install it.
-        if command -v "$stored" >/dev/null 2>&1; then
-          printf '%s\n' "$stored"
-        else
-          echo "Stored helper '$stored' not found; please re-run to select." >&2
-          exit 1
-        fi
+        echo "No AUR helper configured." >&2
+        echo "1) paru  — mature AUR helper (default)" >&2
+        echo "2) shelly — modern AUR helper (preinstalled on CachyOS)" >&2
+        read -rp "Choose AUR helper (1/2): " choice
+        case "$choice" in
+          1|paru|"") install_paru "${yes_flag:+--yes}"; store_helper paru; printf 'paru\n' ;;
+          2|shelly) install_shelly "${yes_flag:+--yes}"; store_helper shelly; printf 'shelly\n' ;;
+          *) echo "Invalid choice" >&2; exit 2 ;;
+        esac
       fi
       ;;
   esac
