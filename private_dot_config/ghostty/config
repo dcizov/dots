@@ -1,0 +1,36 @@
+# Ghostty terminal configuration
+# ~/.config/ghostty/config
+#
+# Constraints observed:
+# - No unsupported fields (window-title, blur-background rejected by Ghostty 1.4.0)
+# - No inline # comments on palette = lines
+
+# Appearance
+theme = Lambda
+font-family = JetBrainsMono Nerd Font
+font-size = 14
+
+# Window
+window-size = 120 40
+maximise = false
+start-in-menu-bar = false
+
+# Transparency (Ghostty supports this natively)
+background-opacity = 0.95
+
+# Cursor
+cursor-style = block
+cursor-blink = false
+
+# Scrollback
+scrollback-limit = 10000
+
+# UI
+hide-mouse-when-typing = true
+
+# Copy on select (Wayland/X11)
+copy-on-select = false
+
+# Shell
+login-shell = true
+working-directory = home
