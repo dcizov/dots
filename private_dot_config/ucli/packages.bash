@@ -402,6 +402,7 @@ APP_FLATPAKS=(
   com.warlordsoftwares.wallpaper-app-4kwall
   com.usebottles.bottles
   com.spotify.Client
+  dev.vencord.Vesktop
   md.obsidian.Obsidian
 )
 
