@@ -16,6 +16,22 @@ ucli devbox-reconcile    # create the box, or bring it in line with this commit
 ucli devbox-recreate     # rebuild it (Debian bump, image/volume/init_hooks change)
 ```
 
+`ucli devbox` asks the reconcile what state the box is in (`--exists`: 0 = there
+and running, 3 = there but stopped, 1 = not there) and narrates accordingly:
+
+| state | what you see |
+|---|---|
+| missing | `==> Creating the dev box` first, then one `==> devbox:` line per step, a progress line every 10 s, capped at `DEVBOX_INIT_TIMEOUT` (300 s) |
+| stopped (after a reboot) | one dim `starting the dev box` line, then the shell |
+| running, files unchanged | nothing — the fingerprint fast path exits before any work |
+
+That first run is minutes, not seconds: image pull, then `apt`, Node, PHP and
+composer inside the container. Ctrl-C there is safe — the reconcile is
+idempotent, so the next `ucli devbox` picks up where it stopped (the box is
+created by `distrobox assemble`, and the provisioner is gated on a hash of
+`provision-dev.sh` + `devbox.env`, so a re-run does not reinstall what is
+already installed).
+
 Everything else is a hidden recipe: it still runs when you name it, but it stays
 out of `ucli --list` and out of both menus (the gum list and `ucli --choose`
 only ever show public recipes), so the dev-box group stays three lines:

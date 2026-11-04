@@ -19,8 +19,7 @@ update:
     #!/usr/bin/env bash
     # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     set -uo pipefail
-    . "$HOME/.local/share/ucli/scripts/lib/ui.sh"
-    have() { command -v "$1" >/dev/null 2>&1; }
+    . "$HOME/.local/share/ucli/scripts/lib/common.sh"
 
     # Guard, ported from `ujust update`: Bluefin refuses to update while the
     # image has layered packages, because that breaks its zero-maintenance
@@ -79,8 +78,7 @@ clean-system:
     #!/usr/bin/env bash
     # prune dangling images, unused flatpaks, old package cache (asks first)
     set -euo pipefail
-    . "$HOME/.local/share/ucli/scripts/lib/ui.sh"
-    have() { command -v "$1" >/dev/null 2>&1; }
+    . "$HOME/.local/share/ucli/scripts/lib/common.sh"
 
     if have podman; then
     ui_rule "podman: dangling images"
@@ -121,13 +119,16 @@ clean-system:
     printf '\nNothing removed.\n'
     fi
 
+# `path` is optional and interpolated, not $1: just does not pass positional
+# arguments to a shebang recipe, so the body's old $1 was always empty.
 # Collect machine + toolchain facts into a file you can paste into an issue.
 [group('Maintenance')]
-report:
+report path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    out="${1:-$HOME/report-$(date +%Y%m%d-%H%M).txt}"
-    have() { command -v "$1" >/dev/null 2>&1; }
+    out="{{ path }}"
+    [[ -n "$out" ]] || out="$HOME/report-$(date +%Y%m%d-%H%M).txt"
+    . "$HOME/.local/share/ucli/scripts/lib/common.sh"
     {
     printf '### system\n'
     uname -a
@@ -136,11 +137,11 @@ report:
     have lspci && lspci -nn | grep -Ei 'vga|3d|display' || true
     printf '\n### desktop\n'
     printf 'session: %s / %s\n' "${XDG_CURRENT_DESKTOP:-?}" "${XDG_SESSION_TYPE:-?}"
-    have gnome-shell && gnome-shell --version
+    have gnome-shell && gnome-shell --version || true
     printf '\n### packages\n'
-    have pacman && printf 'installed: %s\n' "$(pacman -Q | wc -l)"
-    have pacman && printf 'foreign (AUR): %s\n' "$(pacman -Qm | wc -l)"
-    have flatpak && flatpak list --columns=application,version 2>/dev/null | awk 'NR<=40'
+    have pacman && printf 'installed: %s\n' "$(pacman -Q | wc -l)" || true
+    have pacman && printf 'foreign (AUR): %s\n' "$(pacman -Qm | wc -l)" || true
+    have flatpak && flatpak list --columns=application,version 2>/dev/null | awk 'NR<=40' || true
     printf '\n### toolchain (host)\n'
     for c in just chezmoi docker podman distrobox node npm php composer; do
     printf '%-10s %s\n' "$c" "$(command -v "$c" >/dev/null 2>&1 && { "$c" --version 2>/dev/null | awk 'NR==1'; } || echo MISSING)"
@@ -155,7 +156,7 @@ report:
     printf 'repo: %s\n' "$(git -C "$HOME/.local/share/chezmoi" log --oneline -1 2>/dev/null || echo 'not a git repo')"
     printf 'deployed: %s path(s) out of sync\n' "$(chezmoi status 2>/dev/null | wc -l | tr -d ' ')"
     printf '\n### recent errors\n'
-    have journalctl && journalctl -p 3 -b --no-pager 2>/dev/null | tail -20
+    have journalctl && journalctl -p 3 -b --no-pager 2>/dev/null | tail -20 || true
     } >"$out" 2>&1
     printf 'wrote %s (%s lines)\n' "$out" "$(wc -l <"$out")"
     printf 'no env, no keys, no tokens collected\n'

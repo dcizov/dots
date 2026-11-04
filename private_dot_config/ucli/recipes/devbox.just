@@ -17,11 +17,51 @@
 # Enter the box. `ucli` on its own is the menu; this is the one you type daily.
 [group('Dev box')]
 devbox:
+    #!/usr/bin/env bash
     # Enter the `dev` container, creating it first from dev.ini if it doesn't
     # exist yet. If dev.ini is missing, fall back to distrobox's default image
     # (fedora-toolbox) — that is the intentional no-config route.
-    @[ -f "$HOME/.config/distrobox/dev.ini" ] && "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" >/dev/null 2>&1 || true
-    @distrobox enter dev
+    set -euo pipefail
+    . "$HOME/.local/share/ucli/scripts/lib/common.sh"
+
+    reconcile="$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
+
+    have distrobox || {
+      ui_fail "distrobox is not installed (ucli devmode installs it)"
+      exit 1
+    }
+
+    if [[ -f "$HOME/.config/distrobox/dev.ini" ]]; then
+      # Ask the reconcile about the box instead of guessing: 0 = there and
+      # running, 3 = there but stopped, 1 = not there yet.
+      box_state=0
+      "$reconcile" --exists || box_state=$?
+      case "$box_state" in
+        0)
+          # The normal path. Silent, because the reconcile only does work when
+          # dev.ini / the provisioner changed.
+          QUIET=1 "$reconcile" || true
+          ;;
+        3)
+          # After a reboot: the reconcile starts the container, which is a
+          # second or two but not instant, so say what the pause is.
+          ui_note "starting the dev box"
+          QUIET=1 "$reconcile" || true
+          ;;
+        *)
+          # First run. Say so *before* the slow part: the image pull and the
+          # Debian provisioning that follow take minutes, and a recipe that
+          # prints nothing for minutes reads as a hang. It is not a hang:
+          # ctrl-c is safe, the reconcile is idempotent, the next run resumes.
+          ui_rule "Creating the dev box"
+          ui_note "first run only: Debian image pull + provisioning, a few minutes"
+          ui_note "progress is printed below · ctrl-c is safe, re-run to resume"
+          "$reconcile"
+          ;;
+      esac
+    fi
+
+    exec distrobox enter dev
 
 # Throwaway "pet" container from a stock image (ubuntu, fedora, wolfi, debian,
 # arch, alpine) — what Bluefin ships preconfigured, as one command. The `dev`

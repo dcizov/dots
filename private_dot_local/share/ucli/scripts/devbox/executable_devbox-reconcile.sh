@@ -23,6 +23,14 @@
 # create time and must not depend on packages that provisioning installs later
 # (that is what killed the container with Exit 127).
 #
+# Usage:
+#   devbox-reconcile.sh              reconcile (creates the box if missing)
+#   devbox-reconcile.sh --exists     print nothing, answer in the exit code:
+#                                    0 = box exists and runs, 3 = exists but
+#                                    stopped, 1 = does not exist. `ucli devbox`
+#                                    asks this before deciding what to narrate.
+#   devbox-reconcile.sh --quiet      QUIET=1 (warnings + final report only)
+#
 # Env:
 #   DISTROBOX_RECREATE=1   always recreate the container first (keeps $HOME)
 #   DEVBOX_SKIP_WAIT=1     do not wait for distrobox-init
@@ -30,6 +38,16 @@
 #   QUIET=1                only warnings + final report
 # ---------------------------------------------------------------------------
 set -euo pipefail
+
+exists_only=0
+for arg in "$@"; do
+  case "$arg" in
+    --exists) exists_only=1 ;;
+    --quiet)  QUIET=1 ;;
+    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
+  esac
+done
 
 CONF_DIR="$HOME/.config/distrobox"
 INI="$CONF_DIR/dev.ini"
@@ -142,7 +160,12 @@ run_dim() {
   return "$rc"
 }
 
-command -v distrobox >/dev/null 2>&1 || { log "distrobox not installed — skipping"; exit 0; }
+if ! command -v distrobox >/dev/null 2>&1; then
+  # --exists is a question, not a run: answer "no" so the caller can explain.
+  if (( exists_only )); then exit 1; fi
+  log "distrobox not installed — skipping"
+  exit 0
+fi
 
 # One reconcile at a time per box: two concurrent runs (e.g. a leftover
 # `chezmoi apply` and `ucli devbox-recreate`) would otherwise fight over apt.
@@ -151,8 +174,7 @@ if [ "${DEVBOX_LOCKED:-0}" != "1" ] && command -v flock >/dev/null 2>&1; then
   export DEVBOX_LOCKED=1
   exec flock -w 900 "$HOME/.local/state/distrobox-dev.lock" "$0" "$@"
 fi
-[ -f "$INI" ]  || die "missing $INI (run 'chezmoi apply' first)"
-[ -f "$PROV" ] || die "missing $PROV (run 'chezmoi apply' first)"
+[ -f "$INI" ] || die "missing $INI (run 'chezmoi apply' first)"
 
 # --- derived from files, not from the environment ---------------------------
 BOX="$(sed -n 's/^\[\([^]]*\)\].*/\1/p' "$INI" | head -1)"
@@ -162,14 +184,6 @@ WANT_MAJOR="$(sed -n 's/^image=debian:\([0-9][0-9]*\).*/\1/p' "$INI" | head -1)"
 
 [ "${DEVBOX_VERBOSE:-1}" = "0" ] && QUIET=${QUIET:-1}
 DEVBOX_VERBOSE="${DEVBOX_VERBOSE:-1}"
-
-PROV_HASH="$(sha256sum "$PROV" | cut -c1-8)"
-INI_HASH="$(sha256sum "$INI" | cut -c1-12)"
-PROV_FP="$(sha256sum "$PROV" | cut -c1-12)"
-ENV_FP=""
-[ -f "$ENV_FILE" ] && ENV_FP="-$(sha256sum "$ENV_FILE" | cut -c1-12)"
-FP_CURRENT="${INI_HASH}-${PROV_FP}${ENV_FP}"
-FP_FILE="$HOME/.local/state/distrobox-$BOX.fingerprint"
 
 # Container manager for the BOX is whatever distrobox uses — on this host that is
 # podman. docker is a different thing here: it runs the dev-services compose file
@@ -186,13 +200,39 @@ fi
 if [ -z "$CM" ]; then
   if   command -v podman >/dev/null 2>&1; then CM=podman
   elif command -v docker >/dev/null 2>&1; then CM=docker
+  elif (( exists_only )); then exit 1
   else die "neither podman nor docker found"
   fi
 fi
-command -v "$CM" >/dev/null 2>&1 || die "container manager '$CM' (from distrobox config) not found"
+if ! command -v "$CM" >/dev/null 2>&1; then
+  (( exists_only )) && exit 1
+  die "container manager '$CM' (from distrobox config) not found"
+fi
 
 box_exists()  { "$CM" inspect "$BOX" >/dev/null 2>&1; }
 box_running() { [ -n "$("$CM" ps -q --filter "name=^${BOX}$" 2>/dev/null)" ]; }
+
+# --exists answers "is the container there" without touching anything: no
+# provisioner check, no hashing, no spinner, nothing on stdout. Exit codes are
+# the answer: 0 = there and running, 3 = there but stopped (the reconcile will
+# start it, which is a second or two, not nothing), 1 = not there.
+# `ucli devbox` asks this before it decides what to narrate.
+if (( exists_only )); then
+  box_exists || exit 1
+  box_running || exit 3
+  exit 0
+fi
+
+[ -f "$PROV" ] || die "missing $PROV (run 'chezmoi apply' first)"
+
+PROV_HASH="$(sha256sum "$PROV" | cut -c1-8)"
+INI_HASH="$(sha256sum "$INI" | cut -c1-12)"
+PROV_FP="$(sha256sum "$PROV" | cut -c1-12)"
+ENV_FP=""
+[ -f "$ENV_FILE" ] && ENV_FP="-$(sha256sum "$ENV_FILE" | cut -c1-12)"
+FP_CURRENT="${INI_HASH}-${PROV_FP}${ENV_FP}"
+FP_FILE="$HOME/.local/state/distrobox-$BOX.fingerprint"
+
 container_status() { "$CM" inspect -f '{{.State.Status}}' "$BOX" 2>/dev/null || true; }
 
 container_logs_tail() { "$CM" logs --tail 20 "$BOX" 2>&1 | sed 's/^/  | /' || true; }
