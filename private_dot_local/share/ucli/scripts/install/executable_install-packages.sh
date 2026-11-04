@@ -212,6 +212,7 @@ select_packages() {
     desktop) select_desktop ;;
     apps)
       add_array APPS
+      add_array MANUAL_AUR       # shelly (AUR) — installed via the AUR helper
       case "$desktop" in gnome) add_array GNOME_APP_OVERRIDES ;; esac
       ;;
     shell-overrides)
