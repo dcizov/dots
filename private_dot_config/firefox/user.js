@@ -100,7 +100,17 @@ user_pref("network.auth.subresource-http-auth-allow", 1);
 user_pref("editor.truncate_user_pastes", false);
 
 /** EXTENSIONS ***/
+/* 2660: only load extensions from the profile and application directories
+ * (1 = profile, 4 = application). Extensions dropped anywhere else are ignored. ***/
 user_pref("extensions.enabledScopes", 5);
+/* 2661: extensions dropped into a directory by an outside program are
+ * installed but DISABLED by default. Bit flags: 1 = profile, 2 = user,
+ * 4 = application, 8 = system (default = 15, i.e. every scope).
+ * 14 = 2+4+8: profile-scope drops (what ucli places in
+ * <profile>/extensions/*.xpi) are imported and enabled on startup, while
+ * add-ons dropped into the other scopes stay disabled until the user
+ * explicitly enables them. ***/
+user_pref("extensions.autoDisableScopes", 14); // [DEFAULT: 15]
 
 /** HEADERS / REFERERS ***/
 user_pref("network.http.referer.XOriginTrimmingPolicy", 2);

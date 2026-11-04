@@ -6,13 +6,23 @@
 #
 # Downloads XPI files from addons.mozilla.org and places them in each
 # Firefox profile's extensions/ directory with the extension ID as filename.
-# Firefox detects and installs them on next startup.
 #
-# This is the reliable userspace method — firefox --install-extension does not
-# work with extension IDs (it expects XPI paths) and is finicky with --profile.
-# Direct placement into extensions/<id>.xpi is Firefox's documented behavior.
+# How Firefox treats these ("profile-scope sideloads"):
+#   * The profile directory is scanned on startup only (scanForChanges in
+#     toolkit/mozapps/extensions/internal/XPIProvider.sys.mjs). Files placed
+#     while Firefox is running are picked up on the NEXT start.
+#   * Release builds still scan the profile scope: AddonSettings.SCOPES_SIDELOAD
+#     is the constant SCOPE_PROFILE unless the build sets
+#     MOZ_ALLOW_ADDON_SIDELOAD (only ESR / --allow-addon-sideload builds).
+#   * Such add-ons are "foreign installs" and are installed DISABLED if their
+#     scope is listed in extensions.autoDisableScopes (Firefox default: 15 =
+#     every scope). user.js sets it to 14, which keeps profile-scope drops
+#     enabled and the other scopes locked down.
+#   * The XPI must be signed by AMO (these are), because official builds set
+#     MOZ_REQUIRE_SIGNING.
 #
-# Source: https://dev.to/alanwest/how-to-programmatically-install-firefox-extensions-and-why-it-breaks-2b01
+# firefox --install-extension does not work with extension IDs (it expects XPI
+# paths), which is why we place the files ourselves.
 set -uo pipefail
 
 EXT_FILE="${1:?usage: install-firefox-extensions.sh <extensions-file>}"
@@ -173,8 +183,16 @@ done
 
 echo
 echo "==> done. $total_installed installed, $total_skipped skipped (already installed), $total_failed failed."
-echo "    Restart Firefox to activate new extensions."
 
-echo
-echo "==> done. $total_installed installed, $total_failed failed."
-echo "    Restart Firefox to activate new extensions."
+# Firefox only scans these directories at startup, and only imports add-ons it
+# has not seen before. Warn loudly if the browser is currently running.
+if pgrep -u "$real_user" -x firefox >/dev/null 2>&1 \
+   || pgrep -u "$real_user" -f '/firefox( |$)' >/dev/null 2>&1; then
+  echo
+  echo "    NOTE: Firefox is running right now. New extensions are only picked"
+  echo "          up on the next start, so quit Firefox completely and start it"
+  echo "          again (about:addons -> check they are not 'disabled')."
+else
+  echo "    Start Firefox: new extensions are imported on startup."
+fi
+echo "    If an extension shows up disabled, enable it once in about:addons."
