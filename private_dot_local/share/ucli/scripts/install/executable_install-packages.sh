@@ -296,9 +296,9 @@ if ((${#aur_packages[@]})); then
     paru "${paru_args[@]}" "${aur_packages[@]}"
   elif [[ "$aur_helper" == "shelly" ]]; then
     if (( yes_flag )); then
-      shelly aur install --no-confirm "${aur_packages[@]}"
+      shelly install aur --no-confirm "${aur_packages[@]}"
     else
-      shelly aur install "${aur_packages[@]}"
+      shelly install aur "${aur_packages[@]}"
     fi
   fi
 fi
