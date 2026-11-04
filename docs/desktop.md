@@ -73,6 +73,26 @@ the list installed Search Light while enabling GSConnect, whose PK is 1319 (the
 list claimed that was AppIndicator support, actually 615). One line per extension
 cannot drift.
 
+#### "Recorded as done" is not "done"
+
+The set script checks the real state before it writes its gate, and it writes
+nothing unless **every** extension in the set is installed *and* enabled:
+
+- the gate is a fast path, not the truth — when it matches, `gext list` and
+  `dconf read /org/gnome/shell/enabled-extensions` are still consulted, and a set
+  that is not actually there is re-applied instead of skipped;
+- a failed `gext install` prints gext's own error, keeps the UUID out of
+  `enabled-extensions` (an extension GNOME cannot load is worse than a missing
+  one), and exits non-zero, so `setup-extensions` and `setup-desktop` both say the
+  set is incomplete and name the retry;
+- an extension GNOME *disabled* (shell upgrade, Extension Manager, a first login
+  before gext finished) counts as incomplete and gets enabled again.
+
+So "no extensions after `ucli setup-system gnome`" is now a message, not silence:
+`ucli setup-extensions` (as your user, not `sudo`) repairs it. `gext` itself is a
+pipx package — `ucli install-gnome-extensions-cli` — and `~/.local/bin` is on
+`PATH` from the zsh config, which is why the retry belongs in your shell.
+
 #### The personal set
 
 `PERSONAL_GNOME_EXTENSIONS` in `~/.config/ucli/packages.local.bash`, installed by

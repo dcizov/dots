@@ -320,6 +320,8 @@ ucli only copies `~/.config/ucli/firefox/user.js` into them.
 | `— zsh … expected on a console-only box` | no desktop yet; run step 3 |
 | `note: snapper is not installed`, steps continue | no btrfs or no step 2; snapshots are optional |
 | GNOME extensions "unchanged since the last run" | the gate; `ucli setup-extensions --force` |
+| no GNOME extensions after `ucli setup-system gnome` | the gext step; it now says so instead of recording success — `ucli setup-extensions` |
+| `[oh-my-zsh] fzf plugin: Cannot find fzf installation directory` | old shells only: `fzf` is `ucli cli` tier and the plugin is now skipped until the binary exists. Nothing to fix; `ucli cli` turns it on |
 | A config directory is missing | `.chezmoiignore` gates it on `lookPath`; install the program, then `ucli chezmoi-apply` |
 | `missing: kwi` on KDE | AUR-only as `kwi-git`; Konsole from `plasma` is the fallback |
 | CachyOS "installer-owned, nothing to do" | correct; see [distros](distros.md) |

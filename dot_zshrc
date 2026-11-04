@@ -26,16 +26,39 @@ ZSH_CONFIG_DIR="${ZSH_CONFIG_DIR:-$HOME/.config/zsh}"
 # there is exactly one place to add or remove one. Load order is file order, and
 # that file keeps zsh-syntax-highlighting last (it wraps every widget bound
 # before it). Built-in oh-my-zsh plugins are listed here and nowhere else.
-plugins=(git fzf extract)
+#
+# A plugin whose tool is not installed yet is noise, not a feature. The shell tier
+# (`ucli setup-system`) brings zsh/oh-my-zsh/starship; fzf arrives one tier later
+# with `ucli cli`. Loading the oh-my-zsh fzf plugin before that printed
+# "[oh-my-zsh] fzf plugin: Cannot find fzf installation directory. Please add
+# `export FZF_BASE=...`" at every single login on a freshly installed machine.
+# Skipped plugins come back by themselves in the first shell after the tool lands.
+typeset -A ucli_plugin_needs
+ucli_plugin_needs=(fzf fzf fzf-tab fzf)
+ucli_add_plugin() {
+  local name="$1" need="${ucli_plugin_needs[$1]:-}"
+  if [[ -n "$need" ]] && ! (( $+commands[$need] )); then
+    return 0
+  fi
+  plugins+=("$name")
+}
+
+plugins=()
+ucli_add_plugin git
+ucli_add_plugin fzf
+ucli_add_plugin extract
 if [[ -r "$ZSH_CONFIG_DIR/plugins.txt" ]]; then
   while IFS= read -r plugin; do
-    plugins+=("$plugin")
+    ucli_add_plugin "$plugin"
   done < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$ZSH_CONFIG_DIR/plugins.txt" \
              | grep -v '^$' | sed -e 's|.*/||')
   unset plugin
 else
   echo "warning: $ZSH_CONFIG_DIR/plugins.txt missing; run 'ucli chezmoi-apply'" >&2
-  plugins+=(fzf-tab zsh-autosuggestions zsh-history-substring-search zsh-syntax-highlighting)
+  ucli_add_plugin fzf-tab
+  ucli_add_plugin zsh-autosuggestions
+  ucli_add_plugin zsh-history-substring-search
+  ucli_add_plugin zsh-syntax-highlighting
 fi
 
 # Only source oh-my-zsh if it was actually installed (install-shell.sh clones

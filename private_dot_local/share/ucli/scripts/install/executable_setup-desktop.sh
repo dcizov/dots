@@ -421,25 +421,44 @@ fi
 # GNOME extensions are handled by the extension-set script via gext.
 # Ensure gext is installed (via pipx) before installing extensions.
 if [[ "$desktop" == "gnome" ]]; then
+  extension_failed=0
   # Add user's pipx bin to PATH when running as root
   if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
     export PATH="$real_home/.local/bin:$PATH"
   fi
   if ! command -v gext >/dev/null 2>&1; then
-    echo "gext (gnome-extensions-cli) not found; installing via pipx ..."
-    if command -v pipx >/dev/null 2>&1; then
-      runuser -u "$real_user" -- pipx install gnome-extensions-cli
+    echo "gext (gnome-extensions-cli) not found; installing it as $real_user ..."
+    # As the real user and through its own script: pipx installs into
+    # $HOME/.local, so root's HOME would put gext where the desktop session never
+    # looks, and the script is the one place that knows what "installed" means and
+    # what to say when pipx itself is missing (it is not fatal here — the desktop
+    # is already up).
+    if runuser -u "$real_user" -- env HOME="$real_home" \
+         "$script_dir/install-gnome-extensions-cli.sh"; then
       export PATH="$real_home/.local/bin:$PATH"
     else
-      echo "  error: pipx not found. Run 'sudo pacman -S --needed python-pipx' first, then 'ucli install-gnome-extensions-cli'" >&2
-      exit 1
+      extension_failed=1
     fi
   fi
-  # System extensions first, then user/personal overrides.
-  "$script_dir/install-gnome-extension-set.sh" system || true
+  # System extensions first, then user/personal overrides. Neither failure may
+  # take the desktop down with it, but neither may be silent either: `|| true` on
+  # these two lines is how a machine ended up with no extensions and no error.
+  if ! "$script_dir/install-gnome-extension-set.sh" system; then
+    extension_failed=1
+  fi
   # personal set: only when ~/.config/ucli/packages.local.bash defines one; the
   # script exits 0 with a note when it does not.
-  "$script_dir/install-gnome-extension-set.sh" personal || true
+  if ! "$script_dir/install-gnome-extension-set.sh" personal; then
+    extension_failed=1
+  fi
+  if [[ "${extension_failed:-0}" == 1 ]]; then
+    {
+      echo
+      echo "warning: the GNOME extension set did not install completely."
+      echo "  the desktop itself is fine; extensions are the missing piece."
+      echo "  retry as your user (not root): ucli setup-extensions --force"
+    } >&2
+  fi
 fi
 
 # Firefox ships configured: the profile, the Betterfox user.js and (on GNOME) the

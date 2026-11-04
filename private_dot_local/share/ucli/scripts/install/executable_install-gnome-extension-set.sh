@@ -91,25 +91,6 @@ if ! command -v gext >/dev/null 2>&1; then
   exit 1
 fi
 
-# Versioned gate. The token is a hash of packages.bash (plus packages.local.bash
-# for the personal set), which is where the extension lists live: as long as they
-# do not change, this mode has nothing new to install, and gext talks to
-# extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
-# you disable an extension by hand and want the managed set back.
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
-gate_name="gnome-extensions-$mode"
-gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
-# The personal set is defined in the overlay, so its hash is part of the token.
-if [[ -r "$personal_file" ]]; then
-  gate_version="${gate_version}-$(vs_hash "$personal_file")"
-fi
-if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
-  echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
-  echo "    re-run with --force to apply it anyway: ucli setup-extensions --force"
-  exit 0
-fi
-
 # Run a command as the real user (not root) when invoked via sudo.
 # Extensions and dconf are per-user: as root they would land in root's
 # profile/database instead of the user's. HOME is forced too, because dconf
@@ -124,6 +105,62 @@ as_user() {
 }
 
 run_gext() { as_user gext "$@"; }
+
+# Current enabled list, one UUID per line.
+enabled_extensions() {
+  local raw=""
+  if command -v dconf >/dev/null 2>&1; then
+    raw="$(as_user dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
+  fi
+  if [[ -z "$raw" ]] && command -v gsettings >/dev/null 2>&1; then
+    raw="$(as_user gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true)"
+  fi
+  [[ -n "$raw" ]] || return 0
+  printf '%s\n' "$raw" | grep -o "'[^']*'" | tr -d "'" || true
+}
+
+# Versioned gate. The token is a hash of packages.bash (plus packages.local.bash
+# for the personal set), which is where the extension lists live: as long as they
+# do not change, this mode has nothing new to install, and gext talks to
+# extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
+# you disable an extension by hand and want the managed set back.
+# shellcheck source=/dev/null
+source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
+gate_name="gnome-extensions-$mode"
+gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
+# The personal set is defined in the overlay, so its hash is part of the token.
+if [[ -r "$personal_file" ]]; then
+  gate_version="${gate_version}-$(vs_hash "$personal_file")"
+fi
+# `gext list` is local (no network), so asking it is cheap. It is also the only
+# way to tell "already done" from "recorded as done" — a gate committed after a
+# failed install used to make this script print "unchanged; skipping" on every
+# later run, with no extensions installed.
+gext_installed_list() { run_gext list 2>/dev/null || true; }
+
+# True when the managed set is not fully installed *and enabled* right now.
+state_incomplete() {
+  local installed="$1" enabled="$2" entry uuid
+  for entry in "${entries[@]}"; do
+    uuid="${entry#*:}"
+    [[ -n "$uuid" ]] || continue
+    grep -qF "$uuid" <<<"$installed" || return 0
+    # An extension GNOME disabled (shell upgrade, "Extensions" app, or a failed
+    # first login) is installed but does nothing — the user sees "no extensions".
+    grep -qxF "$uuid" <<<"$enabled" || return 0
+  done
+  return 1
+}
+
+if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
+  if state_incomplete "$(gext_installed_list)" "$(enabled_extensions || true)"; then
+    echo "GNOME extension set '$mode' is recorded as done but is not installed/enabled; re-applying."
+  else
+    echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
+    echo "    re-run with --force to apply it anyway: ucli setup-extensions --force"
+    exit 0
+  fi
+fi
 
 # Check if a GNOME extension UUID is already installed.
 is_extension_installed() {
@@ -142,26 +179,15 @@ install_extension_by_pk() {
   fi
 
   echo "installing extension pk=$pk ..."
-  if ! run_gext install "$pk" >/dev/null 2>&1; then
-    echo "warning: could not install extension pk=$pk" >&2
+  local out
+  if ! out="$(run_gext install "$pk" 2>&1)"; then
+    echo "warning: could not install extension pk=$pk ($uuid)" >&2
+    printf '%s\n' "$out" | tail -3 | sed 's/^/    /' >&2
     return 1
   fi
 }
 
 # --- enabled-extensions, written once ---------------------------------------
-
-# Current enabled list, one UUID per line.
-enabled_extensions() {
-  local raw=""
-  if command -v dconf >/dev/null 2>&1; then
-    raw="$(as_user dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
-  fi
-  if [[ -z "$raw" ]] && command -v gsettings >/dev/null 2>&1; then
-    raw="$(as_user gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true)"
-  fi
-  [[ -n "$raw" ]] || return 0
-  printf '%s\n' "$raw" | grep -o "'[^']*'" | tr -d "'" || true
-}
 
 # enable_uuids <uuid...> — merge into the current list and write it once.
 enable_uuids() {
@@ -217,13 +243,48 @@ enable_uuids() {
 
 echo "GNOME extension set '$mode' ..."
 uuids=()
+failed=()
 for entry in "${entries[@]}"; do
   pk="${entry%%:*}"
   uuid="${entry#*:}"
-  install_extension_by_pk "$pk" "$uuid" || true
-  uuids+=("$uuid")
+  if install_extension_by_pk "$pk" "$uuid"; then
+    [[ -n "$uuid" ]] && uuids+=("$uuid")
+  else
+    failed+=("${uuid:-pk=$pk}")
+  fi
 done
+
+# Enable only what is really there: pushing the uuid of a failed download into
+# enabled-extensions makes GNOME list an extension it cannot load.
 enable_uuids "${uuids[@]}"
 
+# Verify the end state. The gate is committed only when everything is installed
+# AND enabled, so a failed run is retried instead of being remembered as done.
+installed_now="$(gext_installed_list)"
+enabled_now="$(enabled_extensions || true)"
+missing=()
+for uuid in "${uuids[@]}"; do
+  grep -qF "$uuid" <<<"$installed_now" || missing+=("$uuid (not installed)")
+  grep -qxF "$uuid" <<<"$enabled_now" || missing+=("$uuid (not enabled)")
+done
+
+total=$(( ${#uuids[@]} + ${#failed[@]} ))
+if (( ${#failed[@]} || ${#missing[@]} )); then
+  {
+    echo
+    echo "warning: GNOME extension set '$mode' is incomplete (${#uuids[@]} of $total installed)"
+    for line in "${failed[@]:-}" "${missing[@]:-}"; do
+      if [[ -n "$line" ]]; then
+        echo "  - $line"
+      fi
+    done
+    echo "  nothing was recorded as done, so this runs again next time:"
+    echo "    ucli setup-extensions --force"
+    echo "    (if gext itself is the problem: ucli install-gnome-extensions-cli)"
+  } >&2
+  exit 1
+fi
+
 vs_commit "$gate_name" user "$gate_version"
-echo "done. re-login, or restart GNOME Shell (Alt+F2, r, Enter), to apply."
+echo "done: ${#uuids[@]} extension(s) installed and enabled."
+echo "      log out and back in (or restart GNOME Shell) to load them."
