@@ -3,34 +3,34 @@
 # Source:   private_dot_config/VSCodium/User/extensions.txt
 # Target:   ~/.config/VSCodium/User/extensions.txt
 #
-# Installed with:  ucli install-vscodium-ext  (see install-vscodium-extensions.sh)
+# Installed with:   ucli vscodium-extensions   (see install-vscodium-extensions.sh)
+# Refreshed when:   this file's content hash changes (versioned gate, --force)
 #
-# HOW TO FILL THIS IN CORRECTLY:
-#   The entries below were inferred from the extensions your settings.json
-#   references. VERIFY and complete them on a working machine with:
-#       codium --list-extensions
-#   then paste the output here (one per line; '#' lines are ignored).
+# Everything here is available on Open VSX, which is what VSCodium uses by
+# default (vscodium-bin-marketplace is installed too, but nothing below relies on
+# it). Deliberately absent: extensions that only work with a Microsoft account or
+# licence — GitHub Copilot, IntelliCode, Settings Sync — and the Microsoft
+# Dev Containers extension, which needs the Microsoft build. Remote development is
+# done over SSH with jeanp413.open-remote-ssh instead.
+#
+# One ID per line; '#' lines are ignored.
+#
+# Verify on a machine with:  codium --list-extensions
 # =================================================================================
 
 aaron-bond.better-comments
 alefragnani.bookmarks
-austinjohnson.open-remote-ssh-local
 be5invis.vscode-custom-css
 docker.docker
 esbenp.prettier-vscode
-github.copilot-chat
 gruntfuggly.todo-tree
 isudox.vscode-jetbrains-keybindings
+jeanp413.open-remote-ssh
 mkhl.shfmt
-ms-azuretools.vscode-containers
-# piousdeer.adwaita-theme
 pkief.material-icon-theme
 rangav.vscode-thunder-client
 redhat.vscode-yaml
-shan.code-settings-sync
 skellock.just
 usernamehw.errorlens
-visualstudioexptteam.intellicode-api-usage-examples
-visualstudioexptteam.vscodeintellicode
 waderyan.gitblame
 yzhang.markdown-all-in-one

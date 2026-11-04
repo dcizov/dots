@@ -68,6 +68,7 @@ SYSTEM_CORE_TOOLS=(
   pkgfile
   pacman-contrib
   smartmontools
+  fwupd            # firmware/BIOS updates; GNOME's Firmware panel expects it
 )
 
 SYSTEM_QOL_TOOLS=(
@@ -75,6 +76,23 @@ SYSTEM_QOL_TOOLS=(
   fastfetch
   restic
 )
+
+# Multimedia codecs. archinstall installs none of these (the gnome group pulls
+# only gst-plugins-base through its own dependencies), and the symptom is a video
+# that plays sound with no picture, or a browser that cannot decode h264.
+SYSTEM_MEDIA_CODECS=(
+  gst-plugins-good
+  gst-plugins-bad
+  gst-plugins-ugly
+  gst-libav
+  ffmpeg
+)
+
+# Installed only when the hardware is actually present — lib/detect.sh decides.
+# A fingerprint reader without fprintd is dead weight, and libinput's CLI is only
+# useful on a machine with a touchpad or trackpoint.
+HARDWARE_FINGERPRINT=(fprintd)
+HARDWARE_TOUCHPAD=(libinput-tools)
 
 CPU_INTEL=(intel-ucode)
 CPU_AMD=(amd-ucode)
@@ -96,10 +114,11 @@ GPU_NVIDIA=(
   lib32-nvidia-utils
 )
 
+# Always installed. Hardware-specific support (fprintd, libinput-tools) lives in
+# HARDWARE_* below and is only added when lib/detect.sh finds the device.
 SYSTEM_SUPPORT=(
   gufw
   ufw
-  fprintd
 )
 
 BOOT_SUPPORT=(
@@ -167,7 +186,6 @@ DEV_CLI=(
   jq
   lazygit
   mise
-  neovim
   ripgrep
   shfmt
   tmux
@@ -231,55 +249,45 @@ DESKTOP_GNOME_BASE=(
 # ArchWiki: "gnome-shell-extensions package provides a set of very useful
 # extensions maintained as part of the GNOME project."
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
+# GNOME extensions, two sources on purpose:
+#
+#   * pacman, when Extra packages the extension — fewer moving parts, updates
+#     with the rest of the system. gnome-shell-extensions carries `user-theme`,
+#     which the Firefox GNOME theme styles the shell through.
+#   * gext / extensions.gnome.org, for everything the repos do not ship.
+#
+# These were parallel PKS/UUIDS arrays once, and they drifted: 1319 is GSConnect
+# (the old list claimed appindicator support), 5489 is Search Light (the old list
+# claimed GSConnect), and AppIndicator support is 615. Hence one "PK:UUID" entry
+# per extension: PK is what `gext install` takes, UUID is what GNOME enables.
 GNOME_SYSTEM_EXTENSION_PACKAGES=(
-  gnome-shell-extensions
-  gnome-shell-extension-caffeine
-  gnome-shell-extension-appindicator
+  gnome-shell-extensions                     # user-theme + classic set
+  gnome-shell-extension-caffeine             # keep the screen awake
+  gnome-shell-extension-appindicator         # tray icons (615 on EGO)
+  libgda6                                    # Copyous: database backend
+  gsound                                     # Copyous: clipboard sound feedback
 )
 
-# extensions.gnome.org primary keys for Bluefin-like default UX.
-# PK→UUID mapping (must stay parallel):
-#   307  → dash-to-dock@micxgx.gmail.com
-#   517  → caffeine@patapon.info
-#   1319 → appindicatorsupport@rgcjonas.gmail.com
-#   9975 → BetterTrayIcons@nexaknight.com
-#   3193 → blur-my-shell@aunetx
-#   5489 → gsconnect@andyholmes.github.io
-#   10070 → user-accent-colors@fabito02
-GNOME_SYSTEM_EXTENSION_PKS=(
-  307
-  517
-  1319
-  3193
-  5489
+GNOME_SYSTEM_EXTENSIONS=(
+  "307:dash-to-dock@micxgx.gmail.com"                        # Ubuntu-like dock
+  "3193:blur-my-shell@aunetx"                                # blur behind shell UI
+  "1319:gsconnect@andyholmes.github.io"                      # phone integration
+  "5489:search-light@icedman.github.com"                     # Spotlight-style Super+Space
+  "8834:copyous@boerdereinar.dev"                            # clipboard history
 )
 
-GNOME_SYSTEM_EXTENSION_UUIDS=(
-  dash-to-dock@micxgx.gmail.com
-  caffeine@patapon.info
-  appindicatorsupport@rgcjonas.gmail.com
-  blur-my-shell@aunetx
-  gsconnect@andyholmes.github.io
-)
-
-# Personal extensions (not system UX) — installed via gext by install-gnome-extension-set.sh overrides
-GNOME_OVERRIDE_EXTENSION_PKS=(
-  3843
-  4451
-  8834
-  4158
-  9975
-  10070
-)
-
-GNOME_OVERRIDE_EXTENSION_UUIDS=(
-  just-perfection-desktop@just-perfection
-  logomenu@aryan_k
-  copyous@boerdereinar.dev
-  gnome-ui-tune@itstime.tech
-  BetterTrayIcons@nexaknight.com
-  user-accent-colors@fabito02
-)
+# Personal extension sets, personal apps/flatpaks and extra dev packages live in
+# ~/.config/ucli/packages.local.bash (see packages.local.bash.example). That file
+# is never chezmoi-managed: it holds PERSONAL_GNOME_EXTENSIONS ("PK:UUID" too),
+# PERSONAL_PKGS, PERSONAL_DEV and PERSONAL_FLATPAKS, and every installer reads it
+# only if it exists.
+#
+# Empty defaults on purpose: the installers source the overlay *after* this file,
+# `set -u` needs the names to exist, and the static check greps for them here.
+PERSONAL_PKGS=()
+PERSONAL_DEV=()
+PERSONAL_FLATPAKS=()
+PERSONAL_GNOME_EXTENSIONS=()
 
 # ArchWiki: gnome-boxes, gdm-settings, nautilus-* are all optional — remove
 # any you don't use to debloat your GNOME install.
@@ -318,22 +326,17 @@ DESKTOP_TERMINAL_KDE=(
 )
 
 GNOME_APP_OVERRIDES=(
-  gnome-boxes            # VM manager — remove if you don't use VMs
-  gdm-settings           # GDM theme/config — remove if defaults are OK
-  nautilus-admin-gtk4    # Nautilus extension — remove if you don't use Nautilus
-  nautilus-my-computer   # Nautilus extension — remove if you don't use Nautilus
-  nautilus-open-any-terminal  # Nautilus extension — remove if you don't use Nautilus
-  extension-manager      # GNOME Extension Manager GUI (AUR package)
+  gnome-boxes            # VM manager
+  nautilus-admin-gtk4    # Nautilus: open as admin
+  nautilus-my-computer   # Nautilus: "My Computer" entry
+  nautilus-open-any-terminal  # Nautilus: "Open in terminal"
+  extension-manager      # manage GNOME extensions without a browser
 )
 
 # ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
 # ArchWiki: gnome-shell-extensions — extensions maintained as part of GNOME
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
-
-GNOME_SHELL_OVERRIDES=(
-  gnome-rounded-blur
-)
 
 # ArchWiki: gdm is the display manager included in the gnome group.
 # https://wiki.archlinux.org/title/GNOME#Starting
@@ -396,18 +399,15 @@ SERVICES_KDE=(
 
 # firefox lives in DESKTOP_BROWSER: it belongs to the desktop tier, not to the
 # optional personal-apps step.
+# Desktop apps, opinionated: system tooling (disks, snapshots, backups) and the
+# pieces the desktop expects (Flatpak backend for shelly). Password managers,
+# torrent clients and anything account-bound belong in PERSONAL_PKGS.
 APPS=(
-  bitwarden
   btrfs-assistant
-  fragments
   gparted
   webapp-manager
-
   deja-dup
-
   fuse2
-  libinput-tools
-
   shelly-flatpak-backend
 )
 
@@ -466,29 +466,22 @@ DESKTOP_REPLACE_KDE=()
 # Flatpak app IDs
 # -----------------------------
 
+# Flatpak housekeeping only. Every other flatpak (Spotify, Obsidian, Bottles,
+# Vesktop, the wallpaper/theme tools, …) is a personal pick and belongs in
+# PERSONAL_FLATPAKS in packages.local.bash.
 APP_FLATPAKS=(
-  com.github.tchx84.Flatseal
-  io.github.flattool.Warehouse
-  io.github.flattool.Ignition
-  io.github.giantpinkrobots.flatsweep
-  io.github.vikdevelop.SaveDesktop
-  me.timschneeberger.GalaxyBudsClient
-  app.drey.Warp
-  com.warlordsoftwares.wallpaper-app-4kwall
-  com.usebottles.bottles
-  com.spotify.Client
-  dev.vencord.Vesktop
-  md.obsidian.Obsidian
+  com.github.tchx84.Flatseal       # per-app sandbox permissions
+  io.github.flattool.Warehouse     # install/manage/uninstall flatpaks
+  io.github.flattool.Ignition      # installed-package overview
+  io.github.giantpinkrobots.flatsweep  # remove unused runtimes
 )
 
+# GNOME-specific flatpaks. No AddWater: the GNOME theme is installed directly by
+# firefox-gnome-theme. No MissionCenter: the pacman package arrives through the
+# gnome-system-monitor= replace, so the flatpak would be a second copy.
 GNOME_FLATPAKS=(
-  dev.qwery.AddWater
-  io.github.swordpuffin.rewaita
-  io.github.swordpuffin.wardrobe
-  io.missioncenter.MissionCenter
-  page.tesk.Refine
   io.github.nacho.mecalin
-  io.gitlab.adhami3310.Impression
+  io.gitlab.adhami3310.Impression   # ISO writer
 )
 
 HYPRLAND_FLATPAKS=()
@@ -496,6 +489,7 @@ KDE_FLATPAKS=()
 
 DEV_FLATPAKS=(
   me.iepure.devtoolbox
+  com.ranfdev.DistroShelf          # GUI over distrobox containers
 )
 
 GAMING_FLATPAKS=()

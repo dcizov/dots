@@ -240,6 +240,29 @@ detect_role() {
   ucli_norm "$(ucli_profile_value role dev)"
 }
 
+# Fingerprint reader? USB vendor ids are the reliable signal: 138a (Validity/
+# Synaptics), 06cb (Synaptics), 27c6 (Goodix), 08ff (AuthenTec), 0483 (STMicro).
+detect_fingerprint() {
+  if grep -qEi "fingerprint" /proc/bus/input/devices 2>/dev/null; then
+    echo yes; return 0
+  fi
+  if command -v lsusb >/dev/null 2>&1; then
+    if lsusb 2>/dev/null | grep -qEi 'ID (138a|06cb|27c6|08ff|0483):'; then
+      echo yes; return 0
+    fi
+  fi
+  echo no
+}
+
+# Touchpad or trackpoint? fprintd/libinput-tools are only useful when present.
+detect_touchpad() {
+  if grep -qEi "touchpad|trackpoint|synaptics|elan" /proc/bus/input/devices 2>/dev/null; then
+    echo yes
+  else
+    echo no
+  fi
+}
+
 detect_gaming() {
   ucli_norm "$(ucli_profile_value gaming false)"
 }

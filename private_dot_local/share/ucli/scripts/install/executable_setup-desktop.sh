@@ -424,7 +424,9 @@ if [[ "$desktop" == "gnome" ]]; then
   fi
   # System extensions first, then user/personal overrides.
   "$script_dir/install-gnome-extension-set.sh" system || true
-  "$script_dir/install-gnome-extension-set.sh" overrides || true
+  # personal set: only when ~/.config/ucli/packages.local.bash defines one; the
+  # script exits 0 with a note when it does not.
+  "$script_dir/install-gnome-extension-set.sh" personal || true
 fi
 
 # Firefox ships configured: the profile, the Betterfox user.js and (on GNOME) the

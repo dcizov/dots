@@ -44,6 +44,12 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
+# Optional personal overlay (PERSONAL_FLATPAKS), same idea as ~/.config/zsh/local.zsh.
+personal_file="$real_home/.config/ucli/packages.local.bash"
+if [[ -r "$personal_file" ]]; then
+  # shellcheck source=/dev/null
+  source "$personal_file"
+fi
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
@@ -60,6 +66,7 @@ select_apps() {
     profile|base|first-install) ;;
     overrides|apps)
       add_array APP_FLATPAKS
+      add_array PERSONAL_FLATPAKS
       case "$desktop" in
         gnome) add_array GNOME_FLATPAKS ;;
         kde|plasma) add_array KDE_FLATPAKS ;;

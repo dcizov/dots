@@ -20,11 +20,14 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-usage: install-gnome-extension-set.sh [system|overrides] [--force]
+usage: install-gnome-extension-set.sh [system|personal] [--force]
 
-  system   Enable repo-packaged default GNOME system extensions
-  overrides Install GNOME app override packages and shell override themes
-  --force  run even when the gate says this set is unchanged
+  system    the opinionated layout set (dash-to-dock, blur-my-shell, gsconnect,
+            search-light, copyous); the repo-packaged ones (caffeine,
+            appindicator, user-theme) are installed by install-packages.sh
+  personal  your own, from PERSONAL_GNOME_EXTENSIONS in
+            ~/.config/ucli/packages.local.bash
+  --force   run even when the gate says this set is unchanged
 USAGE
 }
 
@@ -32,7 +35,7 @@ mode="system"
 force=0
 for arg in "$@"; do
   case "$arg" in
-    system|overrides) mode="$arg" ;;
+    system|personal) mode="$arg" ;;
     --force) force=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; usage; exit 2 ;;
@@ -52,10 +55,36 @@ if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
   export PATH="$real_home/.local/bin:$PATH"
 fi
 
+# Optional personal overlay: PERSONAL_GNOME_EXTENSIONS, "PK:UUID" pairs.
+personal_file="$real_home/.config/ucli/packages.local.bash"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
+if [[ -r "$personal_file" ]]; then
+  # shellcheck source=/dev/null
+  source "$personal_file"
+fi
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
+
+# What this set installs, decided before anything else: an empty personal set
+# must not require gext (or a network) to print its note.
+entries=()
+case "$mode" in
+  system) entries=("${GNOME_SYSTEM_EXTENSIONS[@]:-}") ;;
+  personal)
+    if [[ ! -r "$personal_file" ]]; then
+      echo "no ~/.config/ucli/packages.local.bash; nothing personal to install."
+      echo "    copy packages.local.bash.example next to it to use this set."
+      exit 0
+    fi
+    entries=("${PERSONAL_GNOME_EXTENSIONS[@]:-}")
+    ;;
+esac
+mapfile -t entries < <(printf '%s\n' "${entries[@]:-}" | awk 'NF')
+if (( ${#entries[@]} == 0 )); then
+  echo "GNOME extension set '$mode' is empty; nothing to do."
+  exit 0
+fi
 
 if ! command -v gext >/dev/null 2>&1; then
   echo "gext (gnome-extensions-cli) not found" >&2
@@ -63,15 +92,19 @@ if ! command -v gext >/dev/null 2>&1; then
   exit 1
 fi
 
-# Versioned gate. The token is a hash of packages.bash, which is where the
-# GNOME_* extension arrays live: as long as those lists do not change, this mode
-# has nothing new to install, and gext talks to extensions.gnome.org on every
-# call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
+# Versioned gate. The token is a hash of packages.bash (plus packages.local.bash
+# for the personal set), which is where the extension lists live: as long as they
+# do not change, this mode has nothing new to install, and gext talks to
+# extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
 # you disable an extension by hand and want the managed set back.
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/version-script.sh"
 gate_name="gnome-extensions-$mode"
 gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
+# The personal set is defined in the overlay, so its hash is part of the token.
+if [[ -r "$personal_file" ]]; then
+  gate_version="${gate_version}-$(vs_hash "$personal_file")"
+fi
 if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
   echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
   echo "    re-run with --force to apply it anyway: ucli setup-extensions --force"
@@ -183,30 +216,15 @@ enable_uuids() {
   done
 }
 
-case "$mode" in
-  system)
-    echo "system GNOME extensions ..."
-    # Install anything not packaged by pacman first, then enable in one write.
-    for i in "${!GNOME_SYSTEM_EXTENSION_PKS[@]}"; do
-      install_extension_by_pk "${GNOME_SYSTEM_EXTENSION_PKS[$i]}" "${GNOME_SYSTEM_EXTENSION_UUIDS[$i]:-}" || true
-    done
-    enable_uuids "${GNOME_SYSTEM_EXTENSION_UUIDS[@]:-}"
-    ;;
-  overrides)
-    echo "GNOME app overrides ..."
-    # App overrides are pacman packages installed by install-packages.sh apps mode.
-    # Shell override themes are also pacman packages.
-    for i in "${!GNOME_OVERRIDE_EXTENSION_PKS[@]}"; do
-      install_extension_by_pk "${GNOME_OVERRIDE_EXTENSION_PKS[$i]}" "${GNOME_OVERRIDE_EXTENSION_UUIDS[$i]:-}" || true
-    done
-    enable_uuids "${GNOME_OVERRIDE_EXTENSION_UUIDS[@]:-}"
-    ;;
-  *)
-    echo "unknown mode: $mode (use 'system' or 'overrides')" >&2
-    usage
-    exit 2
-    ;;
-esac
+echo "GNOME extension set '$mode' ..."
+uuids=()
+for entry in "${entries[@]}"; do
+  pk="${entry%%:*}"
+  uuid="${entry#*:}"
+  install_extension_by_pk "$pk" "$uuid" || true
+  uuids+=("$uuid")
+done
+enable_uuids "${uuids[@]}"
 
 vs_commit "$gate_name" user "$gate_version"
 echo "done. run 'ucli gnome' or restart GNOME Shell (Alt+F2, r, Enter) to apply."

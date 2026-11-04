@@ -18,12 +18,15 @@ status=0
 package_arrays=(
   BOOTSTRAP ZSH SHELL_TOOLS SYSTEM_CORE_TOOLS SYSTEM_QOL_TOOLS CPU_INTEL CPU_AMD GPU_AMD GPU_INTEL GPU_NVIDIA
   SYSTEM_SUPPORT BOOT_SUPPORT SNAPSHOT_LIMINE FONTS_THEMES UCLI_RUNTIME CLI DEV_CLI DEV GAMING
-  DESKTOP_GNOME_BASE GNOME_SYSTEM_EXTENSION_PACKAGES GNOME_APP_OVERRIDES GNOME_SHELL_OVERRIDES
+  DESKTOP_GNOME_BASE GNOME_SYSTEM_EXTENSION_PACKAGES GNOME_APP_OVERRIDES
+  SYSTEM_MEDIA_CODECS HARDWARE_FINGERPRINT HARDWARE_TOUCHPAD
   DESKTOP_HYPRLAND_BASE DESKTOP_HYPRLAND_ADDITIONS DESKTOP_KDE_BASE DESKTOP_KDE_ADDITIONS
   DESKTOP_BROWSER DESKTOP_TERMINAL_GNOME DESKTOP_TERMINAL_HYPRLAND DESKTOP_TERMINAL_KDE
   APPS MANUAL_AUR
 )
-extension_pk_arrays=(GNOME_SYSTEM_EXTENSION_PKS GNOME_OVERRIDE_EXTENSION_PKS)
+# Extension lists are "PK:UUID" pairs (see packages.bash for why). The personal
+# list is optional and lives in the overlay.
+extension_lists=("GNOME_SYSTEM_EXTENSIONS")
 
 aur_exists() {
   local pkg="$1"
@@ -78,16 +81,22 @@ validate_package_array() {
   for item in "${items[@]}"; do validate_item "$item" || status=1; done
 }
 
-validate_extension_pk_array() {
-  local name="$1" items=() pk
+validate_extension_list() {
+  local name="$1" items=() entry pk uuid
   eval 'items=("${'"$name"'[@]:-}")'
-  echo "==> checking GNOME extension API array: $name"
-  for pk in "${items[@]}"; do
-    if extension_pk_exists "$pk"; then echo "OK extension pk: $pk"; else echo "MISSING extension pk: $pk"; status=1; fi
+  echo "==> checking GNOME extension list: $name"
+  for entry in "${items[@]}"; do
+    [[ -n "$entry" ]] || continue
+    pk="${entry%%:*}"
+    uuid="${entry#*:}"
+    if [[ "$entry" != *:* ]] || [[ -z "$pk" ]] || [[ -z "$uuid" ]]; then
+      echo "MALFORMED (want PK:UUID): $entry"; status=1; continue
+    fi
+    if extension_pk_exists "$pk"; then echo "OK extension: $pk ($uuid)"; else echo "MISSING extension pk: $pk"; status=1; fi
   done
 }
 
 for array in "${package_arrays[@]}"; do validate_package_array "$array"; done
-for array in "${extension_pk_arrays[@]}"; do validate_extension_pk_array "$array"; done
+for array in "${extension_lists[@]}"; do validate_extension_list "$array"; done
 
 exit "$status"

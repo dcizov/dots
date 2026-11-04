@@ -17,10 +17,11 @@ setup-extensions *ARGS:
     for arg in "$@"; do
         [[ "$arg" == "--force" ]] && force_args=(--force)
     done
-    # system: repo-packaged defaults (caffeine, appindicator, …)
+    # system: the opinionated layout set (dash-to-dock, blur-my-shell, gsconnect,
+    # search-light, copyous) + the repo-packaged ones (caffeine, appindicator)
     "$script_dir/install-gnome-extension-set.sh" system ${force_args[@]+"${force_args[@]}"}
-    # overrides: the gext-installed personal set (just-perfection, logo-menu, …)
-    "$script_dir/install-gnome-extension-set.sh" overrides ${force_args[@]+"${force_args[@]}"}
+    # personal: PERSONAL_GNOME_EXTENSIONS from packages.local.bash, if that exists
+    "$script_dir/install-gnome-extension-set.sh" personal ${force_args[@]+"${force_args[@]}"}
     printf 'ok: extensions installed and enabled (log out/in if the shell has not reloaded)\n'
 
 # GNOME menu. Use `ucli --choose` to pick a GNOME recipe interactively.

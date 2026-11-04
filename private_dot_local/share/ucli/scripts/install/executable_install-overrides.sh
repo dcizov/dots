@@ -6,8 +6,8 @@
 #   flatpaks   APP_FLATPAKS + this desktop's flatpaks
 #   firefox    profile + Betterfox + GNOME theme via install-firefox-profile.sh
 #              (shared with setup-desktop.sh, so normally already done), then the
-#              extension list — the only part of Firefox that is personal
-#   gnome      the "overrides" GNOME extension set, on GNOME only
+#              extension lists (repo + personal)
+#   gnome      the "personal" GNOME extension set, on GNOME only
 #
 # Usage: install-overrides.sh [--force]
 #   --force re-runs the versioned steps (Betterfox copy, override extension set)
@@ -51,10 +51,16 @@ fi
 # firefox is installed from this path, and is a no-op otherwise.
 "$script_dir/install-firefox-profile.sh" ${force_args[@]+"${force_args[@]}"} || true
 
-# The extension lists stay in apps on purpose: which add-ons you want (and which
-# dev add-ons, via ucli devmode) is personal, the config above is not.
-"$script_dir/install-firefox-extensions.sh" "$(fx_config_dir "$real_home")/extensions.txt" || true
+# Extension lists stay in apps on purpose: which add-ons you want (and which dev
+# add-ons, via ucli devmode) is personal, the config above is not. The repo file
+# holds the opinionated ones; personal-extensions.txt is yours and optional.
+fx_dir="$(fx_config_dir "$real_home")"
+"$script_dir/install-firefox-extensions.sh" "$fx_dir/extensions.txt" || true
+if [[ -r "$fx_dir/personal-extensions.txt" ]]; then
+  echo "Firefox personal extensions ($(fx_short_root "$fx_dir" "$real_home")/personal-extensions.txt) ..."
+  "$script_dir/install-firefox-extensions.sh" "$fx_dir/personal-extensions.txt" || true
+fi
 
 if [[ "$desktop" == "gnome" ]]; then
-  "$script_dir/install-gnome-extension-set.sh" overrides ${force_args[@]+"${force_args[@]}"} || true
+  "$script_dir/install-gnome-extension-set.sh" personal ${force_args[@]+"${force_args[@]}"} || true
 fi

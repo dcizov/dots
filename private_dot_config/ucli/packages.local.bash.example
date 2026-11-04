@@ -1,0 +1,57 @@
+# ==============================================================================
+# Your personal package picks — copy to packages.local.bash and edit.
+#
+#   cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
+#
+# This file is NOT chezmoi-managed and is never overwritten: it is where the
+# things the repo deliberately does not decide live. The rule is the same as for
+# ~/.config/zsh/local.zsh — if it is a taste, an account, a subscription or one
+# specific piece of hardware, it goes here, not into packages.bash.
+#
+#   PERSONAL_PKGS             pacman/AUR packages, installed by `ucli apps`
+#   PERSONAL_DEV              extra dev packages, installed by `ucli devmode`
+#   PERSONAL_FLATPAKS         flatpak app IDs, installed by `ucli apps`
+#   PERSONAL_GNOME_EXTENSIONS "PK:UUID" pairs for extensions.gnome.org,
+#                             installed by the `personal` extension set
+#
+# Every installer checks whether this file exists; delete an array (or the whole
+# file) and the step simply installs the repo's opinionated set again.
+# ==============================================================================
+
+# --- packages ----------------------------------------------------------------
+PERSONAL_PKGS=(
+  bitwarden            # password manager (and its browser extension below)
+  fragments            # torrent client
+  neovim               # the editor I use; `vim` is in DEV_CLI as the fallback
+)
+
+# --- extra dev packages ------------------------------------------------------
+PERSONAL_DEV=(
+  # neovim is above because it belongs to apps, not to the dev tier
+)
+
+# --- flatpaks ----------------------------------------------------------------
+PERSONAL_FLATPAKS=(
+  com.usebottles.bottles
+  com.spotify.Client
+  dev.vencord.Vesktop
+  md.obsidian.Obsidian
+  me.timschneeberger.GalaxyBudsClient
+  app.drey.Warp
+  com.warlordsoftwares.wallpaper-app-4kwall
+  io.github.vikdevelop.SaveDesktop
+  io.github.swordpuffin.rewaita
+  io.github.swordpuffin.wardrobe
+  page.tesk.Refine
+)
+
+# --- GNOME extensions (extensions.gnome.org) ---------------------------------
+# Not the layout set — that is GNOME_SYSTEM_EXTENSIONS in packages.bash. These
+# only adjust a shell that is already Ubuntu-like.
+PERSONAL_GNOME_EXTENSIONS=(
+  "3843:just-perfection-desktop@just-perfection"   # hide UI elements
+  "4451:logomenu@aryan_k"                          # app-menu button
+  "4158:gnome-ui-tune@itstime.tech"                # overview tweaks
+  "9975:BetterTrayIcons@nexaknight.com"            # panel icon sizing
+  "10070:user-accent-colors@fabito02"              # accent colour per app
+)

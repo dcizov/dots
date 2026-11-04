@@ -90,13 +90,13 @@ _setup-desktop:
 _shell:
     @~/.local/share/ucli/scripts/install/install-shell.sh
 
-# Install explicit shell override packages.
-_shell-overrides:
-    @~/.local/share/ucli/scripts/install/install-packages.sh shell-overrides
-
 # Reinstall/enable default GNOME system extensions.
 _gnome-system-extensions:
     @~/.local/share/ucli/scripts/install/install-gnome-extension-set.sh system
+
+# Reinstall/enable the personal set (packages.local.bash), if there is one.
+_gnome-personal-extensions:
+    @~/.local/share/ucli/scripts/install/install-gnome-extension-set.sh personal
 
 # Install full setup including opt-in cli/dev/gaming.
 _full-setup:

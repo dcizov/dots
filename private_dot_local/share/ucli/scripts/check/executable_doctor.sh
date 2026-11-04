@@ -232,6 +232,35 @@ case "${desktop,,}" in
 esac
 
 # ---------------------------------------------------------------------------
+section "personal overlay"
+personal_file="$config_dir/packages.local.bash"
+# packages.bash first: it defines the empty PERSONAL_* defaults the overlay fills.
+if [[ -f "$config_dir/packages.bash" ]]; then
+  # shellcheck source=/dev/null
+  source "$config_dir/packages.bash"
+fi
+if [[ -f "$personal_file" ]]; then
+  # shellcheck source=/dev/null
+  source "$personal_file"
+  ok "packages.local.bash: ${#PERSONAL_PKGS[@]} package(s), ${#PERSONAL_FLATPAKS[@]} flatpak(s), ${#PERSONAL_GNOME_EXTENSIONS[@]} extension(s)"
+else
+  info "no packages.local.bash — only the repo's opinionated sets are installed"
+  info "  start from: cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash"
+fi
+
+# ---------------------------------------------------------------------------
+section "archinstall baseline"
+# archinstall owns these on a desktop profile, so they are reported, never
+# installed by ucli. Missing ones are warnings, not failures.
+for pkg in bluez pipewire wireplumber cups power-profiles-daemon; do
+  if pacman -Q "$pkg" >/dev/null 2>&1; then
+    ok "$pkg present (archinstall) "
+  else
+    warn "$pkg missing — archinstall normally installs it; add it yourself if you need it"
+  fi
+done
+
+# ---------------------------------------------------------------------------
 section "versioned gates"
 state_dir="${XDG_STATE_HOME:-$real_home/.local/state}/ucli"
 if [[ -d "$state_dir/gates" ]]; then

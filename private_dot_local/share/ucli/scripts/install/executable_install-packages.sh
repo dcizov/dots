@@ -20,7 +20,8 @@ Modes:
   desktop         desktop environment packages (+ that desktop's terminal & firefox)
   essentials      firefox + the terminal for the chosen desktop (used by setup-desktop)
   apps            firefox + that desktop's terminal + personal apps and overrides
-  shell-overrides explicit shell override packages
+  media-codecs    gstreamer plugin set + ffmpeg (part of `base`)
+  hardware        fprintd / libinput-tools, only if the hardware is present
   dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
   gaming          opt-in gaming packages
@@ -82,6 +83,16 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
+
+# Personal picks, if this machine has an overlay (same idea as ~/.config/zsh/
+# local.zsh): PERSONAL_PKGS / PERSONAL_DEV / PERSONAL_FLATPAKS /
+# PERSONAL_GNOME_EXTENSIONS. Never chezmoi-managed, never required.
+personal_file="$real_home/.config/ucli/packages.local.bash"
+if [[ -r "$personal_file" ]]; then
+  # shellcheck source=/dev/null
+  source "$personal_file"
+fi
+
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
@@ -219,7 +230,13 @@ select_desktop() {
 # (.chezmoiignore asks lookPath).
 select_essentials() {
   case "$desktop" in
-    gnome)     add_array DESKTOP_TERMINAL_GNOME ;;
+    gnome)
+      add_array DESKTOP_TERMINAL_GNOME
+      # The repo-packaged extensions (and gnome-shell-extensions, which carries
+      # user-theme) belong here: setup-desktop.sh installs the DE itself and
+      # never calls `desktop` mode, so anything listed only there never lands.
+      add_array GNOME_SYSTEM_EXTENSION_PACKAGES
+      ;;
     hyprland)  add_array DESKTOP_TERMINAL_HYPRLAND ;;
     kde|plasma) add_array DESKTOP_TERMINAL_KDE ;;
     none|"")   return 0 ;;
@@ -266,16 +283,29 @@ select_packages() {
                                      # browser even when the desktop cannot be detected
       add_array APPS
       add_array MANUAL_AUR       # shelly (AUR) — installed via the AUR helper
+      add_array PERSONAL_PKGS    # packages.local.bash, empty when not set
       case "$desktop" in gnome) add_array GNOME_APP_OVERRIDES ;; esac
       ;;
-    shell-overrides)
-      case "$desktop" in gnome) add_array GNOME_SHELL_OVERRIDES ;; *) echo "No shell overrides defined for desktop=$desktop" >&2 ;; esac
+    media-codecs) add_array SYSTEM_MEDIA_CODECS ;;
+    hardware)
+      # Only what this machine actually has: a fingerprint reader needs fprintd,
+      # a touchpad or trackpoint makes libinput's CLI useful. Both are skipped
+      # silently on hardware that does not need them.
+      if [[ "$(detect_fingerprint 2>/dev/null || echo no)" == yes ]]; then
+        echo "hardware: fingerprint reader found, adding fprintd" >&2
+        add_array HARDWARE_FINGERPRINT
+      fi
+      if [[ "$(detect_touchpad 2>/dev/null || echo no)" == yes ]]; then
+        echo "hardware: touchpad/trackpoint found, adding libinput-tools" >&2
+        add_array HARDWARE_TOUCHPAD
+      fi
       ;;
     dev-cli) add_array DEV_CLI ;;
     dev)
       if (( force )) || [[ "$role" == *dev* ]]; then
         select_packages dev-cli
         add_array DEV
+        add_array PERSONAL_DEV     # packages.local.bash, empty when not set
       else
         echo "dev mode: role='$role' is not dev; skipping (use --force to override)" >&2
       fi
@@ -301,6 +331,8 @@ select_packages() {
       select_packages gpu
       select_packages zsh
       select_packages system-tools
+      select_packages media-codecs
+      select_packages hardware
       select_packages fonts
       ;;
     full)

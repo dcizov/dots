@@ -1,0 +1,18 @@
+# Your own Firefox extensions — copy to personal-extensions.txt and edit.
+#
+#   cp ~/.config/ucli/firefox/personal-extensions.txt.example \
+#      ~/.config/ucli/firefox/personal-extensions.txt
+#
+# `ucli apps` installs this list after the repo's extensions.txt. The file is
+# not chezmoi-managed, so it survives `chezmoi apply` and never goes upstream.
+#
+# Format: one AMO addon ID per line. Lines starting with '#' are ignored.
+
+# Password manager (Firefox's built-in manager is disabled in Betterfox)
+bitwarden-browser-extension@bitwarden.com
+
+# Dark theme for websites
+darkreader@darkreader.org
+
+# Userscript manager (for adguard scripts and custom userscripts)
+violentmonkey@violentmonkey.net

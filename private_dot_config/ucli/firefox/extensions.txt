@@ -1,15 +1,16 @@
-# Firefox extensions installed during `ucli apps` (all desktops)
-# Format: one extension ID per line (AMO addon ID, e.g. uBlock0@raymondhill.net)
-# Lines starting with # are ignored.
+# Firefox extensions installed by `ucli apps` — the opinionated ones only.
 #
-# To find an extension's ID, visit its addons.mozilla.org page and look for
-# the ID in the URL or page source.
+# Format: one AMO addon ID per line (addons.mozilla.org ID, e.g. uBlock0@raymondhill.net).
+# Lines starting with '#' are ignored.
+#
+# Which add-ons someone runs is personal, so this file ships empty on purpose:
+# the repo does not decide your browser. Put yours in
+#
+#     ~/.config/ucli/firefox/personal-extensions.txt
+#
+# (copy personal-extensions.txt.example), which `ucli apps` installs too.
+# `~/.config/ucli/firefox/dev-extensions.txt` is the same idea for `ucli devmode`.
+#
+# To find an extension's ID, open its addons.mozilla.org page and look for the
+# ID in the URL or view-source.
 
-# Password manager (Firefox's built-in manager is disabled in Betterfox)
-bitwarden-browser-extension@bitwarden.com
-
-# Dark theme for websites
-darkreader@darkreader.org
-
-# Userscript manager (for adguard scripts and custom userscripts)
-violentmonkey@violentmonkey.net
