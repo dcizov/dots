@@ -305,6 +305,7 @@ apply_replacements() {
         elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
           # shelly install = repos, shelly install aur = AUR
           # --needed skips already-installed packages (idempotent re-runs)
+          # --no-confirm makes shelly non-interactive (no prompts)
           if pacman -Si "${replace_with[$i]}" >/dev/null 2>&1; then
             runuser -u "$real_user" -- shelly install "${replace_with[$i]}" --needed --no-confirm 2>/dev/null || true
           else

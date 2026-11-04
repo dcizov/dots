@@ -128,12 +128,29 @@ if ((${#xpi_map[@]} == 0)); then
 fi
 
 # Place each XPI into each profile's extensions/ dir with extension ID as filename
+# Skip extensions already installed in all profiles
 total_installed=0
+total_skipped=0
 total_failed=0
 
 for ext_id in "${!xpi_map[@]}"; do
   xpi_file="${xpi_map[$ext_id]}"
   echo "==> installing $ext_id ..."
+
+  # Skip if XPI already exists in all profiles (idempotent re-runs)
+  already_installed=1
+  for prof_dir in "${profile_dirs[@]}"; do
+    if [[ ! -f "$prof_dir/extensions/${ext_id}.xpi" ]]; then
+      already_installed=0
+      break
+    fi
+  done
+
+  if (( already_installed )); then
+    echo "    already installed in all profiles; skipping"
+    total_skipped=$((total_skipped + 1))
+    continue
+  fi
 
   installed_any=0
   for prof_dir in "${profile_dirs[@]}"; do
@@ -153,6 +170,10 @@ for ext_id in "${!xpi_map[@]}"; do
     total_failed=$((total_failed + 1))
   fi
 done
+
+echo
+echo "==> done. $total_installed installed, $total_skipped skipped (already installed), $total_failed failed."
+echo "    Restart Firefox to activate new extensions."
 
 echo
 echo "==> done. $total_installed installed, $total_failed failed."

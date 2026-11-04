@@ -296,11 +296,8 @@ if ((${#aur_packages[@]})); then
     paru "${paru_args[@]}" "${aur_packages[@]}"
   elif [[ "$aur_helper" == "shelly" ]]; then
     # --needed skips already-installed AUR packages (idempotent re-runs)
-    if (( yes_flag )); then
-      shelly install aur "${aur_packages[@]}" --needed --no-confirm
-    else
-      shelly install aur "${aur_packages[@]}" --needed
-    fi
+    # --no-confirm makes shelly non-interactive (no prompts)
+    shelly install aur "${aur_packages[@]}" --needed --no-confirm
   fi
 fi
 
