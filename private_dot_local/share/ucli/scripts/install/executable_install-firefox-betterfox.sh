@@ -21,11 +21,18 @@ if ! command -v firefox >/dev/null 2>&1; then
   exit 0
 fi
 
-PROFILE_DIR="$real_home/.mozilla/firefox"
+# Find Firefox profile directory (XDG-compliant first, then traditional)
+PROFILE_DIR=""
+if [[ -d "$real_home/.config/mozilla/firefox" ]]; then
+  PROFILE_DIR="$real_home/.config/mozilla/firefox"
+elif [[ -d "$real_home/.mozilla/firefox" ]]; then
+  PROFILE_DIR="$real_home/.mozilla/firefox"
+fi
+
 SOURCE_USER_JS="$real_home/.config/firefox/user.js"
 
-if [[ ! -d "$PROFILE_DIR" ]]; then
-  echo "no Firefox profile found at $PROFILE_DIR; skipping Betterfox" >&2
+if [[ -z "$PROFILE_DIR" ]]; then
+  echo "no Firefox profile found; skipping Betterfox" >&2
   echo "  launch Firefox once to create a profile, then re-run: ucli apps" >&2
   exit 0
 fi
@@ -36,15 +43,12 @@ if [[ ! -f "$SOURCE_USER_JS" ]]; then
 fi
 
 # profiles.ini lists all profiles; copy user.js into each one that has a directory
-echo "Installing Betterfox user.js into Firefox profiles ..."
+echo "Installing Betterfox user.js into Firefox profiles ($PROFILE_DIR) ..."
 
 while IFS= read -r line; do
   # Parse Path= line from profiles.ini
   path="${line#Path=}"
   if [[ "$path" != "$line" ]]; then
-    # IsAbsolute=1 means absolute path; otherwise relative to PROFILE_DIR
-    is_abs=""
-    # Read the next lines to check IsAbsolute — simpler: just check if path starts with /
     if [[ "$path" == /* ]]; then
       prof_dir="$path"
     else

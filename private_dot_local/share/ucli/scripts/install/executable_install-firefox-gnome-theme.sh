@@ -22,10 +22,17 @@ if ! command -v firefox >/dev/null 2>&1; then
   exit 0
 fi
 
+# Find Firefox profile directory (XDG-compliant first, then traditional)
+PROFILE_DIR=""
+if [[ -d "$real_home/.config/mozilla/firefox" ]]; then
+  PROFILE_DIR="$real_home/.config/mozilla/firefox"
+elif [[ -d "$real_home/.mozilla/firefox" ]]; then
+  PROFILE_DIR="$real_home/.mozilla/firefox"
+fi
+
 # Only install if a Firefox profile exists (install.sh needs profiles to integrate into)
-PROFILE_DIR="$real_home/.mozilla/firefox"
-if [[ ! -d "$PROFILE_DIR" ]]; then
-  echo "no Firefox profile found at $PROFILE_DIR; skipping firefox-gnome-theme" >&2
+if [[ -z "$PROFILE_DIR" ]]; then
+  echo "no Firefox profile found; skipping firefox-gnome-theme" >&2
   echo "  launch Firefox once to create a profile, then re-run: ucli apps" >&2
   exit 0
 fi
