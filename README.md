@@ -61,14 +61,44 @@ What each layer actually puts on disk:
 | dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty`, `~/.config/mozilla` |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
 | desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **ghostty**, **firefox**, GNOME extension set, snapshot |
-| shell | `ucli cli` | oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, `chsh -s zsh`, cosmetic tooling (starship, eza, bat, zoxide, atuin, tealdeer, glow, fzf) |
+| shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
+| cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
 | apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + Betterfox `user.js`, extension list, Firefox GNOME theme |
 | dev | `ucli devmode` | `DEV_CLI` plumbing + `DEV` stack + dev box |
 
-`ucli cli` on top of a plain zsh: oh-my-zsh + plugins is the standard setup, and
+`ucli cli` on top of a plain zsh: oh-my-zsh + plugins + starship is the standard
+setup (installed by `install-shell.sh`, which the desktop step also runs), and
 the ucli layer rides on it through `plugins=()` and `~/.config/zsh/conf.d/*`
 (deployed by chezmoi, so `ucli chezmoi-apply` refreshes it). Nothing in that
 layer is ucli-specific magic — the same files work in the dev box.
+
+### How this compares to `ujust bluefin-cli`
+
+Bluefin's recipe (`system_files/bluefin/usr/share/ublue-os/just/system.just`)
+is a **toggle**, not an installer: it runs `ublue-bling`, which adds or removes a
+single `source /usr/share/ublue-os/bling/bling.sh` line in `~/.zshrc`
+(`.bashrc`/fish `config.fish` for other shells). Only when turning the feature
+*on* does it also run `brew bundle --file=/usr/share/ublue-os/homebrew/cli.Brewfile`,
+which pulls `bat chezmoi direnv dysk eza fd gh podman-tui ripgrep tealdeer
+trash-cli yq zoxide starship mise`. Turning it off just removes the source line —
+the packages stay, you get your old shell back.
+
+The snippet it sources is a flag-gated alias layer, all defaulting to on:
+`BLUEFIN_SHELL_ENABLE_{EZA,UGREP,BAT,ATUIN,STARSHIP,ZOXIDE,UUTILSCOREUTILS,
+UUTILSFINDUTILS,UUTILSDIFFUTILS,MOTD}` (`CARAPACE` off). Concretely: `eza` for
+`ls/ll/l./l1`, `bat` for `cat`, `ug` for `grep/egrep/fgrep`, the uutils
+coreutils/findutils/diffutils Rust binaries prepended to `PATH`, `atuin init`,
+`starship init`, `zoxide init`, and a MOTD on new shells. It ships no shell
+framework and no plugins — it decorates whatever shell you already run. The
+cross-platform `bluefin-cli` binary (mac/WSL) is the same idea:
+`brew install ublue-os/experimental-tap/bluefin-cli`, then
+`bluefin-cli shell zsh on`.
+
+ucli's equivalent is split differently on purpose: `install-shell.sh` owns the
+framework (zsh + oh-my-zsh + plugin clones + `chsh`), `SHELL_TOOLS` brings
+starship, `ucli cli` adds the cosmetic binaries, and the alias/init layer lives
+in `~/.config/zsh/conf.d/*` under chezmoi — so it is versioned, diffable, and
+`ucli chezmoi-apply` is the "toggle" (edit the file, re-apply).
 
 On **CachyOS**, skip steps 3–6 — Calamares already did DE + Snapper/Limine:
 
@@ -223,13 +253,14 @@ Four package tiers live in `private_dot_config/ucli/packages.bash`:
 |---|---|---|
 | `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
 | `DESKTOP_ESSENTIALS` | `ghostty` + `firefox` — the terminal and browser the dotfiles assume | `desktop` mode → `ucli setup-system`/`setup-desktop`; also `ucli apps` |
-| `CLI` | the shell tier: `starship bat eza zoxide atuin tealdeer glow fzf` **plus** what `install-shell.sh` does — oh-my-zsh, the four plugin clones into `$ZSH_CUSTOM/plugins`, and `chsh -s zsh` | `ucli cli` |
+| `SHELL_TOOLS` | the shell tier: `zsh`, `git`, `curl`, `starship` — what `install-shell.sh` needs to build oh-my-zsh, clone the plugins and initialise the prompt | `ucli setup-system`/`setup-desktop` and `ucli cli` |
+| `CLI` | shell cosmetics on top: `eza bat zoxide atuin tealdeer glow fzf` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
 | `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin` | `ucli devmode` (`--force` bypasses the role check) |
 
 `dev` mode selects `dev-cli` first, so the heavy stack always arrives with its
-plumbing. `ucli cli` pulls its own prerequisites first (`SHELL_DEPS`: zsh, git,
-curl), so it works on a machine that never ran `ucli setup-system`.
+plumbing. `ucli cli` runs `install-shell.sh` first (`SHELL_TOOLS`: zsh, git,
+curl, starship), so it works on a machine that never ran `ucli setup-system`.
 `ucli full-profile` (a.k.a. `install-packages.sh full`) is
 `base + cli + dev + gaming`.
 

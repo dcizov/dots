@@ -351,6 +351,20 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" essentials || true
 fi
 
+# The shell tier (zsh + oh-my-zsh + plugins + starship) belongs to this step too:
+# `ucli setup-system` is the only machine-setup command a fresh install runs, so
+# if the shell waited for `ucli cli` you would boot into bash with no prompt.
+# Packages as root, then the user-owned part (omz, plugin clones, chsh) as the
+# real user — oh-my-zsh must never end up root-owned.
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" shell-tools || true
+fi
+if [[ -x "$script_dir/install-shell.sh" ]]; then
+  echo "Setting up the shell (oh-my-zsh, plugins, starship) for $real_user ..."
+  runuser -u "$real_user" -- env UCLI_SKIP_PACKAGES=1 "$script_dir/install-shell.sh" \
+    || echo "warning: shell setup failed; run 'ucli cli' as $real_user" >&2
+fi
+
 # GNOME extensions are handled by the extension-set script via gext.
 # Ensure gext is installed (via pipx) before installing extensions.
 if [[ "$desktop" == "gnome" ]]; then

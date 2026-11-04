@@ -10,14 +10,18 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # Pass real_home to oh-my-zsh installer via env so it uses the right home.
 export UCLI_REAL_HOME="$real_home"
 
-# The shell tier owns its prerequisites: zsh (the omz installer needs it),
-# git (plugins are cloned) and curl (omz is fetched). `ucli cli` therefore works
-# on a machine that never ran `ucli setup-system`.
-if [[ -x "$script_dir/install-packages.sh" ]]; then
-  "$script_dir/install-packages.sh" shell-deps
+# The shell tier installs its own tools: zsh (the omz installer needs it), git
+# (plugins are cloned), curl (omz is fetched) and starship (the prompt
+# 99-prompt.zsh initialises). This is why `ucli cli` works on a machine that
+# never ran `ucli setup-system`.
+#
+# setup-desktop runs as root and installs these itself before re-running this
+# script as the user, so it passes UCLI_SKIP_PACKAGES=1 to avoid a nested sudo.
+if [[ "${UCLI_SKIP_PACKAGES:-0}" != "1" && -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" shell-tools
 fi
 
-for cmd in zsh git curl; do
+for cmd in zsh git curl starship; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "error: '$cmd' is missing; run: ucli cli (or install it manually)" >&2
     exit 1
@@ -63,4 +67,7 @@ fi
 # chezmoi's: ~/.config/zsh/conf.d/*.zsh, pre-omz.zsh and ~/.config/starship.toml.
 if [[ ! -d "$real_home/.config/zsh/conf.d" ]]; then
   echo "warning: ~/.config/zsh/conf.d not found — run 'ucli chezmoi-apply' to deploy the ucli shell layer" >&2
+fi
+if [[ ! -r "$real_home/.config/starship.toml" ]]; then
+  echo "warning: ~/.config/starship.toml not found — starship will run with its default prompt (run 'ucli chezmoi-apply')" >&2
 fi

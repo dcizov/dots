@@ -43,14 +43,16 @@ BOOTSTRAP=(
   wget
 )
 
-# What `ucli cli` needs before it can build the shell experience: the zsh
-# binary, git to clone oh-my-zsh/plugins, curl for the omz installer. Kept apart
-# from CLI because they are dependencies, not cosmetics — and apart from
-# BOOTSTRAP because a machine without the shell tier should not need them.
-SHELL_DEPS=(
+# The shell tier proper: everything install-shell.sh puts in place. zsh (the
+# shell and the omz installer's prerequisite), git (plugin clones), curl (the omz
+# fetch) and starship (the prompt 99-prompt.zsh initialises). Installed by
+# `install-shell.sh`, which `ucli setup-system`/`setup-desktop` and `ucli cli`
+# all run — so starship is part of the shell, not a cosmetic extra.
+SHELL_TOOLS=(
   zsh
   git
   curl
+  starship
 )
 
 # Deliberately empty: these three used to be installed as Arch packages, which
@@ -141,14 +143,14 @@ UCLI_RUNTIME=(
 #   DEV_CLI  plumbing — parse, search, navigate, edit, run. Needed the moment
 #            you touch a repository, so it rides with `ucli devmode`.
 
-# Shell cosmetics.
+# Shell cosmetics: the toys that sit on top of the shell tier. Nothing here is
+# needed to get a working prompt — that is SHELL_TOOLS + oh-my-zsh.
 CLI=(
   atuin
   bat
   eza
   fzf
   glow
-  starship
   tealdeer
   zoxide
 )

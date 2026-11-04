@@ -12,7 +12,7 @@ Modes:
   ucli-runtime    ucli's own helpers (gum menus, pipx) — part of base
   cli             opt-in shell cosmetics (starship, eza, bat, zoxide, …)
   zsh             zsh plugin packages (now empty — plugins are git-cloned)
-  shell-deps      zsh binary + git + curl, the prerequisites of the shell tier
+  shell-tools     the shell tier: zsh + git + curl + starship (what install-shell.sh needs)
   system-tools    system/admin helpers
   cpu             CPU microcode
   gpu             GPU support
@@ -200,7 +200,7 @@ select_packages() {
     ucli-runtime|runtime) add_array UCLI_RUNTIME ;;
     cli) add_array CLI ;;
     zsh) add_array ZSH ;;
-    shell-deps) add_array SHELL_DEPS ;;
+    shell-tools|shell-deps) add_array SHELL_TOOLS ;;
     system-tools)
       add_array SYSTEM_CORE_TOOLS
       add_array SYSTEM_QOL_TOOLS

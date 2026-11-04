@@ -4,19 +4,19 @@ setup-system *ARGS:
     # base packages + desktop step (pass gnome/kde/hyprland, or omit to prompt)
     @~/.local/share/ucli/scripts/install/install-profile.sh {{ARGS}}
 
-# Set up the whole shell tier: oh-my-zsh + plugins + zsh login + cosmetics.
+# Add the shell cosmetics on top of the shell tier: eza, bat, zoxide, atuin, …
 [group('Install')]
 cli:
-    # opt-in shell tier (oh-my-zsh, plugins, prompt, aliases, fuzzy find)
-    @~/.local/share/ucli/scripts/install/install-packages.sh cli
+    # shell tier first (zsh, oh-my-zsh, plugins, starship), then the cosmetics
     @~/.local/share/ucli/scripts/install/install-shell.sh
+    @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
 # Alias of `ucli cli`, for symmetry with setup-system/setup-desktop/setup-apps.
 [group('Install')]
 setup-cli:
-    # alias of `ucli cli`: oh-my-zsh, plugins, prompt, cosmetic tooling
-    @~/.local/share/ucli/scripts/install/install-packages.sh cli
+    # alias of `ucli cli`: shell tier (zsh, oh-my-zsh, plugins, starship) + cosmetics
     @~/.local/share/ucli/scripts/install/install-shell.sh
+    @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
 # Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
 [group('Install')]
@@ -85,7 +85,7 @@ uninstall:
 _setup-desktop:
     @~/.local/share/ucli/scripts/install/install-desktop-profile.sh
 
-# Install shell setup.
+# Install shell setup (zsh + oh-my-zsh + plugins + starship).
 _shell:
     @~/.local/share/ucli/scripts/install/install-shell.sh
 
