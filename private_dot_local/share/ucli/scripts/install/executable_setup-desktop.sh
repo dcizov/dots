@@ -27,7 +27,26 @@ if (( EUID != 0 )); then
 fi
 
 desktop="${1:-}"
+
+# Auto-detect desktop: CLI arg → chezmoi profile → environment → installed pkgs
 if [[ -z "$desktop" ]]; then
+  # chezmoi profile value (set during initial setup)
+  if command -v chezmoi >/dev/null 2>&1; then
+    desktop="$(chezmoi data 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("desktop","none"))' 2>/dev/null || echo none)"
+  fi
+fi
+if [[ -z "$desktop" || "$desktop" == "none" || "$desktop" == "auto" ]]; then
+  # Environment / detected desktop session
+  desktop="$(detect_desktop 2>/dev/null || echo none)"
+fi
+if [[ -z "$desktop" || "$desktop" == "none" ]]; then
+  # Installed desktop packages as last resort
+  if pacman -Q gnome-shell >/dev/null 2>&1; then desktop="gnome"
+  elif { pacman -Q plasma-desktop >/dev/null 2>&1 || pacman -Q plasma-meta >/dev/null 2>&1; }; then desktop="kde"
+  elif pacman -Q hyprland >/dev/null 2>&1; then desktop="hyprland"
+  fi
+fi
+if [[ -z "$desktop" || "$desktop" == "none" ]]; then
   read -rp "Desktop [gnome/hyprland/kde]: " desktop
 fi
 case "$desktop" in
