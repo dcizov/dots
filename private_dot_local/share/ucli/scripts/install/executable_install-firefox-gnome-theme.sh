@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Install firefox-gnome-theme for GNOME desktop integration.
+# Install firefox-gnome-theme using the official install script.
 # Only runs when desktop is gnome and firefox is installed.
 #
-# Downloads the latest XPI from:
-#   https://github.com/rafaelmardojai/firefox-gnome-theme/releases/latest
-# and installs it via `firefox --install-extension`.
+# Clones the theme repo, then runs scripts/install.sh as the real user
+# so the theme is integrated into the user's Firefox profile(s).
 #
 # Source: https://github.com/rafaelmardojai/firefox-gnome-theme
+# Install docs: https://github.com/rafaelmardojai/firefox-gnome-theme/blob/master/README.md#installation-scripts
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,25 +22,32 @@ if ! command -v firefox >/dev/null 2>&1; then
   exit 0
 fi
 
-THEME_XPI="$real_home/.mozilla/extensions/firefox-gnome-theme@rafaelmardojai.xpi"
-THEME_DIR="$(dirname "$THEME_XPI")"
-mkdir -p "$THEME_DIR"
+# Clone the theme repo to a temp location
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
 
-# Download latest release XPI from GitHub
-LATEST_XPI="https://github.com/rafaelmardojai/firefox-gnome-theme/releases/latest/download/firefox-gnome-theme.xpi"
-
-echo "Downloading firefox-gnome-theme ..."
-if ! curl -fsSL -o "$THEME_XPI" "$LATEST_XPI"; then
-  echo "warning: could not download firefox-gnome-theme" >&2
+echo "Cloning firefox-gnome-theme ..."
+if ! git clone --depth=1 https://github.com/rafaelmardojai/firefox-gnome-theme.git "$TMPDIR/firefox-gnome-theme" 2>/dev/null; then
+  echo "warning: could not clone firefox-gnome-theme repo" >&2
   exit 0
 fi
 
-# Install via Firefox headless mode
-echo "Installing firefox-gnome-theme into Firefox ..."
-if ! firefox --headless --install-extension "$THEME_XPI" 2>/dev/null; then
-  echo "warning: firefox --install-extension failed" >&2
-  echo "  XPI saved to: $THEME_XPI" >&2
-  echo "  Install manually via Firefox Add-ons Manager" >&2
+INSTALL_SCRIPT="$TMPDIR/firefox-gnome-theme/scripts/install.sh"
+PROFILE_DIR="$real_home/.mozilla/firefox"
+
+if [[ ! -x "$INSTALL_SCRIPT" ]]; then
+  chmod +x "$INSTALL_SCRIPT"
+fi
+
+# Run install.sh as the real user — it auto-detects profiles in $PROFILE_DIR
+# and integrates userChrome.css/userContent.css/user.js for each one.
+echo "Installing firefox-gnome-theme into Firefox profile(s) ..."
+if [[ "$EUID" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
+  runuser -u "$real_user" -- env HOME="$real_home" "$INSTALL_SCRIPT" -f "$PROFILE_DIR" 2>/dev/null || \
+    echo "warning: firefox-gnome-theme install script failed" >&2
+else
+  "$INSTALL_SCRIPT" -f "$PROFILE_DIR" 2>/dev/null || \
+    echo "warning: firefox-gnome-theme install script failed" >&2
 fi
 
 echo "firefox-gnome-theme installed."
