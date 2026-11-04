@@ -57,6 +57,24 @@ sync *ARGS:
     # --status shows the service + device ID, --no-service installs only
     @~/.local/share/ucli/scripts/install/install-sync.sh {{ARGS}}
 
+# Virtual machines: qemu + libvirt + virt-manager on KVM. Not part of `ucli
+# devmode` — a dev box is a container, a VM is for other operating systems and
+# installer tests. Enables libvirtd, adds you to the `libvirt` group and starts
+# libvirt's default NAT network, so guests get an address out of the box.
+# Set up virtual machines (qemu + libvirt + virt-manager).
+[group('Install')]
+virt *ARGS:
+    # --status shows packages, /dev/kvm, group, daemon and the default network
+    @~/.local/share/ucli/scripts/install/install-virt.sh {{ARGS}}
+
+# Microsoft's core fonts (Arial, Times New Roman, Courier New, …) from the AUR.
+# The desktop step installs them too; this is the deliberate retry, because the
+# build downloads from SourceForge and that does fail now and then.
+# Install the Microsoft core fonts (AUR ttf-ms-fonts).
+[group('Install')]
+ms-fonts:
+    @~/.local/share/ucli/scripts/install/install-packages.sh --yes fonts-ms
+
 # Install paru idempotently (AUR helper).
 [group('Install')]
 install-paru:

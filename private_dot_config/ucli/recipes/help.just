@@ -30,6 +30,8 @@ usage:
     @printf '%s\n' '  ucli devbox-create ubuntu [name]  # throwaway box from a stock image'
     @printf '%s\n' '  ucli sync              # Syncthing: folder sync between machines'
     @printf '%s\n' '  ucli config-audit      # .pacnew + locally modified package files'
+    @printf '%s\n' '  ucli virt [--status]   # qemu/libvirt/virt-manager + libvirtd'
+    @printf '%s\n' '  ucli ms-fonts          # AUR ttf-ms-fonts (Arial, Times New Roman, …)'
     @printf '%s\n' ''
     @printf '%s\n' 'GNOME:'
     @printf '%s\n' '  ucli gnome             # extensions, settings backup/restore'

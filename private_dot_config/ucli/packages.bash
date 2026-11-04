@@ -55,13 +55,10 @@ SHELL_TOOLS=(
   starship
 )
 
-# Deliberately empty: these three used to be installed as Arch packages, which
-# put them in /usr/share/zsh/plugins — a location the dev box (Debian) does not
-# have. They are now cloned into $ZSH_CUSTOM/plugins by install-shell.sh and
-# loaded by oh-my-zsh's plugins=() array, so both systems run the same files
-# from the same place. Kept as an (empty) array because install-packages.sh and
-# validate-packages.sh reference it by name.
-ZSH=()
+# zsh plugins are deliberately not Arch packages here: install-shell.sh clones
+# them into $ZSH_CUSTOM/plugins, because the packages install into
+# /usr/share/zsh/plugins and the dev box (Debian) has no such directory. There
+# is therefore no zsh-plugin array at all — the shell itself is SHELL_TOOLS above.
 
 SYSTEM_CORE_TOOLS=(
   expac
@@ -154,6 +151,17 @@ FONTS_THEMES=(
   adwaita-icon-theme-legacy
 )
 
+# Microsoft's core fonts (Arial, Times New Roman, Courier New, Verdana, …) — the
+# set every document, PDF and half the web expects and no Linux distro ships.
+# Bluefin gets them from the Homebrew tap colindean/fonts-nonfree; on Arch the
+# same fonts are the AUR package ttf-ms-fonts (the AUR's most-voted font
+# package). Separate from FONTS_THEMES for one reason: it is AUR-only and its
+# payload comes from SourceForge, so a failed build must not take the repo fonts
+# down with it. Install with `ucli ms-fonts`.
+FONTS_MS=(
+  ttf-ms-fonts
+)
+
 # -----------------------------
 # ucli runtime — not optional
 # -----------------------------
@@ -239,6 +247,23 @@ DEV_PERF=(
   nicstat
 )
 
+# Virtual machines — deliberately NOT part of `ucli devmode`: a dev box is a
+# container (distrobox), a VM is for testing installers, other OSes and
+# snapshots you would not run on the host. `qemu-desktop` is the full-system
+# emulator (the `qemu-full` metapackage also drags every other target),
+# `edk2-ovmf` gives UEFI guests, `swtpm` an emulated TPM 2.0 (Windows 11 wants
+# one), `dnsmasq` backs libvirt's default NAT network. `ucli virt` enables
+# libvirtd and puts you in the `libvirt` group; that is the whole install.
+VIRT=(
+  qemu-desktop
+  libvirt
+  virt-manager
+  virt-viewer
+  edk2-ovmf
+  swtpm
+  dnsmasq
+)
+
 GAMING=(
   steam
   mangohud
@@ -277,6 +302,13 @@ DESKTOP_GNOME_BASE=(
   gnome
   gnome-tweaks
 )
+
+# GNOME has no ADDITIONS tier: the gnome group is complete, and the optional
+# extras (gnome-boxes, the Nautilus extensions, extension-manager) are
+# GNOME_APP_OVERRIDES below — they belong to `ucli apps`, not to the desktop
+# install. The empty array exists so setup-desktop can read
+# DESKTOP_<DE>_BASE + DESKTOP_<DE>_ADDITIONS for every desktop alike.
+DESKTOP_GNOME_ADDITIONS=()
 
 # ArchWiki: "gnome-shell-extensions package provides a set of very useful
 # extensions maintained as part of the GNOME project."
@@ -387,31 +419,32 @@ SERVICES_GNOME=(
 # -----------------------------
 # Hyprland / KDE
 
-# Hyprland essentials: compositor + bar/launcher + portal + session tools.
-# The terminal is not here: DESKTOP_TERMINAL_HYPRLAND picks it (ghostty).
-# Optional / removable:
-#   dolphin      -- file manager (remove if you use another)
-#   wofi         -- app launcher (remove if you use rofi/wofi alternatives)
-#   grim/slurp   -- screenshot tools (remove if you don't screenshot)
+# Hyprland essentials: compositor + notifications + launcher + portal + session
+# tools. The terminal is not here: DESKTOP_TERMINAL_HYPRLAND picks it (ghostty).
+# What a session needs to be usable is BASE; what is merely convenient is
+# ADDITIONS, which `setup-desktop --choose` offers as separate toggles and which
+# a distro-installed Hyprland still gets (`--additions-only`). The display
+# manager is neither: it is SERVICES_HYPRLAND below, and setup-desktop /
+# install-packages install and enable it from there.
 # -----------------------------
 
 DESKTOP_HYPRLAND_BASE=(
   hyprland
   dunst
   uwsm
-  dolphin
   wofi
   xdg-desktop-portal-hyprland
   qt5-wayland
   qt6-wayland
   polkit-kde-agent
-  grim
-  slurp
   wl-clipboard
-  sddm
 )
 
-DESKTOP_HYPRLAND_ADDITIONS=()
+DESKTOP_HYPRLAND_ADDITIONS=(
+  dolphin      # file manager — remove if you use another
+  grim         # screenshots (grim + slurp) — remove if you don't screenshot
+  slurp
+)
 
 SERVICES_HYPRLAND=(
   sddm
@@ -419,15 +452,18 @@ SERVICES_HYPRLAND=(
 
 # KDE essentials. The full `plasma` group brings the KDE application set that
 # most people never open (see DESKTOP_SKIP_KDE below); the terminal comes from
-# DESKTOP_TERMINAL_KDE.
+# DESKTOP_TERMINAL_KDE. The two apps worth naming explicitly are ADDITIONS: on a
+# distro-provided Plasma they are already there, on a bare one they come with
+# `--additions-only` or `ucli setup-desktop --choose`.
 DESKTOP_KDE_BASE=(
   plasma
   plasma-wayland-session
+)
+
+DESKTOP_KDE_ADDITIONS=(
   dolphin
   kate
 )
-
-DESKTOP_KDE_ADDITIONS=()
 
 SERVICES_KDE=(
   sddm

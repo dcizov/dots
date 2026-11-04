@@ -15,6 +15,8 @@ ucli bios              # reboot into firmware settings (asks first)
 ucli bios-info         # board + firmware version
 ucli config-audit      # unmerged .pacnew files + locally modified package files
 ucli sync              # Syncthing: folder sync between two machines
+ucli virt              # qemu/libvirt/virt-manager + libvirtd + the libvirt group
+ucli ms-fonts          # Microsoft core fonts (AUR ttf-ms-fonts)
 ```
 
 `ucli config-audit` is the Arch answer to Bluefin's `ujust check-local-overrides`
@@ -26,6 +28,24 @@ either way — drift is normal, but it should not be invisible. Read-only.
 not root) and prints the Web GUI and this machine's device ID; pairing is the
 same two-click dance as Bluefin's *Sync Folder*, because writing `config.xml`
 behind the GUI's back would only fight it.
+
+### Firmware
+
+`fwupd` is in `SYSTEM_CORE_TOOLS`, so it arrives with `base` (`ucli setup-system`):
+GNOME's Firmware panel talks to it over D-Bus and needs no service of its own.
+On the command line, and worth running after a BIOS/firmware update:
+
+```bash
+fwupdmgr get-devices           # what it can see (UEFI dbx, SSD/EC firmware, docks)
+sudo fwupdmgr refresh --force  # pull the latest metadata from LVFS
+sudo fwupdmgr get-updates      # what is pending
+sudo fwupdmgr update           # apply (some updates only land on reboot)
+```
+
+Arch does not enable the LVFS metadata download by itself; `refresh` is what
+fetches it. Firmware that LVFS does not carry (most laptop ECs, some docks) is
+still a vendor/manual job — `ucli bios` reboots straight into the firmware UI
+for that.
 
 `ucli update` warns about foreign (AUR / locally built) packages and asks
 before upgrading — the Arch analogue of `ujust update` refusing to run while

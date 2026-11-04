@@ -38,7 +38,9 @@ Every package list lives in `private_dot_config/ucli/packages.bash`:
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit vim tmux shfmt` — needed the moment you touch a repo (`neovim` is a personal pick, see the overlay below) | `ucli devmode` |
 | `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin vscodium-bin-marketplace`, plus `tailscale` (installed only — `systemctl enable --now tailscaled` and `tailscale up` stay yours). `podman` is there because distrobox needs it, **docker is the dev runtime**: `ucli devmode` also enables `docker.service` and puts you in the `docker` group, which installing the package does not do | `ucli devmode` (`--force` bypasses the role check) |
 | `DEV_PERF` | opt-in profiling set: `perf`, `sysprof`, `bcc`, `bpftrace`, `sysstat`, `trace-cmd`, `numactl`, `nicstat` (AUR) — the Ubuntu/Bluefin-DX list. Bluefin also lists `tiptop`; Arch has no package for it, so it is not in the array | `ucli devmode` → item *Performance tooling* |
+| `VIRT` | virtual machines: `qemu-desktop libvirt virt-manager virt-viewer edk2-ovmf swtpm dnsmasq`. Not part of `DEV`: a dev box is a distrobox container, a VM is for testing installers and other operating systems. `ucli virt` installs the set, enables libvirtd, adds you to the `libvirt` group and starts libvirt's default NAT network | `ucli virt` (`--status` to inspect) |
 | `FONTS_THEMES` | not a taste: the fonts the shipped configs name (`ttf-jetbrains-mono` + `-nerd` — ghostty and VSCodium's terminal ask for `JetBrainsMono Nerd Font`, the editor falls back to the plain family) plus `adw-gtk-theme` and `adwaita-icon-theme-legacy` (Bluefin ships the same Adwaita + legacy-icon pair). A third-party icon set such as Papirus is personal: the shipped GNOME profile points at Adwaita, so installing Papirus means setting the icon theme yourself | `base` → `ucli setup-system`; `ucli setup-desktop` |
+| `FONTS_MS` | Microsoft's core fonts (`ttf-ms-fonts`, AUR) — Arial, Times New Roman, Courier New, Verdana: the set documents, PDFs and half the web still name. Bluefin gets the same fonts from the Homebrew tap `colindean/fonts-nonfree`. Kept out of `FONTS_THEMES` because it is AUR-only and downloads from SourceForge, so a failed build must not take the repo fonts with it | `ucli setup-desktop` (non-fatal), `ucli ms-fonts` to retry |
 | `SYSTEM_MEDIA_CODECS` | `gst-plugins-good bad ugly`, `gst-libav`, `ffmpeg` — archinstall installs none of them, and GNOME's own video apps only pull `gst-plugins-base` | `base` → `ucli setup-system` |
 | `HARDWARE_FINGERPRINT` / `HARDWARE_TOUCHPAD` | `fprintd` when a reader is found (USB ids 138a/06cb/27c6/08ff/0483), `libinput-tools` when a touchpad or trackpoint is | `base`, decided by `lib/detect.sh` — never on hardware that does not need it |
 
@@ -59,6 +61,13 @@ and a machine with no desktop gets neither. `~/.config/ghostty` and
 `~/.config/kitty` follow the same rule on the dotfiles side (`.chezmoiignore`
 asks `lookPath`), so you never end up with a terminal config for a terminal you
 do not have. Want one terminal everywhere? Point all three arrays at it.
+
+**Virtual machines are not a dev-mode item.** `ucli devmode` is about writing
+software; `virt` is about running another operating system — installer testing,
+a Windows guest, a throwaway snapshot you would not boot on the host. It has its
+own recipe and its own array, and `ucli devmode` never touches it. The step that
+is easy to forget is the one that makes it usable: `docker` and `libvirt` both
+need a group membership, and a group change only applies to new sessions.
 
 `base` does not install a desktop: `setup-desktop.sh` owns that step, so the
 skip/replace matrix, firefox + terminal, the extension set and the snapshot all

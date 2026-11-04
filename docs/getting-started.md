@@ -118,8 +118,8 @@ This is the one big compound step. `install-profile.sh` runs these in order:
 | 1 | preflight | warns (and asks, on a TTY) when there is no snapper config |
 | 2 | restore point | `before setup-system` — the same snapshot script as every other step |
 | 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools (+ `fwupd`), multimedia codecs, hardware-detected extras (`fprintd`, `libinput-tools`), fonts, `UCLI_RUNTIME` (gum + python-pipx) — no flatpaks yet |
-| 4 | the desktop | the DE package set through the skip/replace matrix in `packages.bash` (`gnome` group, `plasma`, or the Hyprland set) |
-| 5 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE |
+| 4 | the desktop | the DE package set through the skip/replace matrix in `packages.bash` — `DESKTOP_<DE>_BASE` + `DESKTOP_<DE>_ADDITIONS`, so the lists live in one place — then that desktop's display manager enabled (`gdm`, `sddm`) |
+| 5 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE, and the Microsoft core fonts (AUR `ttf-ms-fonts`; a failed SourceForge download is a warning, not an abort — `ucli ms-fonts` retries) |
 | 6 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
 | 7 | dotfiles | `chezmoi apply` as you — now that the programs exist, `~/.zshrc`, `~/.config/zsh`, `starship.toml`, `~/.config/ghostty`, `~/.config/ucli/firefox` deploy |
 | 8 | GNOME extensions | `gext` via pipx, then the `system` set (dash-to-dock, blur-my-shell, gsconnect, search-light, copyous) and the `personal` set if you defined one (GNOME only) |
@@ -158,6 +158,8 @@ Each is independent; run what you want, when you want.
 | `ucli apps` | `APPS` + `APP_FLATPAKS` (desktop tooling + flatpak housekeeping) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay, then the Firefox extension lists and the personal GNOME extension set | Firefox + terminal are included, so this also works as a one-shot "give me a browser" — and the profile config (Betterfox, theme) comes with it via the shared script |
 | `ucli devmode` | wizard: dev CLI (jq, ripgrep, fd, tmux, mise, …), dev stack (docker, podman for distrobox, distrobox, vscodium) **with `docker.service` enabled and your user added to the `docker` group**, performance tooling (perf, bcc, bpftrace, sysprof, …), dev flatpaks, VSCodium extensions, Firefox dev extensions, the Debian dev box | `--all` everything, `--status`, `--reset`; re-running offers "add more?" |
 | `ucli gaming` | `GAMING`: steam, mangohud, gamemode + 32-bit bits | role-gated; `--force` overrides |
+| `ucli virt` | `VIRT`: qemu-desktop, libvirt, virt-manager, virt-viewer, edk2-ovmf, swtpm, dnsmasq — then libvirtd enabled, you in the `libvirt` group, libvirt's default NAT network up | deliberately not in `devmode`; `--status` checks `/dev/kvm` and group membership, `--no-service` installs only |
+| `ucli ms-fonts` | `FONTS_MS`: AUR `ttf-ms-fonts` (Arial, Times New Roman, …) | already tried by step 3; this is the retry |
 
 ## Configuring it
 

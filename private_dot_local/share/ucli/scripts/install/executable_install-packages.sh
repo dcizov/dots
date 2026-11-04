@@ -6,17 +6,17 @@ usage() {
 usage: install-packages.sh [--dry-run] [--yes] [--distro=ID] [--cpu=VENDOR] [--gpu=VENDOR] [--desktop=DE] [--base-desktop] [--additions-only] MODE
 
 Modes:
-  base            bootstrap + cpu + gpu + zsh + system-tools + fonts + ucli runtime
-                  (desktop is setup-desktop's job; full includes it)
+  base            bootstrap + cpu + gpu + system-tools + fonts + ucli runtime
+                  (the shell itself is `shell-tools`; desktop is setup-desktop's job)
   bootstrap       packages needed for chezmoi/ucli bootstrap
   ucli-runtime    ucli's own helpers (gum menus, pipx) — part of base
   cli             opt-in shell cosmetics (starship, eza, bat, zoxide, …)
-  zsh             zsh plugin packages (now empty — plugins are git-cloned)
   shell-tools     the shell tier: zsh + git + curl + starship (what install-shell.sh needs)
   system-tools    system/admin helpers
   cpu             CPU microcode
   gpu             GPU support
-  fonts           fonts/themes
+  fonts           fonts/themes the shipped configs reference
+  fonts-ms        Microsoft core fonts (AUR ttf-ms-fonts)
   desktop         desktop environment packages (+ that desktop's terminal & firefox)
   essentials      firefox + the terminal for the chosen desktop (used by setup-desktop)
   apps            firefox + that desktop's terminal + personal apps and overrides
@@ -26,6 +26,7 @@ Modes:
   dev             opt-in dev-cli + developer packages
   perf            opt-in performance/profiling tooling (perf, bcc, sysprof, …)
   gaming          opt-in gaming packages
+  virt            virtual machines: qemu/libvirt/virt-manager (+ `ucli virt` for the service)
   snapshot        Btrfs/Snapper/Limine packages
   full            base + cli + dev + gaming(if enabled)
 
@@ -121,7 +122,14 @@ missing_packages=()
 services=()
 
 add_array() { local name="$1"; eval 'selected_packages+=("${'"$name"'[@]:-}")'; }
-add_service_array() { local name="$1"; eval 'services+=("${'"$name"'[@]:-}")'; }
+# Session services (gdm, sddm) are packages too, and "installed but not enabled"
+# is a half-done desktop — so a service array publishes both the unit to enable
+# and the package to install. One array, no second list.
+add_service_array() {
+  local name="$1"
+  eval 'services+=("${'"$name"'[@]:-}")'
+  eval 'selected_packages+=("${'"$name"'[@]:-}")'
+}
 uniq_array() { awk 'NF && !seen[$0]++'; }
 
 aur_exists() {
@@ -255,7 +263,6 @@ select_packages() {
     bootstrap) add_array BOOTSTRAP ;;
     ucli-runtime|runtime) add_array UCLI_RUNTIME ;;
     cli) add_array CLI ;;
-    zsh) add_array ZSH ;;
     shell-tools|shell-deps) add_array SHELL_TOOLS ;;
     system-tools)
       add_array SYSTEM_CORE_TOOLS
@@ -276,6 +283,7 @@ select_packages() {
       case "$gpu" in amd) add_array GPU_AMD ;; intel) add_array GPU_INTEL ;; nvidia) add_array GPU_NVIDIA ;; *) echo "Unknown GPU: $gpu" >&2 ;; esac
       ;;
     fonts) add_array FONTS_THEMES ;;
+    fonts-ms) add_array FONTS_MS ;;
     essentials) select_essentials ;;
     desktop) select_desktop ;;
     apps)
@@ -319,6 +327,7 @@ select_packages() {
         echo "gaming mode: gaming='$gaming' role='$role'; skipping (use --force to override)" >&2
       fi
       ;;
+    virt) add_array VIRT ;;
     snapshot)
       if (( is_cachyos )); then echo "CachyOS detected: snapshot/bootloader integration is installer-owned; skipping" >&2; return 0; fi
       add_array SNAPSHOT_LIMINE
@@ -331,7 +340,6 @@ select_packages() {
       select_packages bootstrap
       select_packages cpu
       select_packages gpu
-      select_packages zsh
       select_packages system-tools
       select_packages media-codecs
       select_packages hardware

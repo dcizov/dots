@@ -8,6 +8,10 @@
 # dotfiles that need those programs to exist, then configures Firefox (profile,
 # Betterfox user.js, GNOME theme), then snapshots as "<DE> Setup".
 #
+# The package set is DESKTOP_<DE>_BASE + DESKTOP_<DE>_ADDITIONS + SERVICES_<DE>
+# from packages.bash — this script holds no package list of its own, so
+# `install-packages.sh desktop`, `--choose` and this step cannot drift apart.
+#
 # Intended for Arch minimal (archinstall) post-console-first-boot flow:
 #   1. curl -fsSL .../dcizov/dots/main/install.sh | bash   # git, chezmoi, just, ucli
 #   2. ucli setup-snapshots        # snapper + limine, snapshot #1 (btrfs)
@@ -89,11 +93,6 @@ source "$real_home/.config/ucli/packages.bash"
 aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
 
-# Enable GDM for GNOME desktop.
-if [[ "$desktop" == "gnome" ]]; then
-  systemctl enable gdm.service 2>/dev/null || true
-fi
-
 # Install desktop packages applying the replacement matrix from packages.bash.
 # Skips packages in DESKTOP_SKIP_<DE> and replaces packages in DESKTOP_REPLACE_<DE>.
 install_desktop_with_replacements() {
@@ -124,23 +123,16 @@ install_desktop_with_replacements() {
     done
   fi
 
-  # Build the final package list: full DE set minus skipped, plus replacements
+  # Build the final package list from packages.bash: BASE (what a session needs)
+  # + ADDITIONS (what is merely convenient) + this desktop's services (sddm/gdm
+  # are packages too — enabling a unit whose package is missing is a no-op).
+  # The skip/replace matrix is applied on top. No package name is repeated here.
+  local base_var="DESKTOP_${de^^}_BASE"
+  local add_var="DESKTOP_${de^^}_ADDITIONS"
+  local svc_var="SERVICES_${de^^}"
   local -a all_pkgs=()
-  case "$de" in
-    gnome)
-      # Use DESKTOP_GNOME_BASE which already includes `gnome` (full group)
-      # + gnome-tweaks. Skip/replace logic below still applies on top.
-      all_pkgs=("${DESKTOP_GNOME_BASE[@]}")
-      ;;
-    hyprland)
-      # No terminal here: install-packages.sh essentials picks it per desktop.
-      all_pkgs=(hyprland uwsm xdg-desktop-portal-hyprland sddm
-                dolphin wofi grim slurp dunst)
-      ;;
-    kde)
-      all_pkgs=(plasma plasma-wayland-session sddm dolphin kate)
-      ;;
-  esac
+  local -n base_ref="$base_var" add_ref="$add_var" svc_ref="$svc_var"
+  all_pkgs=("${base_ref[@]}" "${add_ref[@]}" "${svc_ref[@]}")
 
   local -a final_pkgs=()
   for pkg in "${all_pkgs[@]}"; do
@@ -175,58 +167,46 @@ install_desktop_with_replacements() {
 }
 
 if (( choose )); then
-  # Interactive: let user pick which package groups to install.
+  # Interactive: pick which groups to install. Every group is a packages.bash
+  # array — core is BASE, extras is ADDITIONS, plus the terminal and the browser
+  # this desktop is configured for — so this menu cannot drift from the arrays.
   declare -A groups=()
   declare -A pkgs=()
 
+  add_group() {
+    local name="$1" desc="$2" arr="$3"
+    local -a items=()
+    local -n ref="$arr"
+    items=("${ref[@]}")
+    ((${#items[@]})) || return 0          # an empty array is not offered
+    groups[$name]="$desc"
+    pkgs[$name]="$(printf '%s ' "${items[@]}")"
+  }
+
+  add_group core "${desktop} session (required)" "DESKTOP_${desktop^^}_BASE"
+  add_group extras "optional ${desktop} apps and tools" "DESKTOP_${desktop^^}_ADDITIONS"
   case "$desktop" in
     gnome)
-      groups[core]="GNOME full desktop + core apps (required)"
-      pkgs[core]="${DESKTOP_GNOME_BASE[*]}"
-      groups[tweaks]="Appearance customization (gnome-tweaks)"
-      pkgs[tweaks]="gnome-tweaks"
-      groups[vms]="Virtual machine manager (gnome-boxes — remove if unused)"
-      pkgs[vms]="gnome-boxes"
-      groups[gdm-config]="GDM theme/config (gdm-settings — remove if defaults OK)"
-      pkgs[gdm-config]="gdm-settings"
-      groups[nautilus-ext]="Nautilus extensions (admin, my-computer, open-any-terminal)"
-      pkgs[nautilus-ext]="nautilus-admin-gtk4 nautilus-my-computer nautilus-open-any-terminal"
+      add_group apps "GNOME extras: boxes, Nautilus extensions, extension manager" GNOME_APP_OVERRIDES
+      add_group terminal "Terminal (ghostty, the configured one)" DESKTOP_TERMINAL_GNOME
       ;;
     hyprland)
-      groups[core]="Hyprland compositor + session essentials (required)"
-      pkgs[core]="hyprland uwsm xdg-desktop-portal-hyprland sddm"
-      groups[terminal]="Terminal (ghostty, the configured one)"
-      pkgs[terminal]="ghostty"
-      groups[file-manager]="File manager (dolphin — remove if unused)"
-      pkgs[file-manager]="dolphin"
-      groups[launcher]="App launcher (wofi — remove if unused)"
-      pkgs[launcher]="wofi"
-      groups[screenshot]="Screenshot tools (grim slurp — remove if unused)"
-      pkgs[screenshot]="grim slurp"
-      groups[notifications]="Notification daemon (dunst)"
-      pkgs[notifications]="dunst"
+      add_group terminal "Terminal (ghostty, the configured one)" DESKTOP_TERMINAL_HYPRLAND
       ;;
     kde)
-      groups[core]="KDE Plasma desktop (required)"
-      pkgs[core]="plasma plasma-wayland-session sddm"
-      groups[apps]="Core KDE apps (dolphin kate)"
-      pkgs[apps]="dolphin kate"
-      groups[terminal]="Terminal (kwi — KDE's new one; AUR kwi-git, else Konsole from plasma)"
-      pkgs[terminal]="kwi"
+      add_group terminal "Terminal (kwi — KDE's new one; AUR kwi-git, else Konsole from plasma)" DESKTOP_TERMINAL_KDE
       ;;
   esac
+  add_group browser "Firefox (the configured browser)" DESKTOP_BROWSER
 
   echo "Select $desktop package groups to install:"
   echo
   items=()
-  item_to_group=()
-  for name in "${!groups[@]}"; do
-    items+=("$name — ${groups[$name]}")
-    item_to_group+=("$name")
+  # core was added first on purpose: it stays first in the menu.
+  for name in core extras apps terminal browser; do
+    [[ -n "${groups[$name]:-}" ]] && items+=("$name — ${groups[$name]}")
   done
-
-  # Sort so core is first
-  IFS=$'\n' sorted=($(sort <<<"${items[*]}")); unset IFS
+  sorted=("${items[@]}")
 
   choose_one() {
     local prompt="$1"; shift
@@ -259,17 +239,31 @@ if (( choose )); then
   install_pkgs=()
   for c in "${chosen[@]}"; do
     gname="${c%% — *}"
-    # shellcheck disable=SC2086
-    install_pkgs+=(${pkgs[$gname]})
+    # The group's packages were stored space-separated (it is a word list).
+    read -r -a group_items <<<"${pkgs[$gname]:-}"
+    install_pkgs+=("${group_items[@]}")
   done
 
+  aur_pkgs=()
   for pkg in "${install_pkgs[@]}"; do
     if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
       sudo pacman -S --needed --noconfirm "$pkg"
     else
-      echo "  skipping $pkg: not in repos"
+      # Not in the repos is not "missing": kwi lives in the AUR as kwi-git. The
+      # helper is already resolved above, so hand those over to it.
+      aur_pkgs+=("$pkg")
     fi
   done
+  if (( ${#aur_pkgs[@]} )); then
+    echo "AUR packages: ${aur_pkgs[*]}"
+    case "$aur_helper" in
+      paru)   runuser -u "$real_user" -- paru -S --needed "${aur_pkgs[@]}" \
+                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
+      shelly) runuser -u "$real_user" -- shelly install aur "${aur_pkgs[@]}" --needed --no-confirm \
+                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
+      *)      echo "warning: no AUR helper; install ${aur_pkgs[*]} by hand" >&2 ;;
+    esac
+  fi
 else
   # Install full desktop package set via the package resolver,
   # applying the replacement matrix (skip + replace).
@@ -356,6 +350,20 @@ apply_replacements() {
 
 apply_replacements "$desktop"
 
+# Enable this desktop's session manager (SERVICES_GNOME = gdm, SERVICES_HYPRLAND
+# and SERVICES_KDE = sddm). Same arrays install-packages.sh uses; installing the
+# package is not the same as enabling the unit, and until now only GDM was
+# enabled (at the top of this script, before the package existed).
+svc_var="SERVICES_${desktop^^}"
+declare -n svc_ref="$svc_var"
+for svc in "${svc_ref[@]}"; do
+  if systemctl enable "$svc.service" 2>/dev/null; then
+    echo "enabled $svc.service"
+  else
+    echo "warning: could not enable $svc.service (installed but not started)" >&2
+  fi
+done
+
 # ucli's own runtime first: gum (menus) and python-pipx (gext). `base` installs
 # these too, but the fresh-install flow is setup-desktop -> devmode -> apps, so
 # they have to land here as well or the gext step below fails.
@@ -367,6 +375,15 @@ fi
 # Mono / Nerd Font for ghostty + VSCodium, adw-gtk3 for GTK3 apps, Adwaita icons)
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" fonts
+fi
+
+# Microsoft core fonts (Arial, Times New Roman, …) come from the AUR and are
+# built here rather than in the repo-font step: the build downloads from
+# SourceForge, and losing a desktop setup over a font would be silly. Visible,
+# non-fatal, retryable with `ucli ms-fonts`.
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" --yes fonts-ms \
+    || echo "warning: Microsoft core fonts failed; retry with 'ucli ms-fonts'" >&2
 fi
 
 # The desktop's own apps: firefox (the configured browser, on every desktop) plus
