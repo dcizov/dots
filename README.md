@@ -38,7 +38,8 @@ ucli setup-system gnome     # gnome | kde | hyprland
 #    + DE with the replacement matrix + ghostty + firefox
 #    + GNOME extensions (if gnome) + a "<DE> Setup" snapshot
 
-# 5. optional: drop DE packages you never use (snapshot first, it is reversible)
+# 5. optional: drop DE packages you never use.
+#    Takes a Snapper snapshot first (--no-snapshot skips it).
 ucli debloat-desktop
 
 # 6. extensions only (gnome) — same work step 4 did, rerunnable
@@ -53,6 +54,11 @@ ucli apps
 # 9. optional: developer stack
 ucli devmode
 ```
+
+`ucli setup-system` asks before continuing when there is no Snapper config (it
+proceeds unattended on a pipe or with `UCLI_YES=1`) — the desktop step is the
+destructive one. `ucli debloat-desktop` and `ucli uninstall` take a snapshot
+before they remove anything, for the same reason.
 
 What each layer actually puts on disk:
 
@@ -71,6 +77,46 @@ setup (installed by `install-shell.sh`, which the desktop step also runs), and
 the ucli layer rides on it through `plugins=()` and `~/.config/zsh/conf.d/*`
 (deployed by chezmoi, so `ucli chezmoi-apply` refreshes it). Nothing in that
 layer is ucli-specific magic — the same files work in the dev box.
+
+### Per-machine overrides
+
+Every tool block in `~/.config/zsh/conf.d` sits behind a flag, all defaulting to
+on — `0` turns just that block off, `1` or unset keeps it:
+
+```
+UCLI_SHELL_ENABLE_EZA  _BAT  _FD  _RG  _DUF  _TLDR  _GLOW
+UCLI_SHELL_ENABLE_ATUIN  _DIRENV  _ZOXIDE  _MISE
+```
+
+Put them — plus your own aliases and exports — in `~/.config/zsh/local.zsh`:
+
+```bash
+cp ~/.config/zsh/local.zsh.example ~/.config/zsh/local.zsh
+```
+
+`~/.zshrc` sources it *before* `conf.d/`, so your values win; it is not
+chezmoi-managed, so `chezmoi apply` never touches it. The point is one machine
+opting out of one behaviour (keep GNU `ls`, disable `atuin` while debugging
+history) without forking the repo. A flag only gates the aliases — the binary
+stays installed and callable by its own name. `ucli doctor` lists the flags and
+whether `local.zsh` exists.
+
+### Reruns and gates
+
+Steps that are slow or hit the network are gated by a content hash
+(`lib/version-script.sh`); everything else is a cheap idempotent no-op:
+
+| Step | Token | Re-runs when |
+|---|---|---|
+| GNOME extension sets (`system`, `overrides`) | hash of `packages.bash` | the extension lists change |
+| Betterfox `user.js` | hash of `~/.config/firefox/user.js` | you edit `user.js` |
+| VSCodium extensions | hash of `extensions.txt` | the list changes |
+
+`--force` redoes the work anyway (`ucli setup-extensions --force`,
+`ucli apps --force`, `ucli vscodium-extensions --force`). A gate is only
+committed after the step succeeded, so a failed run is retried next time instead
+of being skipped forever. `ucli state` prints the committed gates, and
+`ucli doctor` lists them next to the rest of the machine's health.
 
 ### How this compares to `ujust bluefin-cli`
 
@@ -446,12 +492,22 @@ bash ~/.local/share/ucli/scripts/check/check.sh ~/dots   # or any checkout
 | `shellcheck --severity=error` | real shell bugs, when it is installed |
 
 CI runs the same script from `.github/workflows/check.yml` on every push and PR
-(Ubuntu, with `just`, `zsh` and `shellcheck` installed). The heavier,
-network-bound checks stay manual:
+(Ubuntu, with `just`, `zsh` and `shellcheck` installed).
+
+`ucli doctor` is the runtime counterpart
+(`~/.local/share/ucli/scripts/check/doctor.sh`). It walks the same layers the
+setup does and reports OK/MISSING/WARN per item: dotfiles (`chezmoi diff` empty,
+`.zshrc`, `plugins.txt`, justfile); shell (parses, login shell, oh-my-zsh,
+starship + `starship.toml`, plugins against `plugins.txt`, `local.zsh`, the
+available flags); ucli runtime (just/gum/pipx/gext/AUR helper/flatpak); apps
+(Firefox profile + Betterfox, snapper config, GNOME enabled-extension count);
+committed gates; dev box. Exit status is 1 when anything is MISSING; warnings
+alone do not fail it.
+
+The heavier, network-bound checks stay manual:
 
 ```bash
 ucli validate                   # every package array against pacman/AUR
-ucli doctor                     # chezmoi, zsh, commands, dev box health
 chezmoi cd && chezmoi diff
 chezmoi execute-template < run_after_95-zsh-plugins.sh.tmpl | sed -n '1,8p'
 ```

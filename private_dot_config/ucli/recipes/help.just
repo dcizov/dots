@@ -61,48 +61,10 @@ usage:
 profile:
     @~/.local/share/ucli/scripts/system/detect.sh
 
-# Check setup health.
+# Check setup health: dotfiles, shell, tools, apps, gates, dev box.
 [group('Help')]
 doctor:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "== chezmoi =="
-    mkdir -p "$HOME/.cache/tmp"
-    TMPDIR="$HOME/.cache/tmp" chezmoi doctor || true
-    echo
-    echo "== zsh =="
-    zsh -n "$HOME/.zshrc"
-    echo "OK: ~/.zshrc"
-    echo
-    echo "== commands =="
-    for cmd in just chezmoi zsh git curl nano; do
-    command -v "$cmd" >/dev/null 2>&1 && printf 'OK:      %s -> %s\n' "$cmd" "$(command -v "$cmd")" || printf 'MISSING: %s\n' "$cmd"
-    done
-    echo
-    echo "== devbox =="
-    if command -v distrobox >/dev/null 2>&1; then
-    printf 'OK:      distrobox -> %s\n' "$(command -v distrobox)"
-    if distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
-    # a container that exists but was never provisioned looks identical to a
-    # healthy one unless we ask about the versions the tooling assumes
-    out="$(distrobox enter dev -- bash -lc \
-    'printf "%s|%s|%s\n" "$(cat /etc/debian_version)" \
-    "$(node -v 2>/dev/null || echo MISSING)" \
-    "$(php -r "echo PHP_VERSION;" 2>/dev/null || echo MISSING)"' 2>/dev/null || true)"
-    debian="${out%%|*}"; rest="${out#*|}"; node="${rest%%|*}"; php="${rest##*|}"
-    if [[ -n "$debian" && "$node" != MISSING && "$php" != MISSING ]]; then
-    printf 'OK:      dev: debian %s / node %s / php %s\n' "$debian" "$node" "$php"
-    else
-    printf 'INCOMPLETE: dev exists but is not provisioned (node %s, php %s)\n' \
-    "${node:-?}" "${php:-?}"
-    printf '         run: ucli devbox-reconcile (or ucli devbox-reprovision)\n'
-    fi
-    else
-    printf 'MISSING: container dev (ucli devbox-reconcile)\n'
-    fi
-    else
-    printf 'MISSING: distrobox\n'
-    fi
+    @~/.local/share/ucli/scripts/check/doctor.sh
 
 # Run the offline checks: bash -n, zsh -n, just parses, package arrays, shellcheck.
 [group('Help')]

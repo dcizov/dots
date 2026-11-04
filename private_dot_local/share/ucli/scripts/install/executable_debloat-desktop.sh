@@ -10,6 +10,10 @@
 # Shows every installed package from the DE group (plus override packages)
 # and lets you pick which to remove with pacman -Rs.
 #
+# A Snapper snapshot is taken before anything is removed (skip with
+# --no-snapshot, or when snapper is not configured): removing packages is the
+# one destructive thing in this repo, and the restore point is free.
+#
 # Interactive selector order: gum -> fzf -> plain select.
 set -euo pipefail
 
@@ -18,7 +22,16 @@ if (( EUID != 0 )); then
   exit 1
 fi
 
-desktop="${1:-}"
+desktop=""
+take_snapshot=1
+for arg in "$@"; do
+  case "$arg" in
+    --no-snapshot) take_snapshot=0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+    -* ) echo "unknown option: $arg" >&2; exit 2 ;;
+    *) desktop="$arg" ;;
+  esac
+done
 
 # Auto-detect desktop: CLI arg → chezmoi profile → environment → installed pkgs
 if [[ -z "$desktop" ]]; then
@@ -51,6 +64,21 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+
+# Restore point before touching anything. Non-fatal: on a machine without
+# snapper there is simply nothing to snapshot, and refusing to debloat over that
+# would be silly — but say so loudly, because the removal is not reversible.
+if (( take_snapshot )); then
+  snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
+  if [[ -f /etc/snapper/configs/root && -x "$snapshot_script" ]]; then
+    echo "Creating a snapshot before debloating ..."
+    "$snapshot_script" "before debloat ($desktop)" \
+      || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
+  else
+    echo "note: no snapper config, so no restore point will be taken."
+    echo "      'ucli setup-snapshots' sets it up; --no-snapshot silences this."
+  fi
+fi
 
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"

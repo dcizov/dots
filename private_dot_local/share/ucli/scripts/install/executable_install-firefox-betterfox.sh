@@ -42,6 +42,22 @@ if [[ ! -f "$SOURCE_USER_JS" ]]; then
   exit 0
 fi
 
+# Versioned gate: the token is the content hash of the source user.js, so the
+# copy only happens when Betterfox (or one of your overrides) actually changed.
+# --force re-copies into every profile.
+# shellcheck source=/dev/null
+if [[ -r "$real_home/.config/ucli/scripts/lib/version-script.sh" ]]; then
+  source "$real_home/.config/ucli/scripts/lib/version-script.sh"
+  force=0
+  [[ "${1:-}" == "--force" ]] && force=1
+  betterfox_version="$(vs_hash "$SOURCE_USER_JS")"
+  if (( ! force )) && ! vs_check firefox-betterfox user "$betterfox_version"; then
+    echo "Betterfox user.js unchanged since the last run (${betterfox_version}); skipping."
+    echo "    re-run with --force to copy it into every profile again"
+    exit 0
+  fi
+fi
+
 # profiles.ini lists all profiles; copy user.js into each one that has a directory
 echo "Installing Betterfox user.js into Firefox profiles ($PROFILE_DIR) ..."
 
@@ -61,4 +77,5 @@ while IFS= read -r line; do
   fi
 done < <(grep '^Path=' "$PROFILE_DIR/profiles.ini" 2>/dev/null || true)
 
+[[ -n "${betterfox_version:-}" ]] && vs_commit firefox-betterfox user "$betterfox_version"
 echo "Betterfox user.js installed. Restart Firefox to apply."

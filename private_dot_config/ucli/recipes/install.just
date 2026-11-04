@@ -20,9 +20,9 @@ setup-cli:
 
 # Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
 [group('Install')]
-setup-apps:
+setup-apps *ARGS:
     # alias of `ucli apps`: ghostty/firefox + personal apps, flatpaks, Firefox config
-    @~/.local/share/ucli/scripts/install/install-overrides.sh
+    @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
 # `ucli devmode` flags:
 #   ucli devmode           wizard on a TTY, everything otherwise
@@ -43,9 +43,9 @@ gaming:
 
 # Install personal apps and overrides (`ucli setup-apps` is the same thing).
 [group('Install')]
-apps:
+apps *ARGS:
     # personal apps and desktop overrides (bitwarden, firefox, spotify flatpak, …)
-    @~/.local/share/ucli/scripts/install/install-overrides.sh
+    @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
 # Install paru idempotently (AUR helper).
 [group('Install')]

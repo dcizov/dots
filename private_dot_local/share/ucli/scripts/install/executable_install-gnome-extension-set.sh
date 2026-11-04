@@ -20,14 +20,24 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-usage: install-gnome-extension-set.sh [system|overrides]
+usage: install-gnome-extension-set.sh [system|overrides] [--force]
 
   system   Enable repo-packaged default GNOME system extensions
   overrides Install GNOME app override packages and shell override themes
+  --force  run even when the gate says this set is unchanged
 USAGE
 }
 
-mode="${1:-system}"
+mode="system"
+force=0
+for arg in "$@"; do
+  case "$arg" in
+    system|overrides) mode="$arg" ;;
+    --force) force=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown argument: $arg" >&2; usage; exit 2 ;;
+  esac
+done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -51,6 +61,21 @@ if ! command -v gext >/dev/null 2>&1; then
   echo "gext (gnome-extensions-cli) not found" >&2
   echo "  run: ucli install-gnome-extensions-cli" >&2
   exit 1
+fi
+
+# Versioned gate. The token is a hash of packages.bash, which is where the
+# GNOME_* extension arrays live: as long as those lists do not change, this mode
+# has nothing new to install, and gext talks to extensions.gnome.org on every
+# call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
+# you disable an extension by hand and want the managed set back.
+# shellcheck source=/dev/null
+source "$real_home/.config/ucli/scripts/lib/version-script.sh"
+gate_name="gnome-extensions-$mode"
+gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
+if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
+  echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
+  echo "    re-run with --force to apply it anyway: ucli setup-extensions --force"
+  exit 0
 fi
 
 # Run a command as the real user (not root) when invoked via sudo.
@@ -183,4 +208,5 @@ case "$mode" in
     ;;
 esac
 
+vs_commit "$gate_name" user "$gate_version"
 echo "done. run 'ucli gnome' or restart GNOME Shell (Alt+F2, r, Enter) to apply."

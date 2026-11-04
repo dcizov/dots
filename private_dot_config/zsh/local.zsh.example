@@ -1,0 +1,31 @@
+# Copy to ~/.config/zsh/local.zsh — machine-local shell overrides.
+#
+#   cp ~/.config/zsh/local.zsh.example ~/.config/zsh/local.zsh
+#
+# It is sourced by ~/.zshrc *before* ~/.config/zsh/conf.d/, so anything here wins
+# over the managed defaults. chezmoi does not manage it: it will never be
+# overwritten or removed by `chezmoi apply`.
+#
+# Keep it short. If something here turns out to be useful on every machine, it
+# belongs in the repo (conf.d/) instead.
+
+# --- turn individual ucli shell features off (all default to 1) --------------
+# UCLI_SHELL_ENABLE_EZA=0        # keep GNU ls
+# UCLI_SHELL_ENABLE_BAT=0
+# UCLI_SHELL_ENABLE_FD=0
+# UCLI_SHELL_ENABLE_RG=0
+# UCLI_SHELL_ENABLE_DUF=0
+# UCLI_SHELL_ENABLE_TLDR=0
+# UCLI_SHELL_ENABLE_GLOW=0
+# UCLI_SHELL_ENABLE_ATUIN=0      # e.g. while debugging a history problem
+# UCLI_SHELL_ENABLE_DIRENV=0
+# UCLI_SHELL_ENABLE_ZOXIDE=0
+# UCLI_SHELL_ENABLE_MISE=0
+
+# --- machine-specific aliases -----------------------------------------------
+# alias gs='git status -sb'
+# alias dev='cd ~/work/current'
+
+# --- environment ------------------------------------------------------------
+# export EDITOR=nvim
+# export PAGER=less

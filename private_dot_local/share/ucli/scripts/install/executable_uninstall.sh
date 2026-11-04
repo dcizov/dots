@@ -13,14 +13,18 @@ set -euo pipefail
 # Safe to re-run; missing paths are skipped.
 
 yes_flag=0
+take_snapshot=1
 for arg in "$@"; do
   case "$arg" in
     --yes|-y) yes_flag=1 ;;
+    --no-snapshot) take_snapshot=0 ;;
     --help|-h)
       cat <<'USAGE'
-usage: uninstall.sh [--yes]
+usage: uninstall.sh [--yes] [--no-snapshot]
 
 Remove chezmoi-managed dotfiles, ucli, and ucli-installed packages.
+  --yes          skip confirmation prompts
+  --no-snapshot  do not take a Snapper snapshot first
 USAGE
       exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
@@ -81,6 +85,19 @@ echo
 if ! confirm "Remove all listed paths?"; then
   echo "aborted."
   exit 0
+fi
+
+# Restore point before deleting anything. Uninstall removes packages and dotfiles
+# wholesale, so a snapshot is the difference between "try again" and "reinstall".
+if (( take_snapshot )); then
+  snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
+  if [[ -f /etc/snapper/configs/root && -x "$snapshot_script" ]]; then
+    echo "Creating a snapshot before uninstalling ..."
+    sudo "$snapshot_script" "before ucli uninstall" \
+      || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
+  else
+    echo "note: no snapper config, so no restore point will be taken (--no-snapshot silences this)."
+  fi
 fi
 
 for t in "${HOME_TARGETS[@]}"; do

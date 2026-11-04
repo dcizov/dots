@@ -6,6 +6,17 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
+# --force re-runs the versioned steps (Betterfox copy, GNOME extension sets) even
+# when their content hash says nothing changed.
+force_args=()
+for arg in "$@"; do
+  case "$arg" in
+    --force) force_args=(--force) ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    *) echo "unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
@@ -65,13 +76,13 @@ ensure_firefox_profile
 
 # Firefox Betterfox user.js — applies on all desktops (Firefox is desktop-agnostic).
 # The profile now exists by construction: ensure_firefox_profile above.
-"$script_dir/install-firefox-betterfox.sh" || true
+"$script_dir/install-firefox-betterfox.sh" ${force_args[@]+"${force_args[@]}"} || true
 
 # Firefox extensions (regular) — same profile, now guaranteed above
 "$script_dir/install-firefox-extensions.sh" "$real_home/.config/firefox/extensions.txt" || true
 
 if [[ "$desktop" == "gnome" ]]; then
-  "$script_dir/install-gnome-extension-set.sh" overrides || true
+  "$script_dir/install-gnome-extension-set.sh" overrides ${force_args[@]+"${force_args[@]}"} || true
   # Firefox GNOME theme — only makes sense on GNOME desktop (same profile)
   "$script_dir/install-firefox-gnome-theme.sh" || true
 fi

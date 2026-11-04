@@ -9,6 +9,21 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
+# Preflight: the desktop step is the destructive one (packages, chsh, a snapshot
+# at the end), so on a machine with no snapper config warn and — on a TTY — ask.
+# Same rule as `ucli update`: a pipe/non-TTY proceeds, UCLI_YES=1 proceeds.
+if [[ ! -f /etc/snapper/configs/root ]]; then
+  echo "warning: no Snapper config found — the desktop step will not be able to"
+  echo "         create a restore point first. 'ucli setup-snapshots' sets it up."
+  if [[ -t 0 && "${UCLI_YES:-0}" != "1" ]]; then
+    read -rp "Continue without snapshots? [y/N] " reply
+    if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+      echo "aborted. run 'ucli setup-snapshots' first."
+      exit 1
+    fi
+  fi
+fi
+
 # base = the machine itself: bootstrap, cpu/gpu, system tools, fonts, ucli runtime.
 "$script_dir/install-packages.sh" base
 "$script_dir/install-flatpaks.sh" base

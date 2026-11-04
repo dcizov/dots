@@ -46,6 +46,14 @@ else
   echo "warning: oh-my-zsh not found at $ZSH; run 'ucli cli' to install" >&2
 fi
 
+# Your overrides first, so the UCLI_SHELL_ENABLE_* flags and aliases defined
+# there win over the managed defaults in conf.d. Not chezmoi-managed: copy the
+# example once (`cp ~/.config/zsh/local.zsh.example ~/.config/zsh/local.zsh`)
+# and chezmoi will leave it alone from then on.
+if [[ -r "$ZSH_CONFIG_DIR/local.zsh" ]]; then
+  source "$ZSH_CONFIG_DIR/local.zsh"
+fi
+
 # Load modular config in numeric order.
 for file in "$ZSH_CONFIG_DIR"/conf.d/*.zsh(N); do
   source "$file"
