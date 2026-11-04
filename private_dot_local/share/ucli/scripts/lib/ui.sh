@@ -205,7 +205,12 @@ ui_choose() {
   for item in "${tags[@]}"; do (( ${#item} > max )) && max=${#item}; done
   pad=$(( max + 2 ))
   for item in "$@"; do
-    lines+=("$(_ui_pad "$pad" "${item%%|*}")${item#*|}")
+    if [[ "$item" == *"|"* ]]; then
+      lines+=("$(_ui_pad "$pad" "${item%%|*}")${item#*|}")
+    else
+      # A bare label is legal: no description column, nothing to duplicate.
+      lines+=("$item")
+    fi
   done
 
   ui_hint "enter = select · ctrl-c = cancel"
@@ -213,8 +218,29 @@ ui_choose() {
     local pick
     pick="$(printf '%s\n' "${lines[@]}" | gum choose --header "$header" \
       --cursor "$UCLI_UI_CURSOR" --height 14)" || return 1
-    [[ -n "$pick" ]] || return 1
-    printf '%s\n' "${pick%% *}"
+    [[ -n "${pick//[[:space:]]/}" ]] || return 1
+    # gum echoes the whole row (padded tag column + description), so the row has
+    # to be mapped back to its tag. Cutting at the first space looked fine and
+    # broke the moment a tag contained one: every "Dev box" pick came back as
+    # "Dev", which is how the chooser ended in "nothing in that group".
+    local i
+    for i in "${!lines[@]}"; do
+      if [[ "${lines[$i]}" == "$pick" ]]; then
+        printf '%s\n' "${tags[$i]}"
+        return 0
+      fi
+    done
+    # gum trims trailing whitespace on some terminals: fall back to the longest
+    # tag the picked row starts with.
+    local tag best="" bestlen=0
+    for tag in "${tags[@]}"; do
+      if [[ "$pick" == "$tag" || "$pick" == "$tag "* ]] && (( ${#tag} > bestlen )); then
+        best="$tag"
+        bestlen=${#tag}
+      fi
+    done
+    [[ -n "$best" ]] || return 1
+    printf '%s\n' "$best"
     return 0
   fi
   ui_tty || return 1

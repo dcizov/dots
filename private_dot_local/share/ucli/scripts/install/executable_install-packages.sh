@@ -347,15 +347,28 @@ if (( yes_flag )); then pacman_args+=(--noconfirm); paru_args+=(--noconfirm); fi
 
 if ((${#repo_packages[@]})); then sudo pacman "${pacman_args[@]}" "${repo_packages[@]}"; fi
 if ((${#aur_packages[@]})); then
-  aur_helper="$("$script_dir/install-aur-helper.sh" "${yes_flag:+--yes}")"
+  helper_args=()
+  (( yes_flag )) && helper_args=(--yes)
+  aur_helper="$("$script_dir/install-aur-helper.sh" "${helper_args[@]+"${helper_args[@]}"}")"
+  # The helper script prints one line by contract; take the last one anyway, so
+  # an installer that chatters on stdout cannot turn this into a silent no-op.
+  aur_helper="${aur_helper##*$'\n'}"
   echo "AUR helper: $aur_helper"
-  if [[ "$aur_helper" == "paru" ]]; then
-    paru "${paru_args[@]}" "${aur_packages[@]}"
-  elif [[ "$aur_helper" == "shelly" ]]; then
-    # --needed skips already-installed AUR packages (idempotent re-runs)
-    # --no-confirm makes shelly non-interactive (no prompts)
-    shelly install aur "${aur_packages[@]}" --needed --no-confirm
-  fi
+  case "$aur_helper" in
+    paru)
+      paru "${paru_args[@]}" "${aur_packages[@]}"
+      ;;
+    shelly)
+      # --needed skips already-installed AUR packages (idempotent re-runs)
+      # --no-confirm makes shelly non-interactive (no prompts)
+      shelly install aur "${aur_packages[@]}" --needed --no-confirm
+      ;;
+    *)
+      # Never leave the AUR half of a profile silently uninstalled.
+      echo "no AUR helper available; cannot install: ${aur_packages[*]}" >&2
+      exit 1
+      ;;
+  esac
 fi
 
 for svc in "${services[@]}"; do

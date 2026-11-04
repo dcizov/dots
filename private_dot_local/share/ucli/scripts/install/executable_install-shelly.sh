@@ -27,7 +27,7 @@ for arg in "$@"; do
 done
 
 if command -v shelly >/dev/null 2>&1; then
-  echo "shelly already installed: $(command -v shelly)"
+  echo "shelly already installed: $(command -v shelly)" >&2
   exit 0
 fi
 
@@ -35,7 +35,7 @@ fi
 # works on a machine with no helper at all. CachyOS carries both shelly and paru
 # in its own repositories; Arch does not.
 if pacman -Si shelly >/dev/null 2>&1; then
-  echo "shelly is in the configured repositories; installing with pacman"
+  echo "shelly is in the configured repositories; installing with pacman" >&2
   sudo pacman -S --needed --noconfirm shelly
   exit 0
 fi
@@ -61,16 +61,16 @@ fi
 workdir="$(mktemp -d -t shelly-build.XXXXXX)"
 trap 'rm -rf "$workdir"' EXIT
 
-echo "cloning shelly AUR repository ..."
+echo "cloning shelly AUR repository ..." >&2
 git clone https://aur.archlinux.org/shelly.git "$workdir"
 cd "$workdir"
 
 # Verify the PGP signature on the source tarball if gpg is available.
 if command -v gpg >/dev/null 2>&1; then
-  echo "verifying PGP signature on shelly source ..."
+  echo "verifying PGP signature on shelly source ..." >&2
   sig_file="$(ls *.sig 2>/dev/null | head -1 || true)"
   if [[ -n "$sig_file" ]] && gpg --verify "$sig_file" 2>/dev/null; then
-    echo "PGP signature verified."
+    echo "PGP signature verified." >&2
   else
     echo "warning: no valid signature found on source; makepkg will verify checksums instead" >&2
   fi

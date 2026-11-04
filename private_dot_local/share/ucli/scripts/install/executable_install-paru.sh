@@ -24,7 +24,7 @@ for arg in "$@"; do
 done
 
 if command -v paru >/dev/null 2>&1; then
-  echo "paru already installed: $(command -v paru)"
+  echo "paru already installed: $(command -v paru)" >&2
   exit 0
 fi
 
@@ -32,7 +32,7 @@ fi
 # works on a machine with no helper at all. CachyOS carries both shelly and paru
 # in its own repositories; Arch does not.
 if pacman -Si paru >/dev/null 2>&1; then
-  echo "paru is in the configured repositories; installing with pacman"
+  echo "paru is in the configured repositories; installing with pacman" >&2
   sudo pacman -S --needed --noconfirm paru
   exit 0
 fi
@@ -70,14 +70,14 @@ fi
 workdir="$(mktemp -d -t paru-build.XXXXXX)"
 trap 'rm -rf "$workdir"' EXIT
 
-echo "cloning paru AUR repository ..."
+echo "cloning paru AUR repository ..." >&2
 git clone https://aur.archlinux.org/paru.git "$workdir"
 cd "$workdir"
 
 # Verify the PGP signature on the paru source tarball.
 # Paru releases are signed by Morganamilo (48652EE482BF7507).
 if command -v gpg >/dev/null 2>&1; then
-  echo "verifying PGP signature on paru source ..."
+  echo "verifying PGP signature on paru source ..." >&2
   # Import the upstream key if not already trusted.
   if ! gpg --list-keys 48652EE482BF7507 >/dev/null 2>&1; then
     gpg --recv-keys 48652EE482BF7507 2>/dev/null || \
@@ -88,7 +88,7 @@ if command -v gpg >/dev/null 2>&1; then
   # Verify the .SRCINFO or PKGBUILD signature if a .sig file exists.
   sig_file="$(ls *.sig 2>/dev/null | head -1 || true)"
   if [[ -n "$sig_file" ]] && gpg --verify "$sig_file" 2>/dev/null; then
-    echo "PGP signature verified."
+    echo "PGP signature verified." >&2
   else
     echo "warning: no valid signature found on source; makepkg will verify checksums instead" >&2
   fi

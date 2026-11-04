@@ -145,7 +145,11 @@ if (( yes_flag )); then
 else
   run pacman -S --needed btrfs-progs snapper snap-pac limine
 fi
-aur_helper="$("$script_dir/../install/install-aur-helper.sh" "${yes_flag:+--yes}")"
+helper_args=()
+(( yes_flag )) && helper_args=(--yes)
+aur_helper="$("$script_dir/../install/install-aur-helper.sh" "${helper_args[@]+"${helper_args[@]}"}")"
+# One line by contract; take the last line anyway (see install-aur-helper.sh).
+aur_helper="${aur_helper##*$'\n'}"
 echo "AUR helper: $aur_helper"
 if ! command -v "$aur_helper" >/dev/null 2>&1; then
   echo "$aur_helper not available after install attempt" >&2
@@ -159,6 +163,9 @@ if [[ "$aur_helper" == "paru" ]]; then
   fi
 elif [[ "$aur_helper" == "shelly" ]]; then
   run sudo -u "${SUDO_USER:-$USER}" shelly install aur limine-snapper-sync limine-mkinitcpio-hook --needed --no-confirm
+else
+  echo "unknown AUR helper '$aur_helper'; cannot install limine-snapper-sync" >&2
+  exit 1
 fi
 
 # Remove home snapper config/subvolume created by archinstall if requested.

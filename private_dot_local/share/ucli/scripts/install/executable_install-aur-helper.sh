@@ -11,6 +11,14 @@ set -euo pipefail
 # The chosen helper name is printed to stdout and stored in
 # $HOME/.local/share/ucli/aur-helper so subsequent runs reuse the same
 # selection without re-prompting. Userspace only — no /etc writes.
+#
+# STDOUT CONTRACT: exactly one line, the helper name. Every installer's own
+# output goes to stderr, and the answer is verified with `command -v` after the
+# install rather than taken on trust. Callers do `helper="$(install-aur-helper.sh)"`
+# and then compare it to "paru"/"shelly"; install-paru.sh printing "cloning paru
+# AUR repository ..." on stdout used to end up inside that variable, which is
+# how `ucli setup-snapshots` died with "paru not available after install
+# attempt" right after pacman had reported paru installed.
 
 usage() {
   cat <<'USAGE'
@@ -69,6 +77,22 @@ run_as_real_user() {
   fi
 }
 
+# The helper that is really on PATH now — never the string the installer
+# claimed. Stores it and prints the single line callers rely on.
+pick_installed() {
+  if command -v shelly >/dev/null 2>&1; then
+    store_helper shelly
+    printf 'shelly\n'
+    return 0
+  fi
+  if command -v paru >/dev/null 2>&1; then
+    store_helper paru
+    printf 'paru\n'
+    return 0
+  fi
+  return 1
+}
+
 install_paru() {
   run_as_real_user "$script_dir/install-paru.sh" "$@"
 }
@@ -98,53 +122,35 @@ main() {
     return 0
   fi
 
-  # Priority: shelly (if installed) > paru (if installed) > install paru (default)
-  if command -v shelly >/dev/null 2>&1; then
-    store_helper shelly
-    printf 'shelly\n'
-    return 0
+  # Already there: shelly wins over paru, both win over installing anything.
+  pick_installed && return 0
+
+  # Nothing installed. CachyOS defaults to shelly, everything else to paru; a
+  # human gets asked unless --yes.
+  local want=shelly
+  [[ "$distro" == cachyos ]] || want=paru
+
+  if (( ! yes_flag )); then
+    echo "No AUR helper installed." >&2
+    want="$(ui_choose "Which AUR helper?" \
+      'paru|mature AUR helper (the default)' \
+      'shelly|modern AUR helper, preinstalled on CachyOS')" || exit 2
   fi
 
-  if command -v paru >/dev/null 2>&1; then
-    store_helper paru
-    printf 'paru\n'
-    return 0
-  fi
+  local -a yes_args=()
+  (( yes_flag )) && yes_args=(--yes)
 
-  # Neither helper is installed. Install paru as the default bootstrap helper.
-  case "$distro" in
-    cachyos)
-      # Shelly is preinstalled on CachyOS; if we got here it's missing.
-      if command -v shelly >/dev/null 2>&1; then
-        store_helper shelly
-        printf 'shelly\n'
-      else
-        echo "CachyOS detected but shelly not found; installing shelly..." >&2
-        install_shelly "${yes_flag:+--yes}"
-        store_helper shelly
-        printf 'shelly\n'
-      fi
-      ;;
-    arch|archlinux|*)
-      if (( yes_flag )); then
-        # Non-interactive: default to paru (mature, widely used)
-        echo "Non-interactive mode: installing paru..." >&2
-        install_paru "${yes_flag:+--yes}"
-        store_helper paru
-        printf 'paru\n'
-      else
-        echo "No AUR helper configured." >&2
-        choice="$(ui_choose "Which AUR helper?" \
-          'paru|mature AUR helper (the default)' \
-          'shelly|modern AUR helper, preinstalled on CachyOS')" || exit 2
-        case "$choice" in
-          paru)   install_paru "${yes_flag:+--yes}"; store_helper paru; printf 'paru\n' ;;
-          shelly) install_shelly "${yes_flag:+--yes}"; store_helper shelly; printf 'shelly\n' ;;
-          *) echo "Invalid choice" >&2; exit 2 ;;
-        esac
-      fi
-      ;;
+  case "$want" in
+    paru)   echo "Installing paru..." >&2 ; install_paru "${yes_args[@]+"${yes_args[@]}"}" >&2 ;;
+    shelly) echo "Installing shelly..." >&2 ; install_shelly "${yes_args[@]+"${yes_args[@]}"}" >&2 ;;
+    *) echo "Invalid choice: $want" >&2; exit 2 ;;
   esac
+
+  # Installed is what `command -v` says, not what the installer printed.
+  if ! pick_installed; then
+    echo "no AUR helper on PATH after installing $want" >&2
+    exit 1
+  fi
 }
 
 main "$@"
