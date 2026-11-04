@@ -19,7 +19,9 @@
 #      `add_array X` in install-packages.sh must exist in packages.bash. This is
 #      the check that catches a rename (SHELL_DEPS -> SHELL_TOOLS) on one side
 #      only.
-#   5. shellcheck (if installed), severity=error only.
+#   5. shellcheck (if installed), severity=warning: the repo is clean at that
+#      level, and a warning is exactly the class of thing that turns into a bug
+#      later (unused state, word splitting, masked exit codes).
 set -euo pipefail
 
 root=""
@@ -177,13 +179,13 @@ if command -v shellcheck >/dev/null 2>&1; then
   sc_fail=0
   for f in "${bash_files[@]:-}"; do
     [[ -n "$f" ]] || continue
-    if ! out="$(shellcheck --severity=error --shell=bash --format=gcc "$f" 2>&1)"; then
+    if ! out="$(shellcheck --severity=warning --shell=bash --format=gcc "$f" 2>&1)"; then
       sc_fail=1
       echo "$out" | head -5 | sed 's/^/  /' >&2
       fail_msg x "shellcheck ${f#"$root"/}"
     fi
   done
-  [[ $sc_fail -eq 0 ]] && note "shellcheck" "severity=error clean"
+  [[ $sc_fail -eq 0 ]] && note "shellcheck" "severity=warning clean"
 else
   note "shellcheck" "skipped (not installed)"
 fi

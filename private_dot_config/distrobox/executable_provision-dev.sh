@@ -140,6 +140,7 @@ run() {
     # `stdbuf apt_get …` fails with "failed to run command 'apt_get'".
     local -a pre=()
     if [ -n "$STDBUF" ] && [ "$(type -t "$1" 2>/dev/null)" = "file" ]; then
+      # shellcheck disable=SC2206  # STDBUF is a word list ("stdbuf -oL -eL")
       pre=($STDBUF)
     fi
     set +e

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2088  # the "~/..." hits are message text, not paths
 # =============================================================================
 # devbox-vscode-doctor.sh -- why open-remote-ssh cannot bootstrap the `dev` box
 #

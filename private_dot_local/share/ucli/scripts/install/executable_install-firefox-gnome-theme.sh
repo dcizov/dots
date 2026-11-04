@@ -9,7 +9,6 @@
 # Install docs: https://github.com/rafaelmardojai/firefox-gnome-theme/blob/master/README.md#installation-scripts
 set -euo pipefail
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # When run via sudo (from setup-desktop.sh), use the invoking user's home
 # so the theme is installed in the user's Firefox profile, not root's.

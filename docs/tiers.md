@@ -37,12 +37,40 @@ Every package list lives in `private_dot_config/ucli/packages.bash`:
 | `CLI` | shell cosmetics on top: `eza bat zoxide atuin tealdeer glow fzf` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit vim tmux shfmt` — needed the moment you touch a repo (`neovim` is a personal pick, see the overlay below) | `ucli devmode` |
 | `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin vscodium-bin-marketplace`, plus `tailscale` (installed only — `systemctl enable --now tailscaled` and `tailscale up` stay yours). `podman` is there because distrobox needs it, **docker is the dev runtime**: `ucli devmode` also enables `docker.service` and puts you in the `docker` group, which installing the package does not do | `ucli devmode` (`--force` bypasses the role check) |
-| `DEV_PERF` | opt-in profiling set: `perf`, `sysprof`, `bcc`, `bpftrace`, `sysstat`, `trace-cmd`, `numactl`, `nicstat` (AUR) — the Ubuntu/Bluefin-DX list. Bluefin also lists `tiptop`; Arch has no package for it, so it is not in the array | `ucli devmode` → item *Performance tooling* |
+| `DEV_PERF` | opt-in profiling set: `perf`, `sysprof`, `bcc`, `bpftrace`, `sysstat`, `trace-cmd`, `numactl` — the Ubuntu/Bluefin-DX list, all from the repos. Two entries are deliberately absent: `nicstat` (AUR, last touched 2015 — `ip -s link` and `sar -n DEV` cover it) and `tiptop` (no Arch package, no live AUR entry). `perf` belongs to Arch's `linux-tools` and is built against the `linux` kernel; on `linux-zen`/`linux-cachyos*` userspace profiling is unaffected but kernel-side tracepoints may not match, and `install-packages.sh perf` says so when the running kernel is not `linux` | `ucli devmode` → item *Performance tooling* |
 | `VIRT` | virtual machines: `qemu-desktop libvirt virt-manager virt-viewer edk2-ovmf swtpm dnsmasq`. Not part of `DEV`: a dev box is a distrobox container, a VM is for testing installers and other operating systems. `ucli virt` installs the set, enables libvirtd, adds you to the `libvirt` group and starts libvirt's default NAT network | `ucli virt` (`--status` to inspect) |
 | `FONTS_THEMES` | not a taste: the fonts the shipped configs name (`ttf-jetbrains-mono` + `-nerd` — ghostty and VSCodium's terminal ask for `JetBrainsMono Nerd Font`, the editor falls back to the plain family) plus `adw-gtk-theme` and `adwaita-icon-theme-legacy` (Bluefin ships the same Adwaita + legacy-icon pair). A third-party icon set such as Papirus is personal: the shipped GNOME profile points at Adwaita, so installing Papirus means setting the icon theme yourself | `base` → `ucli setup-system`; `ucli setup-desktop` |
 | `FONTS_MS` | Microsoft's core fonts (`ttf-ms-fonts`, AUR) — Arial, Times New Roman, Courier New, Verdana: the set documents, PDFs and half the web still name. Bluefin gets the same fonts from the Homebrew tap `colindean/fonts-nonfree`. Kept out of `FONTS_THEMES` because it is AUR-only and downloads from SourceForge, so a failed build must not take the repo fonts with it | `ucli setup-desktop` (non-fatal), `ucli ms-fonts` to retry |
 | `SYSTEM_MEDIA_CODECS` | `gst-plugins-good bad ugly`, `gst-libav`, `ffmpeg` — archinstall installs none of them, and GNOME's own video apps only pull `gst-plugins-base` | `base` → `ucli setup-system` |
-| `HARDWARE_FINGERPRINT` / `HARDWARE_TOUCHPAD` | `fprintd` when a reader is found (USB ids 138a/06cb/27c6/08ff/0483), `libinput-tools` when a touchpad or trackpoint is | `base`, decided by `lib/detect.sh` — never on hardware that does not need it |
+| `HARDWARE_FINGERPRINT` / `HARDWARE_TOUCHPAD` | `fprintd` when a reader is found (USB ids 138a/06cb/27c6/08ff/0483), `libinput-tools` when a touchpad or trackpoint is | `base`, decided by `lib/detect.sh` — never on hardware that does not need it. `ucli fingerprint` does the rest of the job (daemon, the DE's enrollment page, optional PAM) |
+
+### Package policy
+
+Three rules, applied to every array above:
+
+1. **Repo first.** A name that exists in `core`/`extra` is never taken from the
+   AUR, and `install-packages.sh` resolves through `pacman -Si` before it asks
+   the AUR at all. `CachyOS` even skips the installer-owned rows.
+2. **Nothing unmaintained.** No orphaned AUR package (no maintainer) and no
+   package whose last AUR touch is years behind its upstream — `nicstat` left
+   `DEV_PERF` for exactly that reason: AUR-only, last touched 2015, and `ip -s
+   link`/`sar -n DEV` answer the same question.
+3. **AUR only when the thing does not exist without it.** The whole surface is
+   five names, each one load-bearing:
+
+| AUR package | Why it is not optional |
+|---|---|
+| `shelly`, `shelly-flatpak-backend` | the GUI package manager, and the reason `gnome-software` is gone. Two entries because they are two packages of one PKGBUILD (the Flatpak backend is what makes Flathub browseable) |
+| `kwi-git` | KDE's terminal (`DESKTOP_TERMINAL_KDE` → `kwi`); not in the repos yet. Konsole from the `plasma` group is the fallback, so this one is a taste, not a dependency |
+| `ttf-ms-fonts` | Microsoft's core fonts. Nothing in the repos ships them, and documents/PDFs name them |
+| `vscodium-bin`, `vscodium-bin-marketplace` | VSCodium is AUR-only by design (the marketplace patch is what makes extensions installable from it). The marketplace package is the least loved piece here — last touched 2023, license `unknown` — so it is the first candidate to drop if it ever stops applying |
+
+**Kernels are not assumed.** Nothing in the repo requires `linux`: the arrays
+name no kernel packages (`base-devel` style meta only), `BOOT_SUPPORT` and
+`SNAPSHOT_LIMINE` are bootloader/initramfs work, and the only kernel-coupled
+package is `perf` (see `DEV_PERF` above — it warns when the running kernel is
+not Arch's `linux`). `linux-zen`, `linux-lts` and the CachyOS kernels all work;
+`ucli setup-system` runs unchanged on them.
 
 `ugrep` ships as its own command (`ug`), not as an alias for `grep`: it is
 recursive by default and searches inside archives, so swapping it under `grep`

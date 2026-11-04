@@ -55,7 +55,8 @@ write_file() {
 backup() {
   local path="$1"
   [[ -e "$path" ]] || return 0
-  local bak="${path}.bak.$(date +%F-%H%M%S)"
+  local bak
+  bak="${path}.bak.$(date +%F-%H%M%S)"
   run cp -a "$path" "$bak"
 }
 

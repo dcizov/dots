@@ -11,8 +11,6 @@
 # Source: https://github.com/yokoffing/Betterfox
 set -euo pipefail
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
 # When run via sudo, use the invoking user's home
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"

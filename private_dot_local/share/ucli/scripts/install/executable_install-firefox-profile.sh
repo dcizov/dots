@@ -57,15 +57,17 @@ firefox_headless() {
   # --screenshot exits on its own once it has written the file, which is the
   # cheapest way to make Firefox create its profile and quit. Older builds may
   # not exit, so everything is wrapped in timeout and failures are ignored.
-  local shot
-  shot="$(mktemp -u "${TMPDIR:-/tmp}/ucli-firefox-XXXXXX.png")"
+  local shot_dir shot
+  # mktemp -u only *names* a file; a private directory cannot be raced.
+  shot_dir="$(mktemp -d "${TMPDIR:-/tmp}/ucli-firefox-XXXXXX")"
+  shot="$shot_dir/shot.png"
   if [[ "$EUID" -eq 0 ]]; then
     runuser -u "$real_user" -- timeout 40 firefox --headless --screenshot "$shot" about:blank \
       >/dev/null 2>&1 || true
   else
     timeout 40 firefox --headless --screenshot "$shot" about:blank >/dev/null 2>&1 || true
   fi
-  rm -f "$shot"
+  rm -rf "$shot_dir"
 }
 
 # Firefox writes user.js and extensions into a *profile*, and a profile only

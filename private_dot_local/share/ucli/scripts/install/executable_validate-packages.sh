@@ -10,9 +10,11 @@ while (($#)); do
   esac
 done
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$HOME/.config/ucli/packages.bash"
+
+# shellcheck source=/dev/null
+source "$HOME/.config/ucli/scripts/lib/aur.sh"
 
 status=0
 package_arrays=(
@@ -28,31 +30,6 @@ package_arrays=(
 # Extension lists are "PK:UUID" pairs (see packages.bash for why). The personal
 # list is optional and lives in the overlay.
 extension_lists=("GNOME_SYSTEM_EXTENSIONS")
-
-aur_exists() {
-  local pkg="$1"
-  # Primary: AUR RPC API (fast, structured).
-  if python3 - "$pkg" <<'PY' >/dev/null 2>&1
-import json, sys, urllib.parse, urllib.request
-pkg = sys.argv[1]
-url = "https://aur.archlinux.org/rpc/v5/info?" + urllib.parse.urlencode({"arg[]": pkg})
-with urllib.request.urlopen(url, timeout=15) as response:
-    data = json.load(response)
-for result in data.get("results", []):
-    if result.get("Name") == pkg:
-        sys.exit(0)
-sys.exit(1)
-PY
-  then
-    return 0
-  fi
-  # Fallback: git ls-remote (works when the API is down or rate-limited).
-  if command -v git >/dev/null 2>&1; then
-    git ls-remote "https://aur.archlinux.org/${pkg}.git" >/dev/null 2>&1
-    return $?
-  fi
-  return 1
-}
 
 extension_pk_exists() {
   local pk="$1"

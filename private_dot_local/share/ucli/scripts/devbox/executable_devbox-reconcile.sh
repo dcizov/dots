@@ -131,6 +131,7 @@ run_dim() {
   local label="$1" rc=0; shift
   local -a pre=()
   # stdbuf exec()s its argument, so only wrap real executables, never functions
+  # shellcheck disable=SC2206  # STDBUF is a word list ("stdbuf -oL -eL")
   [ -n "$STDBUF" ] && [ "$(type -t "$1" 2>/dev/null)" = "file" ] && pre=($STDBUF)
   status_start "$label"
   set +e
@@ -237,12 +238,12 @@ init_still_running() {
 # `additional_packages`; apt-get from here during that window fails with
 # "E: Could not get lock /var/lib/apt/lists/lock". Wait, but never look hung:
 # progress every ~10 s, hard cap, and bail out early if the container is gone.
-INIT_READY=0; WAIT_DONE=0
+WAIT_DONE=0
 wait_for_init_ready() {
   # called up to three times on the slow path; only the first one may wait and
   # stream — including when that first attempt times out
   [ "$WAIT_DONE" = "1" ] && return 0
-  local timeout="${DEVBOX_INIT_TIMEOUT:-300}" deadline fails=0 elapsed=0
+  local timeout="${DEVBOX_INIT_TIMEOUT:-300}" deadline elapsed=0
   local logfile seen=0 new_lines=0
   [ "${DEVBOX_SKIP_WAIT:-0}" = "1" ] && return 0
   box_running || return 0
@@ -266,7 +267,6 @@ wait_for_init_ready() {
     seen="$new_lines"
     if grep -q container_setup_done "$logfile"; then
       rm -f "$logfile"
-      INIT_READY=1
       return 0
     fi
     if ! box_running; then

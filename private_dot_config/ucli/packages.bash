@@ -234,8 +234,18 @@ DEV=(
 # Bluefin's DX image follows (Brendan Gregg's list). `perf` is Linux's own
 # profiler; bcc/bpftrace are the eBPF front ends; sysprof is the graphical one
 # GNOME apps are profiled with.
-#   nicstat is AUR-only; Bluefin's `tiptop` has no Arch package at all and is
-#   left out rather than pointed at a guess.
+#
+# Left out on purpose:
+#   nicstat — AUR only and last touched in 2015. `ip -s link` and `sar -n DEV`
+#             answer the same question, and this repo does not ship unmaintained
+#             packages just because another distro's list has them.
+#   tiptop  — Bluefin lists it; Arch has no package and no live AUR entry.
+#
+# `perf` comes from Arch's `linux-tools`, so it is built against the `linux`
+# kernel. On linux-zen / linux-cachyos* it still profiles userspace, but
+# kernel-side tracepoints can be missing or renamed — use the perf that matches
+# your kernel when you need those (see the note `install-packages.sh perf`
+# prints when the running kernel is not `linux`).
 DEV_PERF=(
   perf
   sysprof
@@ -244,7 +254,6 @@ DEV_PERF=(
   sysstat
   trace-cmd
   numactl
-  nicstat
 )
 
 # Virtual machines — deliberately NOT part of `ucli devmode`: a dev box is a

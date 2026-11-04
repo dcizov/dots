@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2088  # the "~/..." hits are message text, not paths
 # Health check for a ucli machine. Prints one line per thing that can be wrong,
 # in the order you would debug it: dotfiles → shell → tools → dev box → desktop.
 #

@@ -2,14 +2,8 @@
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
-
-# shellcheck source=/dev/null
-source "$real_home/.config/ucli/scripts/lib/detect.sh"
-
-desktop="$(detect_desktop 2>/dev/null || echo none)"
+# `desktop` mode detects the desktop itself (--desktop= owner), so nothing here
+# guesses at it: this script is the package half of the desktop step only.
 "$script_dir/install-packages.sh" desktop
 # Fonts and themes are referenced by the shipped configs (ghostty font, adw-gtk3,
 # Adwaita icons)

@@ -4,8 +4,8 @@ set -euo pipefail
 # Install/enable GNOME Shell extensions using gnome-extensions-cli (gext).
 #
 # Usage:
-#   install-gnome-extension-set.sh system   # default system extensions (from GNOME_SYSTEM_EXTENSION_PACKAGES)
-#   install-gnome-extension-set.sh overrides # app overrides (from GNOME_APP_OVERRIDES + GNOME_SHELL_OVERRIDES)
+#   install-gnome-extension-set.sh system    # the opinionated set (GNOME_SYSTEM_EXTENSIONS)
+#   install-gnome-extension-set.sh personal  # your own (PERSONAL_GNOME_EXTENSIONS)
 #
 # Package-based extensions (gnome-shell-extensions, etc.) are installed via
 # pacman/paru by install-packages.sh. This script handles non-repo extensions
@@ -42,7 +42,6 @@ for arg in "$@"; do
   esac
 done
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # When run via sudo (from setup-desktop.sh), $HOME is root's home;
 # use the invoking user's home instead.

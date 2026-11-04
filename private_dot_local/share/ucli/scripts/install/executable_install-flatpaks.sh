@@ -36,7 +36,6 @@ for arg in "$@"; do
 done
 [[ -n "$mode" ]] || { usage; exit 2; }
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
 real_user="${SUDO_USER:-$USER}"

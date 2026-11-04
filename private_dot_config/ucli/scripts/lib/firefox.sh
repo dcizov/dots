@@ -1,4 +1,5 @@
 # Firefox locations — one place, four readers.
+# shellcheck shell=bash
 #
 # Firefox changed its Linux layout in 147 (August 2026): profiles moved to the
 # XDG base directory spec, so a *new* install keeps them in

@@ -1,4 +1,5 @@
 # Shared interactive helpers for ucli recipes. Sourced, never executed.
+# shellcheck shell=bash
 #
 # One menu API, three backends. Default order is gum → fzf → select, because
 # gum is what ujust uses (`gum choose` / `gum confirm`) and it looks like the
