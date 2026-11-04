@@ -304,10 +304,11 @@ apply_replacements() {
           runuser -u "$real_user" -- paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
         elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
           # shelly install = repos, shelly install aur = AUR
+          # --needed skips already-installed packages (idempotent re-runs)
           if pacman -Si "${replace_with[$i]}" >/dev/null 2>&1; then
-            runuser -u "$real_user" -- shelly install --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+            runuser -u "$real_user" -- shelly install --needed --no-confirm "${replace_with[$i]}" 2>/dev/null || true
           else
-            runuser -u "$real_user" -- shelly install aur --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+            runuser -u "$real_user" -- shelly install aur --needed --no-confirm "${replace_with[$i]}" 2>/dev/null || true
           fi
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
