@@ -17,13 +17,25 @@ All package decisions are backed by the [Arch Linux package database](https://ar
 ## Quick start (Arch minimal → working machine)
 
 ```bash
-curl -fsSL https://install.wtfaq.tech | bash     # git, chezmoi, just → ucli on PATH
+# 1. bootstrap: git, chezmoi, just → ucli on PATH (nothing else)
+curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
+
 ucli setup-snapshots                             # snapper + limine, snapshot #1
 ucli setup-system gnome                          # base + DE + terminal + browser
                                                  # + shell tier + dotfiles + snapshot
 ucli cli                                         # shell cosmetics
 ucli apps                                        # apps, flatpaks, Firefox config
 ucli devmode                                     # optional: dev tools + dev box
+```
+
+`install.wtfaq.tech` is retired, so the bootstrap is a plain GitHub raw file.
+Four ways in, all equivalent:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
+curl -fsSLO https://raw.githubusercontent.com/dcizov/dots/main/install.sh   # read it first
+git clone https://github.com/dcizov/dots.git && cd dots && ./install.sh     # any branch
+curl -fsSL https://codeload.github.com/dcizov/dots/tar.gz/refs/heads/main | tar xz
 ```
 
 Two epochs. The bootstrap stops at "ucli works": `~/.local/bin/ucli`,
@@ -35,9 +47,10 @@ only ever deployed for a program that exists; that is what keeps the
 fresh-install snapshot small enough to be worth keeping.
 
 The terminal follows the desktop: **ghostty** on GNOME and Hyprland (GTK4, native
-Wayland, already in the Adwaita stack / a first-class wlroots client), **kitty**
-on KDE Plasma (a Qt desktop, no GTK theme dragged in). Firefox is installed
-everywhere, and its profile stays Firefox's own — `~/.config/mozilla/firefox` on
+Wayland, already in the Adwaita stack / a first-class wlroots client), **kwi** on
+KDE Plasma (KDE's new Qt Quick terminal, also built on libghostty-vt; AUR-only
+today, with Konsole from the `plasma` group as the safety net). Firefox is
+installed everywhere, and its profile stays Firefox's own — `~/.config/mozilla/firefox` on
 147+, `~/.mozilla/firefox` on an upgraded install. ucli only copies
 `~/.config/ucli/firefox/user.js` and the extension lists into each profile it
 finds in `profiles.ini`; [docs/distros.md](docs/distros.md) has the path table
@@ -53,7 +66,7 @@ why the snapshot comes before the rest.
 
 | Doc | What is in it |
 |---|---|
-| [docs/install.md](docs/install.md) | The full pipeline step by step, the snapshot-only path (before chezmoi), Arch-specific notes, fresh-install readiness |
+| [docs/install.md](docs/install.md) | The full pipeline step by step, the four ways to run the bootstrap, snapshots (`--no-snapshot`), the snapshot-only path, Arch-specific notes, fresh-install readiness |
 | [docs/tiers.md](docs/tiers.md) | Every package tier (`UCLI_RUNTIME`, `SHELL_TOOLS`, `DESKTOP_BROWSER`, `DESKTOP_TERMINAL_<DE>`, `CLI`, `DEV_CLI`, `DEV`, `GAMING`), what `ucli cli`/`devmode`/`apps` put on disk, per-machine shell flags in `local.zsh`, versioned gates and `--force` |
 | [docs/desktop.md](docs/desktop.md) | Software replacement matrix (skip/replace per DE), the `ucli gnome` menu, GNOME settings backup/restore, adding backed-up settings to the repo |
 | [docs/devbox.md](docs/devbox.md) | The distrobox dev box: creation, provisioning, versions, reconcile |

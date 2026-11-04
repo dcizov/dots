@@ -75,9 +75,9 @@ chezmoi-apply:
 # Reverse what chezmoi/ucli deployed in this user's home directory.
 # Removes chezmoi-managed dotfiles, ucli wrapper, and ucli-installed packages.
 [group('Install')]
-uninstall:
-    # reverse chezmoi/ucli deployment
-    @~/.local/share/ucli/scripts/install/uninstall.sh
+uninstall *ARGS:
+    # reverse chezmoi/ucli deployment (--no-snapshot skips the restore point)
+    @~/.local/share/ucli/scripts/install/uninstall.sh {{ARGS}}
 
 # --- internal recipes (used by menus, not top-level) ---
 

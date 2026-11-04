@@ -1,8 +1,9 @@
 # Set up snapshots and boot entries. Skips CachyOS.
 [group('System')]
-setup-snapshots:
-    # create Btrfs subvolume, configure snapper, limine-snapper-sync
-    @sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh
+setup-snapshots *ARGS:
+    # create Btrfs subvolume, configure snapper, limine-snapper-sync, snapshot #1
+    # --no-snapshot: configure only, take no snapshot
+    @sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh {{ARGS}}
 
 # System menu. Use `ucli --choose` to pick a system recipe interactively.
 [group('System')]
@@ -51,10 +52,15 @@ motd mode="status":
     esac
 
 # Create a named Snapper snapshot (needs `ucli setup-snapshots` first).
+#   ucli snapshot                       "Fresh Arch Linux Installation"
+#   ucli snapshot "before the upgrade"  your own description
+#   ucli snapshot --dry-run             show what would happen
+# Same script every other step calls, so a snapshot taken here and one taken by
+# setup-desktop/setup-snapshots cannot drift apart.
 [group('System')]
-snapshot desc="Fresh Arch Linux Installation":
-    # create a snapper snapshot with a description
-    @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh "{{desc}}"
+snapshot *ARGS:
+    # create a snapper snapshot (description and flags pass straight through)
+    @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh {{ARGS}}
 
 # Internal fresh-install snapshot helper. setup-snapshots calls this in its script.
 _fresh-snapshot:
@@ -65,17 +71,17 @@ _fresh-snapshot:
 #        sudo setup-desktop.sh --choose gnome  (interactive: pick package groups first)
 # For Arch minimal: run after chezmoi apply, before ucli devmode/apps.
 [group('System')]
-setup-desktop:
+setup-desktop *ARGS:
     # install desktop environment (gnome/hyprland/kde) + create snapshot
-    @sudo ~/.local/share/ucli/scripts/install/setup-desktop.sh
+    @sudo ~/.local/share/ucli/scripts/install/setup-desktop.sh {{ARGS}}
 
 # Review installed desktop packages and remove bloat.
 # Usage: just debloat-desktop           (prompts for gnome/hyprland/kde)
 # Run after setup-desktop to remove packages you don't need.
 [group('System')]
-debloat-desktop:
-    # remove DE packages you don't need
-    @sudo ~/.local/share/ucli/scripts/install/debloat-desktop.sh
+debloat-desktop *ARGS:
+    # remove DE packages you don't need (--no-snapshot skips the restore point)
+    @sudo ~/.local/share/ucli/scripts/install/debloat-desktop.sh {{ARGS}}
 
 # Backup GNOME Shell settings and extensions.
 # Usage: just backup-gnome-settings

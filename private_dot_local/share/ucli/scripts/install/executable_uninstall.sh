@@ -69,6 +69,8 @@ HOME_TARGETS=(
   "$HOME/.config/zsh"
   "$HOME/.local/bin/ucli"
   "$HOME/.local/share/backgrounds"
+  # kwi (KDE's terminal) runtime data, if it ever ships one
+  "$HOME/.local/share/kwi"
   # chezmoi runtime state
   "$HOME/.local/share/chezmoi"
   "$HOME/.config/chezmoi"
@@ -92,15 +94,13 @@ fi
 
 # Restore point before deleting anything. Uninstall removes packages and dotfiles
 # wholesale, so a snapshot is the difference between "try again" and "reinstall".
-if (( take_snapshot )); then
-  snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
-  if [[ -f /etc/snapper/configs/root && -x "$snapshot_script" ]]; then
-    echo "Creating a snapshot before uninstalling ..."
-    sudo "$snapshot_script" "before ucli uninstall" \
-      || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
-  else
-    echo "note: no snapper config, so no restore point will be taken (--no-snapshot silences this)."
-  fi
+# One snapshot script decides whether a restore point is possible; this only
+# forwards the flag (and does nothing when it is missing, e.g. a broken deploy).
+snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
+if (( take_snapshot )) && [[ -x "$snapshot_script" ]]; then
+  echo "Creating a snapshot before uninstalling ..."
+  sudo "$snapshot_script" "before ucli uninstall" \
+    || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
 fi
 
 for t in "${HOME_TARGETS[@]}"; do

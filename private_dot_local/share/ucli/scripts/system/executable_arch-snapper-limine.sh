@@ -4,6 +4,7 @@ set -euo pipefail
 yes_flag=0
 dry_run=0
 force=0
+take_snapshot=1
 remove_home_snapshots=1
 for arg in "$@"; do
   case "$arg" in
@@ -11,9 +12,10 @@ for arg in "$@"; do
     --dry-run|-n) dry_run=1 ;;
     --keep-home-snapshots) remove_home_snapshots=0 ;;
     --force) force=1 ;;
+    --no-snapshot) take_snapshot=0 ;;
     --help|-h)
       cat <<'USAGE'
-usage: sudo arch-snapper-limine.sh [--yes] [--dry-run] [--force] [--keep-home-snapshots]
+usage: sudo arch-snapper-limine.sh [--yes] [--dry-run] [--force] [--no-snapshot] [--keep-home-snapshots]
 
 Arch family post-install system setup (Arch, CachyOS, EndeavourOS, …):
 - verifies Btrfs subvolume layout @, @home, @log, @pkg
@@ -23,7 +25,7 @@ Arch family post-install system setup (Arch, CachyOS, EndeavourOS, …):
 - configures mkinitcpio systemd hooks plus sd-btrfs-overlayfs
 - configures /etc/default/limine preserving current kernel cmdline base
 - runs mkinitcpio -P, limine-update, limine-snapper-sync
-- creates CachyOS-style fresh installation snapshot
+- creates the fresh-installation snapshot (skipped with --no-snapshot)
 
 CachyOS ships this whole stack itself (snapper root config, snap-pac,
 limine-snapper-sync, the mkinitcpio hooks, /etc/default/limine), so there the
@@ -348,7 +350,11 @@ else
   echo "limine-snapper-sync not found" >&2
 fi
 
-# CachyOS-style installation snapshot.
-run "$script_dir/snapshot-fresh-install.sh"
+# Snapshot #1. One implementation for every restore point in the repo: it also
+# carries --no-snapshot / UCLI_NO_SNAPSHOT, so callers forward rather than reimplement.
+snapshot_args=()
+(( take_snapshot )) || snapshot_args+=(--no-snapshot)
+(( dry_run )) && snapshot_args+=(--dry-run)
+run "$script_dir/snapshot-fresh-install.sh" "${snapshot_args[@]}" "Fresh Arch Linux Installation"
 
 echo "Arch Snapper/Limine setup complete. Review /etc/default/limine, /etc/mkinitcpio.conf, and limine-snapper-info."

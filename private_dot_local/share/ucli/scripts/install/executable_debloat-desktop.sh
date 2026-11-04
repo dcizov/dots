@@ -68,16 +68,13 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # Restore point before touching anything. Non-fatal: on a machine without
 # snapper there is simply nothing to snapshot, and refusing to debloat over that
 # would be silly — but say so loudly, because the removal is not reversible.
-if (( take_snapshot )); then
-  snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
-  if [[ -f /etc/snapper/configs/root && -x "$snapshot_script" ]]; then
-    echo "Creating a snapshot before debloating ..."
-    "$snapshot_script" "before debloat ($desktop)" \
-      || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
-  else
-    echo "note: no snapper config, so no restore point will be taken."
-    echo "      'ucli setup-snapshots' sets it up; --no-snapshot silences this."
-  fi
+# The snapshot script itself decides whether a restore point is possible (snapper
+# installed? /etc/snapper/configs/root? btrfs?), so this only forwards the flag.
+snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
+if (( take_snapshot )) && [[ -x "$snapshot_script" ]]; then
+  echo "Creating a snapshot before debloating ..."
+  "$snapshot_script" "before debloat ($desktop)" \
+    || echo "warning: snapshot failed; continuing anyway (press Ctrl-C now to abort)" >&2
 fi
 
 # shellcheck source=/dev/null

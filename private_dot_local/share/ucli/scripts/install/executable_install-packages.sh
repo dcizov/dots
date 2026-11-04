@@ -135,9 +135,29 @@ PY
   return 1
 }
 
+# The name you type is not always the AUR package name: kwi is packaged as
+# kwi-git, which `provides=kwi`. Ask the RPC for providers before calling a package
+# missing, and prefer a non-git name when several offer it.
+aur_provides() {
+  local pkg="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$pkg" <<'PY' 2>/dev/null || true
+import json, sys, urllib.parse, urllib.request
+pkg = sys.argv[1]
+url = "https://aur.archlinux.org/rpc/v5/search?" + urllib.parse.urlencode({"arg[]": pkg, "by": "provides"})
+with urllib.request.urlopen(url, timeout=15) as response:
+    data = json.load(response)
+providers = [r["Name"] for r in data.get("results", []) if pkg in (r.get("Provides") or [])]
+providers.sort(key=lambda name: (name.endswith("-git"), name))
+if providers:
+    print(providers[0])
+PY
+}
+
 resolve_package() {
   local pkg="$1"
   local group_members=()
+  local aur_name=""
   [[ -n "$pkg" ]] || return 0
 
   if pacman -Si "$pkg" >/dev/null 2>&1; then
@@ -149,8 +169,14 @@ resolve_package() {
     repo_packages+=("${group_members[@]}")
     return 0
   fi
+  # Exact AUR name first (the common case, one RPC query), providers second.
   if aur_exists "$pkg"; then
     aur_packages+=("$pkg")
+    return 0
+  fi
+  if aur_name="$(aur_provides "$pkg")" && [[ -n "$aur_name" ]]; then
+    aur_packages+=("$aur_name")
+    echo "note: $pkg is provided by the AUR package $aur_name" >&2
     return 0
   fi
   missing_packages+=("$pkg")

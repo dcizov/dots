@@ -307,11 +307,14 @@ DESKTOP_TERMINAL_HYPRLAND=(
   ghostty
 )
 
-# KDE: kitty. Plasma is a Qt desktop; Ghostty drags the GTK theme stack in and
-# looks foreign next to Konsole, while kitty needs nothing from the desktop.
-# Swap this for `ghostty` if you want one terminal on every machine.
+# KDE: kwi — the new KDE terminal (announced 2026-11-01): Qt Quick + Kirigami,
+# GPU rendering through the Qt Scene Graph, and libghostty-vt underneath, so both
+# ends of this repo now share Ghostty's terminal core. It is experimental and not
+# in the Arch repos yet, so it resolves as the AUR package kwi-git (which provides
+# `kwi`); if that is unavailable, Plasma still installs Konsole, so a KDE desktop
+# always has a terminal. kitty is what this array said before kwi existed.
 DESKTOP_TERMINAL_KDE=(
-  kitty
+  kwi
 )
 
 GNOME_APP_OVERRIDES=(

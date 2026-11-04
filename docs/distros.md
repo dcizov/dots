@@ -18,6 +18,7 @@ differs is *who owns* the pieces and which repo a package comes from.
 | Snapshots | `/etc/snapper/configs/root`, `/etc/conf.d/snapper` | same paths, **installer-owned** | same paths |
 | Boot | `/etc/default/limine`, `/etc/mkinitcpio.conf` | same paths, **installer-owned** | same paths |
 | Firefox profiles | `~/.config/mozilla/firefox` or `~/.mozilla/firefox` | identical | identical |
+| KDE terminal (`kwi`) | AUR `kwi-git` | same, and CachyOS's extra repos may carry it sooner | AUR |
 | `~/.local/bin`, `~/.config` | XDG as usual | identical | identical |
 
 There is no per-distro path table to maintain beyond this: the differences are
@@ -58,8 +59,9 @@ What the scripts do about it:
 | Bootloader support | `BOOT_SUPPORT` | skipped |
 | Snapper + Limine | `arch-snapper-limine.sh` writes the config, hooks and `/etc/default/limine` | script explains it is already wired and exits; `--force` overrides |
 
-`ucli setup-snapshots` on CachyOS therefore creates nothing — use
-`sudo snapshot-fresh-install.sh "…"` for a restore point, or `ucli snapshot`.
+`ucli setup-snapshots --no-snapshot` on CachyOS prints what is already wired and
+exits (add `--force` to run the Arch path anyway). For a restore point there, use
+`ucli snapshot "…"` — the same script every other step uses.
 
 ## Firefox paths (the one path that moved)
 

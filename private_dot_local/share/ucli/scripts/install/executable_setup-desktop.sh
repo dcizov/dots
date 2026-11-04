@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # Set up a desktop environment and snapshot afterwards.
 #
-# Usage: sudo setup-desktop.sh <gnome|hyprland|kde>
+# Usage: sudo setup-desktop.sh [--choose] [--no-snapshot] [gnome|hyprland|kde]
 #
 # Installs the desktop package set, then the firefox + terminal pair that desktop
 # is configured for, then the shell tier, then GNOME extensions, then applies the
 # dotfiles that need those programs to exist, then snapshots as "<DE> Setup".
 #
 # Intended for Arch minimal (archinstall) post-console-first-boot flow:
-#   1. curl -fsSL https://install.wtfaq.tech | bash   # git, chezmoi, just, ucli
+#   1. curl -fsSL .../dcizov/dots/main/install.sh | bash   # git, chezmoi, just, ucli
 #   2. ucli setup-snapshots        # snapper + limine, snapshot #1 (btrfs)
 #   3. ucli setup-system gnome     # base packages, then this script
 #   4. ucli devmode / ucli apps    # optional extras
+#
+# Run it plainly, or with --no-snapshot to install without the "<DE> Setup"
+# restore point (the same flag every other snapshot in the repo honours).
 #
 # Everything a TTY-only machine needs before step 3 is ucli itself: until the
 # desktop exists, .chezmoiignore keeps ~/.zshrc, starship, ~/.config/ghostty and
@@ -19,10 +22,20 @@
 set -euo pipefail
 
 choose=0
-if [[ "${1:-}" == "--choose" ]]; then
-  choose=1
+take_snapshot=1
+while (($#)); do
+  case "$1" in
+    --choose) choose=1 ;;
+    --no-snapshot) take_snapshot=0 ;;
+    --help|-h)
+      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    -*) echo "unknown option: $1" >&2; exit 2 ;;
+    *) break ;;
+  esac
   shift
-fi
+done
 
 if (( EUID != 0 )); then
   echo "Run as root: sudo $0 [--choose] <gnome|hyprland|kde>" >&2
@@ -193,8 +206,8 @@ if (( choose )); then
       pkgs[core]="plasma plasma-wayland-session sddm"
       groups[apps]="Core KDE apps (dolphin kate)"
       pkgs[apps]="dolphin kate"
-      groups[terminal]="Terminal (kitty, the configured one on Plasma)"
-      pkgs[terminal]="kitty"
+      groups[terminal]="Terminal (kwi — KDE's new one; AUR kwi-git, else Konsole from plasma)"
+      pkgs[terminal]="kwi"
       ;;
   esac
 
@@ -351,9 +364,10 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
 fi
 
 # The desktop's own apps: firefox (the configured browser, on every desktop) plus
-# the terminal that desktop is configured for — ghostty on gnome/hyprland, kitty
-# on kde. The DE install above only covers DE packages and the replacement
-# matrix, and it never installs a terminal it would then have two of.
+# the terminal that desktop is configured for — ghostty on gnome/hyprland, kwi on
+# kde (AUR kwi-git today; Konsole from the plasma group is the safety net). The DE
+# install above only covers DE packages and the replacement matrix, and it never
+# installs a terminal it would then have two of.
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" essentials || true
 fi
@@ -411,8 +425,11 @@ fi
 # Create a snapshot capturing the DE-installed state. Not fatal: on a machine
 # where `ucli setup-snapshots` has not run yet there is no snapper config, and
 # failing the whole desktop setup over a restore point would be silly.
-"$script_dir/../system/snapshot-fresh-install.sh" "$desktop Setup" \
-  || echo "warning: snapshot skipped (no snapper config yet — run 'ucli setup-snapshots')" >&2
+# One snapshot script for the whole repo; --no-snapshot / UCLI_NO_SNAPSHOT=1 skip it.
+snapshot_args=()
+(( take_snapshot )) || snapshot_args+=(--no-snapshot)
+"$script_dir/../system/snapshot-fresh-install.sh" "${snapshot_args[@]}" "$desktop Setup" \
+  || echo "warning: snapshot failed; run 'ucli snapshot' afterwards" >&2
 
 echo "Desktop $desktop installed and snapshot created."
 echo "Next: log out and back in (zsh + extensions), then 'ucli devmode' and 'ucli apps'."

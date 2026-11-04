@@ -20,7 +20,7 @@ docs/
 *.zip
 *.bak
 
-# Bootstrap installer, served by install.wtfaq.tech
+# Bootstrap installer: fetched from GitHub raw (install.wtfaq.tech is retired)
 install.sh
 
 # Shell tier: zsh + its config arrive with the desktop step (install-shell.sh

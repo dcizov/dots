@@ -32,7 +32,7 @@ Every package list lives in `private_dot_config/ucli/packages.bash`:
 | `DESKTOP_BROWSER` | `firefox` — the browser the dotfiles configure (Betterfox `user.js`, extension list, GNOME theme) | `desktop` mode → `ucli setup-system`/`setup-desktop`; `ucli apps` always, even when no desktop is detected |
 | `DESKTOP_TERMINAL_GNOME` | `ghostty` — GTK4, already inside the Adwaita stack | same, plus `ucli apps` when the desktop is known |
 | `DESKTOP_TERMINAL_HYPRLAND` | `ghostty` — native wlroots/Wayland client, honours window rules; `kitty` is no longer in `DESKTOP_HYPRLAND_BASE` | same, plus `ucli apps` when the desktop is known |
-| `DESKTOP_TERMINAL_KDE` | `kitty` — a Qt desktop gets a terminal that needs nothing from GTK | same, plus `ucli apps` when the desktop is known |
+| `DESKTOP_TERMINAL_KDE` | `kwi` — KDE's new terminal (Qt Quick + Kirigami, GPU-rendered, libghostty-vt underneath); AUR-only today as `kwi-git`, so the AUR resolver maps the name, and Konsole from the `plasma` group is the safety net | same, plus `ucli apps` when the desktop is known |
 | `SHELL_TOOLS` | the shell tier: `zsh`, `git`, `curl`, `starship` — what `install-shell.sh` needs to build oh-my-zsh, clone the plugins and initialise the prompt | `ucli setup-system`/`setup-desktop` and `ucli cli` |
 | `CLI` | shell cosmetics on top: `eza bat zoxide atuin tealdeer glow fzf` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
@@ -50,7 +50,7 @@ curl, starship), so it works on a machine that never ran `ucli setup-system`.
 
 **The terminal follows the desktop, the browser does not.** `select_essentials`
 in `install-packages.sh` adds `DESKTOP_BROWSER` plus the one
-`DESKTOP_TERMINAL_<DE>` array, so GNOME and Hyprland get ghostty, KDE gets kitty,
+`DESKTOP_TERMINAL_<DE>` array, so GNOME and Hyprland get ghostty, KDE gets kwi,
 and a machine with no desktop gets neither. `~/.config/ghostty` and
 `~/.config/kitty` follow the same rule on the dotfiles side (`.chezmoiignore`
 asks `lookPath`), so you never end up with a terminal config for a terminal you

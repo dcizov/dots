@@ -5,7 +5,7 @@
 # ─── Palette ──────────────────────────────────────────────────────────────
 # One source of truth. It mirrors the `lambda` palette in starship.toml and
 # the 16 ANSI slots in ~/.config/ghostty/themes/Lambda (kitty uses
-# the same 16). Only zsh-syntax-highlighting needs it in the shell: it paints
+# the same 16; Kwi follows the Plasma colour scheme instead). Only zsh-syntax-highlighting needs it in the shell: it paints
 # with hex, not with ANSI names.
 typeset -gA _lam=(
   bg      '#1c1c1f'   # window background (matches GNOME Console)

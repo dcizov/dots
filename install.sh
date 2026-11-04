@@ -4,32 +4,52 @@ set -euo pipefail
 REPO="${WTFAQ_REPO:-https://github.com/dcizov/dots.git}"
 BRANCH="${WTFAQ_BRANCH:-}"
 APPLY=1
+SNAPSHOT=1
 YES=0
 DRY_RUN=0
 
 usage() {
   cat <<'USAGE'
-usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--yes] [--dry-run]
+usage: install.sh [--repo URL] [--branch BRANCH] [--no-apply] [--no-snapshot]
+                  [--yes] [--dry-run]
 
 Bootstrap wtfaq chezmoi/ucli setup on a console-only machine.
 
 Installs git, chezmoi and just, then deploys the ucli runtime only: ~/.local/bin/ucli,
 ~/.config/ucli, ~/.local/share/ucli and a ~/.bash_profile that puts ~/.local/bin on
 PATH. Everything desktop-shaped — zsh, oh-my-zsh, starship, ~/.config/ghostty,
-~/.config/ucli/firefox — is deliberately left to `ucli setup-system`, so a fresh install
-stays small enough to snapshot.
+~/.config/ucli/firefox — is deliberately left to `ucli setup-system`, so a fresh
+install stays small enough to snapshot.
 
   ucli setup-snapshots          # snapper + limine, snapshot #1
   ucli setup-system gnome       # base + desktop + shell + dotfiles + snapshot
 
-WARNING: The recommended install method pipes a remote script directly into bash
-  (curl https://install.wtfaq.tech | bash). Verify the script contents before
-  piping it, or download and inspect it first.
+HOW TO RUN IT (no project domain needed — install.wtfaq.tech is retired):
 
-Examples:
-  curl -fsSL https://install.wtfaq.tech | bash
-  curl -fsSL https://install.wtfaq.tech | bash -s -- --repo https://github.com/dcizov/dots.git
-  curl -fsSL https://install.wtfaq.tech | bash -s -- --branch main
+  # 1. straight to bash, main branch
+  curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
+
+  # 2. read it first, then run it (recommended)
+  curl -fsSLO https://raw.githubusercontent.com/dcizov/dots/main/install.sh
+  less install.sh && bash install.sh
+
+  # 3. from a clone — the way to run anything other than main
+  git clone https://github.com/dcizov/dots.git && cd dots && ./install.sh
+
+  # 4. tarball, no git history
+  curl -fsSL https://codeload.github.com/dcizov/dots/tar.gz/refs/heads/main | tar xz
+  cd dots-main && ./install.sh
+
+Options:
+  --repo URL      chezmoi source repository (default: dcizov/dots on GitHub)
+  --branch NAME   chezmoi branch to init from (the download URLs above follow main)
+  --no-apply      init chezmoi but deploy nothing
+  --no-snapshot   skip the post-bootstrap snapshot (also UCLI_NO_SNAPSHOT=1)
+  --yes           no confirmation prompt
+  --dry-run       print what would run
+
+WARNING: method 1 pipes a remote script straight into bash. It runs as you, and
+  it can install packages. Use method 2 if you would rather read it first.
 USAGE
 }
 
@@ -53,6 +73,10 @@ while (($#)); do
       ;;
     --no-apply)
       APPLY=0
+      shift
+      ;;
+    --no-snapshot)
+      SNAPSHOT=0
       shift
       ;;
     --yes|-y)
@@ -201,6 +225,34 @@ apply_console_dotfiles() {
     || warn "chezmoi apply failed; run 'ucli chezmoi-apply' once ucli is on PATH"
 }
 
+# A restore point right after the bootstrap, from the same script every other step
+# uses. Only when snapper is already configured: archinstall does not configure it
+# (ucli setup-snapshots does, and that takes snapshot #1 itself), while CachyOS's
+# installer does. Skipped with --no-snapshot / UCLI_NO_SNAPSHOT=1, and never prompts
+# for sudo to produce a snapshot that would be skipped anyway.
+take_fresh_snapshot() {
+  local script="$HOME/.local/share/ucli/scripts/system/snapshot-fresh-install.sh"
+
+  if [[ "${UCLI_NO_SNAPSHOT:-0}" == "1" ]] || (( ! SNAPSHOT )); then
+    log "skipping the post-bootstrap snapshot (--no-snapshot)"
+    return 0
+  fi
+  if [[ ! -f /etc/snapper/configs/root ]]; then
+    log "no snapper config yet; 'ucli setup-snapshots' sets it up and takes snapshot #1"
+    return 0
+  fi
+  if [[ ! -x "$script" ]]; then
+    log "snapshot script not deployed yet; skipping the post-bootstrap snapshot"
+    return 0
+  fi
+  if (( DRY_RUN )); then
+    log "[dry-run] would run: sudo $script post-bootstrap"
+    return 0
+  fi
+  log "Taking a post-bootstrap snapshot"
+  sudo "$script" "post-bootstrap" || warn "snapshot failed; continuing (ucli snapshot retries it)"
+}
+
 print_next_steps() {
   cat <<'EOF'
 
@@ -214,9 +266,14 @@ lookPath on every apply). That keeps the fresh-install snapshot small.
 Next, in this order:
 
   ucli setup-snapshots        # snapper + limine + snapshot #1 (btrfs)
+                              # --no-snapshot configures without snapshotting
   ucli setup-system gnome     # base packages, DE, terminal, firefox, shell,
                               # GNOME extensions, then the dotfiles, then a snapshot
   ucli doctor                 # what is still missing
+
+Every snapshot in this repo — this one, the setup-system and <DE> ones, and the
+ones before debloat/uninstall — is the same script, and --no-snapshot (or
+UCLI_NO_SNAPSHOT=1) turns them all off:  ucli snapshot "my description"
 
 Then log out and back in: zsh becomes your login shell and GNOME extensions load.
 
@@ -256,6 +313,7 @@ main() {
 
   install_requirements
   run_chezmoi_init
+  take_fresh_snapshot
 
   if ! command -v ucli >/dev/null 2>&1; then
     warn "ucli is not on PATH yet. Try opening a new shell or run: export PATH=\"\$HOME/.local/bin:\$PATH\""

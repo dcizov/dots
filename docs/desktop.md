@@ -23,7 +23,7 @@ Edit `DESKTOP_SKIP_<DE>` and `DESKTOP_REPLACE_<DE>` in `packages.bash` to custom
 |---|---|---|
 | GNOME | `DESKTOP_TERMINAL_GNOME` → `ghostty` | GTK4 + native Wayland; GNOME already ships that stack, and `~/.config/ghostty` is the config in this repo |
 | Hyprland | `DESKTOP_TERMINAL_HYPRLAND` → `ghostty` | first-class wlroots client that honours Hyprland window rules, so kitty is not installed as well |
-| KDE | `DESKTOP_TERMINAL_KDE` → `kitty` | Plasma is Qt; kitty needs no GTK theme and no portal round-trip |
+| KDE | `DESKTOP_TERMINAL_KDE` → `kwi` | KDE's new terminal (2026-11-01): Qt Quick/Kirigami, Vulkan/OpenGL rendering through the Qt Scene Graph, libghostty-vt underneath — so both halves of this repo sit on Ghostty's terminal core. Experimental and AUR-only today (`kwi-git` provides `kwi`); Konsole comes with the `plasma` group, so the desktop always has a terminal |
 
 A machine with no desktop installs neither. `~/.config/ghostty` / `~/.config/kitty` are only deployed once that binary exists, so a console install never carries a terminal config.
 

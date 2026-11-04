@@ -10,19 +10,21 @@ can stop in between, inspect, and continue.
 # 0. archinstall (minimal profile), reboot, log in to the console
 
 # 1. bootstrap: git, chezmoi, just — then the ucli runtime only
-curl -fsSL https://install.wtfaq.tech | bash   # --yes / --dry-run / --no-apply
+curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
+#    flags: --yes / --dry-run / --no-apply / --no-snapshot
 #    deploys ~/.local/bin/ucli, ~/.config/ucli, ~/.local/share/ucli
 #    and a ~/.bash_profile that puts ~/.local/bin on PATH. Nothing else.
 
 # 2. snapshots, so everything after this point is reversible
 ucli setup-snapshots        # snapper + limine, creates snapshot #1
 ucli snapshot               # optional extra "clean machine" snapshot
+#    --no-snapshot (or UCLI_NO_SNAPSHOT=1) configures/installs without snapshotting
 
 # 3. the machine: base packages + the desktop you want
 ucli setup-system gnome     # gnome | kde | hyprland
 #    = bootstrap, cpu/gpu, system tools, fonts, ucli runtime
 #    + DE with the replacement matrix
-#    + firefox and that desktop's terminal (ghostty / kitty)
+#    + firefox and that desktop's terminal (ghostty / kwi)
 #    + the shell tier (zsh, oh-my-zsh, plugins, starship, chsh)
 #    + chezmoi apply (now that those programs exist: ~/.zshrc, starship,
 #      ~/.config/ghostty, ~/.config/ucli/firefox) 
@@ -57,10 +59,11 @@ console box therefore deploys the same small set as the bootstrap.
 | Terminal | Desktop | Why |
 |---|---|---|
 | ghostty | GNOME, Hyprland | GTK4 + native Wayland; already in the Adwaita stack GNOME ships, first-class wlroots client on Hyprland |
-| kitty | KDE Plasma | Qt desktop, no GTK theme drag; needs nothing from the desktop |
+| kwi | KDE Plasma | KDE's new terminal: Qt Quick + Kirigami, GPU rendering via the Qt Scene Graph, libghostty-vt underneath. Experimental and AUR-only today (`kwi-git`); Konsole ships with the `plasma` group as the fallback |
 
 Flip `DESKTOP_TERMINAL_KDE` / `DESKTOP_TERMINAL_HYPRLAND` in `packages.bash` if
-you want it the other way round.
+you want it the other way round (kitty is still a perfectly good answer; its AUR
+name is what makes `kwi` awkward today).
 
 `ucli setup-system` asks before continuing when there is no Snapper config (it
 proceeds unattended on a pipe or with `UCLI_YES=1`) — the desktop step is the
@@ -74,7 +77,7 @@ What each layer actually puts on disk:
 | bootstrap | `install.sh` | `~/.local/bin/ucli`, `~/.config/ucli`, `~/.local/share/ucli`, `~/.bash_profile` (`~/.local/bin` on PATH) |
 | dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty` or `~/.config/kitty`, `~/.config/ucli/firefox` (copied into every Firefox profile) |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
-| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kitty** (kde), GNOME extension set, `chezmoi apply`, snapshot |
+| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), GNOME extension set, `chezmoi apply`, snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
 | cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
 | apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + a headless first run of Firefox if it has no profile yet, then Betterfox `user.js`, the extension list and the Firefox GNOME theme |
@@ -94,6 +97,60 @@ chezmoi init --apply https://github.com/dcizov/dots.git
 ucli cli                     # shell tier (optional)
 ucli apps                    # apps, flatpaks, Firefox config (firefox always, terminal when the DE is known)
 ucli devmode                 # optional
+```
+
+## Running the bootstrap (no project domain)
+
+`install.wtfaq.tech` is retired; the script lives in the repo and you can fetch it
+straight from GitHub. All four methods run the same file:
+
+```bash
+# 1. pipe to bash — always the main branch
+curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
+
+# 2. download, read, then run (recommended: it installs packages and runs as you)
+curl -fsSLO https://raw.githubusercontent.com/dcizov/dots/main/install.sh
+less install.sh && bash install.sh
+
+# 3. from a clone — the way to run a branch or a fork
+git clone https://github.com/dcizov/dots.git && cd dots && ./install.sh
+./install.sh --branch my-branch --repo https://github.com/me/dots.git
+
+# 4. tarball, no history
+curl -fsSL https://codeload.github.com/dcizov/dots/tar.gz/refs/heads/main | tar xz
+cd dots-main && ./install.sh
+```
+
+`--branch` only picks the branch `chezmoi init` uses; the download URLs above are
+static, so to bootstrap from a non-main branch use method 3 or 4 (or point
+`--repo`/`--branch` at it). The bootstrap never needs root until it installs
+`git`/`chezmoi`/`just` with `pacman`, and it asks before doing that.
+
+## Snapshots: one script, one switch
+
+Every restore point in this repo is `scripts/system/snapshot-fresh-install.sh`,
+called by the bootstrap, `ucli setup-system`, `ucli setup-desktop`,
+`ucli setup-snapshots`, `ucli debloat-desktop`, `ucli uninstall` and by hand:
+
+```bash
+ucli snapshot                          # "Fresh Arch Linux Installation"
+ucli snapshot "before the upgrade"     # your own description
+ucli snapshot --dry-run                # show what would run
+```
+
+It skips itself, loudly but with exit 0, when there is nothing to snapshot (no
+`snapper`, no `/etc/snapper/configs/root`, root not btrfs) — "not applicable" is
+not "failed", and no step should die over a missing restore point. A real snapper
+error still exits non-zero.
+
+To turn snapshots off for a whole run, one switch reaches all of them:
+
+```bash
+ucli setup-system gnome --no-snapshot      # also skips the "<DE> Setup" snapshot
+sudo UCLI_NO_SNAPSHOT=1 ...                # via sudo -E, or
+ucli setup-snapshots --no-snapshot         # configure snapper, take no snapshot
+ucli debloat-desktop --no-snapshot
+ucli uninstall --no-snapshot
 ```
 
 ## Snapshot-only path (skip chezmoi initially)
@@ -126,7 +183,7 @@ sudo arch-snapper-limine.sh --yes
 
 # 3. Then bootstrap: this only adds ucli + ~/.bash_profile PATH, so the
 #    snapshot still describes a nearly-stock Arch install.
-curl -fsSL https://install.wtfaq.tech | bash
+curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash
 
 # 4. Continue with ucli:
 ucli setup-snapshots      # if you did not run arch-snapper-limine.sh above
