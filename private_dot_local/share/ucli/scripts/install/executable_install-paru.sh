@@ -28,6 +28,15 @@ if command -v paru >/dev/null 2>&1; then
   exit 0
 fi
 
+# A repository package beats an AUR build — signed, updated, no makepkg, and it
+# works on a machine with no helper at all. CachyOS carries both shelly and paru
+# in its own repositories; Arch does not.
+if pacman -Si paru >/dev/null 2>&1; then
+  echo "paru is in the configured repositories; installing with pacman"
+  sudo pacman -S --needed --noconfirm paru
+  exit 0
+fi
+
 if ! command -v pacman >/dev/null 2>&1; then
   echo "pacman not found; cannot install paru" >&2
   exit 1

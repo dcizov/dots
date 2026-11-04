@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Install Betterfox user.js into every Firefox profile.
 #
-# Copies the vendored user.js (Betterfox v154 + user overrides) into each
-# profile directory under ~/.mozilla/firefox/, so the config applies on the
-# next Firefox restart.
+# Copies the vendored user.js (Betterfox v154 + user overrides) into each profile,
+# so the config applies on the next Firefox restart. Profile locations differ by
+# Firefox version — ~/.config/mozilla/firefox on 147+, ~/.mozilla/firefox before
+# that — and lib/firefox.sh resolves both.
 #
 # Works on all desktops (gnome, hyprland, kde) — Firefox is desktop-agnostic.
 #
@@ -21,18 +22,20 @@ if ! command -v firefox >/dev/null 2>&1; then
   exit 0
 fi
 
-# Find Firefox profile directory (XDG-compliant first, then traditional)
-PROFILE_DIR=""
-if [[ -d "$real_home/.config/mozilla/firefox" ]]; then
-  PROFILE_DIR="$real_home/.config/mozilla/firefox"
-elif [[ -d "$real_home/.mozilla/firefox" ]]; then
-  PROFILE_DIR="$real_home/.mozilla/firefox"
+# Where Firefox keeps its profiles (147+ XDG, legacy, flatpak) lives in one place.
+fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+if [[ ! -r "$fx_lib" ]]; then
+  echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
+  exit 1
 fi
+# shellcheck source=/dev/null
+source "$fx_lib"
 
-SOURCE_USER_JS="$real_home/.config/firefox/user.js"
+PROFILE_DIR="$(fx_profile_root "$real_home")"
+SOURCE_USER_JS="$(fx_config_dir "$real_home")/user.js"
 
-if [[ -z "$PROFILE_DIR" ]]; then
-  echo "no Firefox profile found; skipping Betterfox" >&2
+if [[ ! -d "$PROFILE_DIR" ]]; then
+  echo "no Firefox profile found ($(fx_short_root "$PROFILE_DIR" "$real_home")); skipping Betterfox" >&2
   echo "  launch Firefox once to create a profile, then re-run: ucli apps" >&2
   exit 0
 fi
@@ -67,24 +70,14 @@ if [[ -r "$real_home/.config/ucli/scripts/lib/version-script.sh" ]]; then
   fi
 fi
 
-# profiles.ini lists all profiles; copy user.js into each one that has a directory
-echo "Installing Betterfox user.js into Firefox profiles ($PROFILE_DIR) ..."
+# Every profile Firefox knows about gets the same user.js.
+echo "Installing Betterfox user.js into Firefox profiles ($(fx_short_root "$PROFILE_DIR" "$real_home")) ..."
 
-while IFS= read -r line; do
-  # Parse Path= line from profiles.ini
-  path="${line#Path=}"
-  if [[ "$path" != "$line" ]]; then
-    if [[ "$path" == /* ]]; then
-      prof_dir="$path"
-    else
-      prof_dir="$PROFILE_DIR/$path"
-    fi
-    if [[ -d "$prof_dir" ]]; then
-      cp -f "$SOURCE_USER_JS" "$prof_dir/user.js"
-      echo "  installed to $prof_dir/user.js"
-    fi
-  fi
-done < <(grep '^Path=' "$PROFILE_DIR/profiles.ini" 2>/dev/null || true)
+while IFS= read -r prof_dir; do
+  [[ -n "$prof_dir" ]] || continue
+  cp -f "$SOURCE_USER_JS" "$prof_dir/user.js"
+  echo "  installed to $(fx_short_root "$prof_dir" "$real_home")/user.js"
+done < <(fx_profile_dirs "$PROFILE_DIR")
 
 [[ -n "${betterfox_version:-}" ]] && vs_commit firefox-betterfox user "$betterfox_version"
 echo "Betterfox user.js installed. Restart Firefox to apply."

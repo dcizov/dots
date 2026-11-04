@@ -16,7 +16,7 @@ Bootstrap wtfaq chezmoi/ucli setup on a console-only machine.
 Installs git, chezmoi and just, then deploys the ucli runtime only: ~/.local/bin/ucli,
 ~/.config/ucli, ~/.local/share/ucli and a ~/.bash_profile that puts ~/.local/bin on
 PATH. Everything desktop-shaped — zsh, oh-my-zsh, starship, ~/.config/ghostty,
-~/.config/firefox — is deliberately left to `ucli setup-system`, so a fresh install
+~/.config/ucli/firefox — is deliberately left to `ucli setup-system`, so a fresh install
 stays small enough to snapshot.
 
   ucli setup-snapshots          # snapper + limine, snapshot #1
@@ -105,6 +105,12 @@ detect_distro() {
   printf '%s\n' "${ID:-unknown}"
 }
 
+detect_distro_like() {
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  printf '%s\n' "${ID_LIKE:-}"
+}
+
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
   export PATH="$HOME/.local/bin:$PATH"
@@ -135,15 +141,25 @@ install_arch_requirements() {
 }
 
 install_requirements() {
-  local distro
+  local distro like
   distro="$(detect_distro)"
+  like="$(detect_distro_like)"
 
   case "$distro" in
-    arch|cachyos)
+    arch|archlinux|cachyos)
       install_arch_requirements
       ;;
     *)
-      die "unsupported distro: $distro. This bootstrap currently supports Arch/CachyOS only."
+      # EndeavourOS, Garuda, Arco, Artix, Manjaro… share /etc/os-release,
+      # /etc/pacman.conf and the package names used here. Refuse only what is not
+      # Arch under the hood.
+      if [[ " ${like} " == *" arch "* ]]; then
+        warn "'$distro' is Arch-based (ID_LIKE=$like); continuing with Arch paths and pacman"
+        warn "  CachyOS-specific handling (chwd for GPU, its own repos) will not apply"
+        install_arch_requirements
+      else
+        die "unsupported distro: $distro (ID_LIKE=${like:-none}). Supports Arch, CachyOS and Arch derivatives."
+      fi
       ;;
   esac
 }
@@ -192,7 +208,7 @@ Done. This machine now has ucli, and ~/.local/bin on PATH from ~/.bash_profile.
 
 No shell tier, no terminal config, no browser config yet: those arrive with the
 desktop, because ~/.zshrc, ~/.config/zsh, starship.toml, ~/.config/ghostty and
-~/.config/firefox are only deployed once the programs exist (.chezmoiignore asks
+~/.config/ucli/firefox are only deployed once the programs exist (.chezmoiignore asks
 lookPath on every apply). That keeps the fresh-install snapshot small.
 
 Next, in this order:

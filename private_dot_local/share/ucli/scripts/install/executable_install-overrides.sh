@@ -30,16 +30,20 @@ desktop="$(detect_desktop 2>/dev/null || echo none)"
 # exists after Firefox has started once. On a fresh machine that used to mean
 # both steps below silently skipped themselves and you ended up with a stock
 # browser. Create the profile headlessly instead of asking the user to remember.
+fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+if [[ -r "$fx_lib" ]]; then
+  # shellcheck source=/dev/null
+  source "$fx_lib"
+else
+  echo "warning: $fx_lib missing; Firefox profile handling is skipped (run: ucli chezmoi-apply)" >&2
+  exit 1
+fi
+
 firefox_profiles_ini() {
-  local candidate
-  for candidate in "$real_home/.config/mozilla/firefox/profiles.ini" \
-                   "$real_home/.mozilla/firefox/profiles.ini"; do
-    if [[ -f "$candidate" ]]; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done
-  return 1
+  local root
+  root="$(fx_profile_root "$real_home")"
+  [[ -f "$root/profiles.ini" ]] || return 1
+  printf '%s\n' "$root/profiles.ini"
 }
 
 firefox_headless() {
@@ -79,7 +83,7 @@ ensure_firefox_profile
 "$script_dir/install-firefox-betterfox.sh" ${force_args[@]+"${force_args[@]}"} || true
 
 # Firefox extensions (regular) — same profile, now guaranteed above
-"$script_dir/install-firefox-extensions.sh" "$real_home/.config/firefox/extensions.txt" || true
+"$script_dir/install-firefox-extensions.sh" "$(fx_config_dir "$real_home")/extensions.txt" || true
 
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides ${force_args[@]+"${force_args[@]}"} || true

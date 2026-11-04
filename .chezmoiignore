@@ -42,9 +42,12 @@ install.sh
 .config/kitty/
 {{- end }}
 
-# Firefox config (user.js, extension lists) — desktop tier with the browser.
+# ucli's Firefox sources (user.js, extension lists) — desktop tier with the browser.
+# These are copied into every Firefox profile; the profiles themselves are Firefox
+# state (~/.config/mozilla/firefox on 147+, ~/.mozilla/firefox legacy) and are
+# never managed here.
 {{- if not (or $de (lookPath "firefox")) }}
-.config/firefox/
+.config/ucli/firefox/
 {{- end }}
 
 # Dev box: only deploy distrobox config if the role is dev.

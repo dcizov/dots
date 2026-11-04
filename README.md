@@ -37,7 +37,11 @@ fresh-install snapshot small enough to be worth keeping.
 The terminal follows the desktop: **ghostty** on GNOME and Hyprland (GTK4, native
 Wayland, already in the Adwaita stack / a first-class wlroots client), **kitty**
 on KDE Plasma (a Qt desktop, no GTK theme dragged in). Firefox is installed
-everywhere.
+everywhere, and its profile stays Firefox's own — `~/.config/mozilla/firefox` on
+147+, `~/.mozilla/firefox` on an upgraded install. ucli only copies
+`~/.config/ucli/firefox/user.js` and the extension lists into each profile it
+finds in `profiles.ini`; [docs/distros.md](docs/distros.md) has the path table
+for both spellings, and for CachyOS's repositories.
 
 Every step is idempotent and rerunnable on its own. `ucli doctor` says what a
 machine is missing, `ucli check` runs the offline static checks, and
@@ -54,6 +58,7 @@ why the snapshot comes before the rest.
 | [docs/desktop.md](docs/desktop.md) | Software replacement matrix (skip/replace per DE), the `ucli gnome` menu, GNOME settings backup/restore, adding backed-up settings to the repo |
 | [docs/devbox.md](docs/devbox.md) | The distrobox dev box: creation, provisioning, versions, reconcile |
 | [docs/operations.md](docs/operations.md) | `ucli update`/`clean-system`/`logs`/`state`/`report`, the chezmoi workflow, and what `ucli check` + `ucli doctor` verify |
+| [docs/distros.md](docs/distros.md) | Arch vs CachyOS vs other Arch derivatives: paths, repositories, AUR helpers, what is installer-owned on CachyOS, and the Firefox profile paths |
 | [docs/bluefin.md](docs/bluefin.md) | What `ujust bluefin-cli` actually does, what this repo took from it, and what it deliberately left |
 
 ## Repository layout
@@ -65,7 +70,7 @@ why the snapshot comes before the rest.
 | `private_dot_config/ucli/` | `~/.config/ucli/` | `justfile`, `recipes/*.just`, `packages.bash` (every package array), `scripts/lib/` |
 | `private_dot_local/share/ucli/scripts/` | `~/.local/share/ucli/scripts/` | install, check (`check.sh`, `doctor.sh`), system, gnome, devbox, inventory scripts |
 | `private_dot_local/bin/executable_ucli` | `~/.local/bin/ucli` | the `just` wrapper (`ucli <recipe>`, `ucli --choose`) |
-| `private_dot_config/` `ghostty`, `kitty`, `VSCodium`, `firefox` | the matching `~/.config` paths | terminal (only the installed one), editor and browser config |
+| `private_dot_config/` `ghostty`, `kitty`, `VSCodium`, `ucli/firefox` | the matching `~/.config` paths | terminal (only the installed one), editor, and ucli's Firefox sources (`user.js`, extension lists) |
 | `private_dot_config/distrobox/` | `~/.config/distrobox/` | dev box definition + `provision-dev.sh` |
 | `run_*.sh.tmpl`, `install.sh` | — (run by chezmoi / the bootstrap) | bootstrap, plugin repair hook, theme scripts |
 

@@ -15,7 +15,7 @@
 #
 # Everything a TTY-only machine needs before step 3 is ucli itself: until the
 # desktop exists, .chezmoiignore keeps ~/.zshrc, starship, ~/.config/ghostty and
-# ~/.config/firefox out of $HOME, so the fresh-install snapshot stays minimal.
+# ~/.config/ucli/firefox out of $HOME, so the fresh-install snapshot stays minimal.
 set -euo pipefail
 
 choose=0
@@ -368,7 +368,7 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
 fi
 
 # Deploy the dotfiles that only make sense now that the desktop exists: ~/.zshrc,
-# starship, ~/.config/<terminal>, ~/.config/firefox. .chezmoiignore checks for the
+# starship, ~/.config/<terminal>, ~/.config/ucli/firefox. .chezmoiignore checks for the
 # programs with lookPath, so a TTY-only box gets none of them — this is the apply
 # that makes them appear. Runs as the real user (root-owned $HOME would be wrong)
 # and is not fatal: a machine without chezmoi initialized still gets a desktop.

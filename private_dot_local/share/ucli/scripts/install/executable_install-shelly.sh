@@ -7,9 +7,11 @@ usage: install-shelly.sh [--yes]
 
 Install shelly idempotently (AUR helper for Arch/CachyOS).
 
-- On CachyOS: shelly is preinstalled; this script is a no-op if shelly exists.
-- On Arch/other: clones https://aur.archlinux.org/shelly.git, verifies the PGP
-  signature if gpg is available, and builds with makepkg -si.
+- A no-op when shelly is already installed (it is the default helper on CachyOS).
+- Repository first: if the configured repos carry shelly (CachyOS does), install
+  it with pacman.
+- Otherwise clone https://aur.archlinux.org/shelly.git, verify the PGP signature
+  if gpg is available, and build with makepkg -si.
 
 Shelly AUR package: https://aur.archlinux.org/packages/shelly
 USAGE
@@ -26,6 +28,15 @@ done
 
 if command -v shelly >/dev/null 2>&1; then
   echo "shelly already installed: $(command -v shelly)"
+  exit 0
+fi
+
+# A repository package beats an AUR build — signed, updated, no makepkg, and it
+# works on a machine with no helper at all. CachyOS carries both shelly and paru
+# in its own repositories; Arch does not.
+if pacman -Si shelly >/dev/null 2>&1; then
+  echo "shelly is in the configured repositories; installing with pacman"
+  sudo pacman -S --needed --noconfirm shelly
   exit 0
 fi
 

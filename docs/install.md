@@ -25,7 +25,7 @@ ucli setup-system gnome     # gnome | kde | hyprland
 #    + firefox and that desktop's terminal (ghostty / kitty)
 #    + the shell tier (zsh, oh-my-zsh, plugins, starship, chsh)
 #    + chezmoi apply (now that those programs exist: ~/.zshrc, starship,
-#      ~/.config/ghostty, ~/.config/firefox) 
+#      ~/.config/ghostty, ~/.config/ucli/firefox) 
 #    + GNOME extensions (if gnome) + a "<DE> Setup" snapshot
 
 # 4. optional: drop DE packages you never use.
@@ -49,7 +49,7 @@ Two epochs, on purpose. Before step 3 the machine is a console: `ucli` and a
 `PATH`, nothing else — no zsh, no starship, no terminal or browser config. That
 is what makes the fresh-install snapshot worth keeping. The dotfiles that need a
 program (`~/.zshrc`, `~/.config/zsh`, `~/.config/starship.toml`,
-`~/.config/ghostty`, `~/.config/kitty`, `~/.config/firefox`) are held back by
+`~/.config/ghostty`, `~/.config/kitty`, `~/.config/ucli/firefox`) are held back by
 `.chezmoiignore`, which asks `lookPath` on every apply — so they appear the
 moment the program does, and never before. A plain `chezmoi apply -v` on a
 console box therefore deploys the same small set as the bootstrap.
@@ -72,7 +72,7 @@ What each layer actually puts on disk:
 | Layer | Comes from | Contents |
 |---|---|---|
 | bootstrap | `install.sh` | `~/.local/bin/ucli`, `~/.config/ucli`, `~/.local/share/ucli`, `~/.bash_profile` (`~/.local/bin` on PATH) |
-| dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty` or `~/.config/kitty`, `~/.config/firefox` |
+| dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty` or `~/.config/kitty`, `~/.config/ucli/firefox` (copied into every Firefox profile) |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
 | desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kitty** (kde), GNOME extension set, `chezmoi apply`, snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
@@ -86,7 +86,8 @@ the ucli layer rides on it through `plugins=()` and `~/.config/zsh/conf.d/*`
 (deployed by chezmoi, so `ucli chezmoi-apply` refreshes it). Nothing in that
 layer is ucli-specific magic — the same files work in the dev box.
 
-On **CachyOS**, skip steps 2–5 — Calamares already did DE + Snapper/Limine:
+On **CachyOS**, skip steps 2–5 — Calamares already did DE + Snapper/Limine
+([docs/distros.md](distros.md) has the ownership and repository differences):
 
 ```bash
 chezmoi init --apply https://github.com/dcizov/dots.git

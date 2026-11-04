@@ -54,7 +54,6 @@ HOME_TARGETS=(
   "$HOME/.config/direnv"
   "$HOME/.config/distrobox"
   "$HOME/.config/fd"
-  "$HOME/.config/firefox"
   "$HOME/.config/ghostty"
   "$HOME/.config/glow"
   "$HOME/.config/kitty"
@@ -62,6 +61,9 @@ HOME_TARGETS=(
   "$HOME/.config/restic"
   "$HOME/.config/ripgrep"
   "$HOME/.config/starship.toml"
+  # Includes ucli's Firefox sources (user.js, extension lists). Those are NOT a
+  # Firefox path: profiles live in ~/.config/mozilla/firefox (FF 147+) or
+  # ~/.mozilla/firefox (legacy) and are deliberately left alone here.
   "$HOME/.config/ucli"
   "$HOME/.config/VSCodium"
   "$HOME/.config/zsh"

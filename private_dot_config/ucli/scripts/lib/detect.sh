@@ -30,6 +30,34 @@ detect_distro_raw() {
   fi
 }
 
+# ID_LIKE from /etc/os-release. Arch and CachyOS both ship /etc/os-release (a
+# symlink to /usr/lib/os-release) and the same pacman layout; every Arch
+# derivative that sets ID_LIKE=arch (EndeavourOS, Garuda, Arco, Artix, …) does too.
+detect_distro_like() {
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    printf '%s\n' "${ID_LIKE:-}"
+  else
+    printf ''
+  fi
+}
+
+# Everything this repo assumes (pacman, /etc/snapper, mkinitcpio, limine) is
+# inherited from Arch, so the family is what matters, not the branding.
+detect_distro_family() {
+  local id like
+  id="$(ucli_norm "$(detect_distro_raw)")"
+  like="$(ucli_norm "$(detect_distro_like)")"
+  case "$id" in
+    arch|archlinux|cachyos) printf 'arch\n'; return 0 ;;
+  esac
+  case " $like " in
+    *" arch "*) printf 'arch\n'; return 0 ;;
+  esac
+  printf '%s\n' "$id"
+}
+
 detect_distro() {
   local override
   override="$(ucli_profile_value distro "")"

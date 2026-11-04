@@ -67,9 +67,13 @@ echo
 # ---------------------------------------------------------------------------
 # 1. bash -n
 # ---------------------------------------------------------------------------
+# Two trees hold shell: ~/.local/share/ucli/scripts (run directly) and
+# ~/.config/ucli/scripts (the libs they source: detect, ui, choose,
+# version-script, firefox). The libs used to be skipped — a syntax error there
+# breaks every caller and nothing caught it.
 bash_files=()
 while IFS= read -r f; do bash_files+=("$f"); done < <(
-  find "$scripts_dir" -name '*.sh' -type f | sort
+  find "$scripts_dir" "$config_dir/scripts" -name '*.sh' -type f 2>/dev/null | sort
 )
 for f in "${extra_shell[@]:-}"; do
   [[ -n "$f" ]] && bash_files+=("$f")

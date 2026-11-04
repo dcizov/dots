@@ -3,17 +3,19 @@ set -euo pipefail
 
 yes_flag=0
 dry_run=0
+force=0
 remove_home_snapshots=1
 for arg in "$@"; do
   case "$arg" in
     --yes|-y) yes_flag=1 ;;
     --dry-run|-n) dry_run=1 ;;
     --keep-home-snapshots) remove_home_snapshots=0 ;;
+    --force) force=1 ;;
     --help|-h)
       cat <<'USAGE'
-usage: sudo arch-snapper-limine.sh [--yes] [--dry-run] [--keep-home-snapshots]
+usage: sudo arch-snapper-limine.sh [--yes] [--dry-run] [--force] [--keep-home-snapshots]
 
-Arch-only post-install system setup:
+Arch family post-install system setup (Arch, CachyOS, EndeavourOS, …):
 - verifies Btrfs subvolume layout @, @home, @log, @pkg
 - removes archinstall-created @home/.snapshots by default
 - configures root Snapper with CachyOS-style root config
@@ -22,6 +24,10 @@ Arch-only post-install system setup:
 - configures /etc/default/limine preserving current kernel cmdline base
 - runs mkinitcpio -P, limine-update, limine-snapper-sync
 - creates CachyOS-style fresh installation snapshot
+
+CachyOS ships this whole stack itself (snapper root config, snap-pac,
+limine-snapper-sync, the mkinitcpio hooks, /etc/default/limine), so there the
+script explains what it left alone and exits. --force runs the Arch path anyway.
 USAGE
       exit 0 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
@@ -64,13 +70,45 @@ if (( EUID != 0 )); then
 fi
 
 . /etc/os-release
-if [[ " ${ID:-} ${ID_LIKE:-} " == *" cachyos "* ]]; then
-  echo "CachyOS detected. Keeping CachyOS installer Snapper/Limine defaults; nothing to do."
+
+# Arch family. Everything below (pacman, /etc/snapper, mkinitcpio, limine) comes
+# from Arch, so CachyOS, EndeavourOS, Garuda and friends take the same path; only
+# non-Arch systems are refused outright.
+case "${ID:-}" in
+  arch|archlinux|cachyos) ;;
+  *)
+    if [[ " ${ID_LIKE:-} " == *" arch "* ]]; then
+      echo "note: ID=$ID is Arch-based (ID_LIKE=$ID_LIKE); continuing with Arch paths" >&2
+    else
+      echo "unsupported: ID=${ID:-unknown} is not Arch-based; nothing here applies" >&2
+      exit 1
+    fi
+    ;;
+esac
+
+# CachyOS already ships the whole stack: snapper's root config, snap-pac,
+# limine-snapper-sync and limine-mkinitcpio-hook in its own repositories, and
+# Calamares writes /etc/default/limine. Rewriting that is how you break a boot.
+if [[ "${ID:-}" == "cachyos" ]] && (( ! force )); then
+  cat <<'EOF'
+CachyOS detected: the Snapper + Limine stack is installer-owned there, so nothing
+was changed. Already in place on a CachyOS install:
+
+  /etc/snapper/configs/root     snapper root config
+  snap-pac                      one snapshot per pacman transaction
+  limine-snapper-sync           snapshot -> boot entry sync
+  limine-mkinitcpio-hook        initramfs per snapshot
+  /etc/default/limine           kernel command line
+
+To take a restore point right now:
+
+  sudo snapshot-fresh-install.sh "Fresh CachyOS Installation"
+
+To run the Arch path anyway (backs up and overwrites those files):
+
+  sudo arch-snapper-limine.sh --force
+EOF
   exit 0
-fi
-if [[ "${ID:-}" != "arch" ]]; then
-  echo "This script is intended for Arch installed with archinstall. Detected ID=${ID:-unknown}" >&2
-  exit 1
 fi
 
 if [[ "$(findmnt -no FSTYPE /)" != btrfs ]]; then

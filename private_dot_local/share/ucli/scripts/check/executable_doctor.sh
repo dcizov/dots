@@ -184,19 +184,30 @@ fi
 # ---------------------------------------------------------------------------
 section "apps"
 if have firefox; then
-  profiles=""
-  for candidate in "$real_home/.config/mozilla/firefox" "$real_home/.mozilla/firefox"; do
-    [[ -f "$candidate/profiles.ini" ]] && profiles="$candidate" && break
-  done
-  if [[ -n "$profiles" ]]; then
-    ok "firefox profile ($profiles)"
-    if [[ -f "$real_home/.config/firefox/user.js" ]]; then
-      ok "Betterfox user.js available"
+  # Firefox 147+ keeps profiles in ~/.config/mozilla/firefox; older installs stay in
+  # ~/.mozilla/firefox. lib/firefox.sh knows which one this machine uses.
+  if [[ -r "$config_dir/scripts/lib/firefox.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "$config_dir/scripts/lib/firefox.sh"
+    profiles="$(fx_profile_root "$real_home")"
+    if [[ -f "$profiles/profiles.ini" ]]; then
+      ok "firefox profile root: $(fx_short_root "$profiles" "$real_home")"
+      count=0
+      while IFS= read -r profile_dir; do
+        [[ -n "$profile_dir" ]] && count=$((count + 1))
+      done < <(fx_profile_dirs "$profiles")
+      info "$count profile(s); user.js copied into each"
+      if [[ -f "$(fx_config_dir "$real_home")/user.js" ]]; then
+        ok "Betterfox user.js available (~/.config/ucli/firefox/user.js)"
+      else
+        warn "~/.config/ucli/firefox/user.js missing (run: ucli chezmoi-apply)"
+      fi
     else
-      warn "~/.config/firefox/user.js missing (run: ucli chezmoi-apply)"
+      info "firefox profile root: $(fx_short_root "$profiles" "$real_home") (no profile yet)"
+      warn "firefox has no profile yet (ucli apps creates one headlessly)"
     fi
   else
-    warn "firefox has no profile yet (ucli apps creates one headlessly)"
+    warn "$config_dir/scripts/lib/firefox.sh missing (run: ucli chezmoi-apply)"
   fi
 else
   warn "firefox missing (run: ucli setup-system / ucli apps)"

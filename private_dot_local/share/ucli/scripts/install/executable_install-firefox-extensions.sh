@@ -32,40 +32,33 @@ if [[ ! -r "$EXT_FILE" ]]; then
   exit 1
 fi
 
-# Find Firefox profile directory (XDG-compliant first, then traditional)
+# Firefox profile locations differ by version (147+ uses XDG): lib/firefox.sh owns
+# the resolution, this script only consumes it.
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
-PROFILE_DIR=""
-if [[ -d "$real_home/.config/mozilla/firefox" ]]; then
-  PROFILE_DIR="$real_home/.config/mozilla/firefox"
-elif [[ -d "$real_home/.mozilla/firefox" ]]; then
-  PROFILE_DIR="$real_home/.mozilla/firefox"
+fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
+if [[ ! -r "$fx_lib" ]]; then
+  echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
+  exit 1
 fi
+# shellcheck source=/dev/null
+source "$fx_lib"
 
-if [[ -z "$PROFILE_DIR" ]]; then
-  echo "no Firefox profile found; skipping extensions" >&2
+PROFILE_DIR="$(fx_profile_root "$real_home")"
+
+if [[ ! -d "$PROFILE_DIR" ]]; then
+  echo "no Firefox profile found ($(fx_short_root "$PROFILE_DIR" "$real_home")); skipping extensions" >&2
   echo "  launch Firefox once to create a profile, then re-run: ucli apps" >&2
   exit 0
 fi
 
-echo "Firefox profile dir: $PROFILE_DIR"
+echo "Firefox profile dir: $(fx_short_root "$PROFILE_DIR" "$real_home")"
 
-# Collect profile directories from profiles.ini
 profile_dirs=()
-while IFS= read -r line; do
-  path="${line#Path=}"
-  if [[ "$path" != "$line" ]]; then
-    if [[ "$path" == /* ]]; then
-      prof_dir="$path"
-    else
-      prof_dir="$PROFILE_DIR/$path"
-    fi
-    if [[ -d "$prof_dir" ]]; then
-      profile_dirs+=("$prof_dir")
-    fi
-  fi
-done < <(grep '^Path=' "$PROFILE_DIR/profiles.ini" 2>/dev/null || true)
+while IFS= read -r prof_dir; do
+  [[ -n "$prof_dir" ]] && profile_dirs+=("$prof_dir")
+done < <(fx_profile_dirs "$PROFILE_DIR")
 
 if ((${#profile_dirs[@]} == 0)); then
   echo "no Firefox profiles found; skipping extensions" >&2

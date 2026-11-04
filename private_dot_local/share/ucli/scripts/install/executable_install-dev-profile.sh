@@ -111,7 +111,7 @@ cmd_for() {
     dev-pkgs) printf '%s' "\"$script_dir/install-packages.sh\" --force dev" ;;
     flatpaks) printf '%s' "\"$script_dir/install-flatpaks.sh\" dev" ;;
     vscodium) printf '%s' "command -v codium >/dev/null || { echo 'skipped: codium is not installed'; exit 0; }; \"$script_dir/install-vscodium-extensions.sh\"" ;;
-    firefox)  printf '%s' "\"$script_dir/install-firefox-extensions.sh\" \"$real_home/.config/firefox/dev-extensions.txt\"" ;;
+    firefox)  printf '%s' "\"$script_dir/install-firefox-extensions.sh\" \"$real_home/.config/ucli/firefox/dev-extensions.txt\"" ;;
     devbox)   printf '%s' "command -v distrobox >/dev/null || { echo 'skipped: distrobox is not installed'; exit 0; }; [ -x \"$reconcile\" ] || { echo 'skipped: devbox-reconcile.sh not found'; exit 0; }; \"$reconcile\"" ;;
     *)        return 1 ;;
   esac

@@ -117,7 +117,7 @@ Steps that are slow or hit the network are gated by a content hash
 | Step | Token | Re-runs when |
 |---|---|---|
 | GNOME extension sets (`system`, `overrides`) | hash of `packages.bash` | the extension lists change |
-| Betterfox `user.js` | hash of `~/.config/firefox/user.js` | you edit `user.js` |
+| Betterfox `user.js` | hash of `~/.config/ucli/firefox/user.js` | you edit `user.js` |
 | VSCodium extensions | hash of `extensions.txt` | the list changes |
 
 `--force` redoes the work anyway (`ucli setup-extensions --force`,
