@@ -7,6 +7,7 @@
 # `$terminal` / `$desktop` from .chezmoi.toml.tmpl the same way.
 README.md
 AGENT_HANDOFF.md
+docs/
 *.tar.gz
 *.zip
 *.bak
