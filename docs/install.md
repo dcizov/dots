@@ -2,6 +2,10 @@
 
 ## Fresh install on Arch minimal
 
+New to the repo? Read [getting-started](getting-started.md) first — it is the
+same pipeline with what each step installs and how to configure it. This page is
+the reference.
+
 The pipeline, in order. Every step is idempotent and every step is also
 runnable on its own (`setup-desktop`, `setup-extensions`, `setup-apps`), so you
 can stop in between, inspect, and continue.

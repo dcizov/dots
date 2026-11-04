@@ -16,6 +16,9 @@ All package decisions are backed by the [Arch Linux package database](https://ar
 
 ## Quick start (Arch minimal → working machine)
 
+New to this repo? [docs/getting-started.md](docs/getting-started.md) walks through
+the same commands with what each step installs and where the knobs are.
+
 ```bash
 # 1. bootstrap: git, chezmoi, just → ucli on PATH (nothing else)
 curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash -s -- --yes
@@ -66,6 +69,7 @@ why the snapshot comes before the rest.
 
 | Doc | What is in it |
 |---|---|
+| [docs/getting-started.md](docs/getting-started.md) | **Start here.** The four steps end to end: what each one installs, what it writes, how to configure it (shell flags, package arrays, chezmoi data, gates), where everything lands, and what to check afterwards |
 | [docs/install.md](docs/install.md) | The full pipeline step by step, the four ways to run the bootstrap, snapshots (`--no-snapshot`), the snapshot-only path, Arch-specific notes, fresh-install readiness |
 | [docs/tiers.md](docs/tiers.md) | Every package tier (`UCLI_RUNTIME`, `SHELL_TOOLS`, `DESKTOP_BROWSER`, `DESKTOP_TERMINAL_<DE>`, `CLI`, `DEV_CLI`, `DEV`, `GAMING`), what `ucli cli`/`devmode`/`apps` put on disk, per-machine shell flags in `local.zsh`, versioned gates and `--force` |
 | [docs/desktop.md](docs/desktop.md) | Software replacement matrix (skip/replace per DE), the `ucli gnome` menu, GNOME settings backup/restore, adding backed-up settings to the repo |

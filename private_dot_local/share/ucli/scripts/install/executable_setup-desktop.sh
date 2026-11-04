@@ -79,7 +79,8 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
 
-# Resolve the AUR helper (distro-aware; cached in /etc/ucli/aur-helper).
+# Resolve the AUR helper (distro-aware; the choice is cached in
+# ~/.local/share/ucli/aur-helper).
 # Run as the real user since this may install the helper via makepkg (no root).
 aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
