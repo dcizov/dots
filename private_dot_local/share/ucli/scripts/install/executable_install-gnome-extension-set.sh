@@ -59,9 +59,21 @@ run_gext() {
   fi
 }
 
+# Check if a GNOME extension UUID is already installed.
+is_extension_installed() {
+  local uuid="$1"
+  run_gext list 2>/dev/null | grep -qF "$uuid"
+}
+
 # Install an extension from extensions.gnome.org by primary key, then enable it.
+# Skips if the extension UUID is already installed (idempotent re-runs).
 install_extension_by_pk() {
   local pk="$1" uuid="$2"
+
+  if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
+    echo "extension pk=$pk ($uuid) already installed; skipping"
+    return 0
+  fi
 
   echo "installing extension pk=$pk ..."
   if ! run_gext install "$pk" >/dev/null 2>&1; then
@@ -78,7 +90,11 @@ case "$mode" in
   system)
     echo "enabling system GNOME extensions ..."
     for uuid in "${GNOME_SYSTEM_EXTENSION_UUIDS[@]:-}"; do
-      run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
+        echo "extension $uuid already enabled; skipping"
+      else
+        run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      fi
     done
     # Install non-repo extensions by primary key via gext
     for i in "${!GNOME_SYSTEM_EXTENSION_PKS[@]}"; do
@@ -90,7 +106,11 @@ case "$mode" in
     # App overrides are pacman packages installed by install-packages.sh apps mode.
     # Shell override themes are also pacman packages.
     for uuid in "${GNOME_OVERRIDE_EXTENSION_UUIDS[@]:-}"; do
-      run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
+        echo "extension $uuid already enabled; skipping"
+      else
+        run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      fi
     done
     for i in "${!GNOME_OVERRIDE_EXTENSION_PKS[@]}"; do
       install_extension_by_pk "${GNOME_OVERRIDE_EXTENSION_PKS[$i]}" "${GNOME_OVERRIDE_EXTENSION_UUIDS[$i]:-}"
