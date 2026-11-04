@@ -11,7 +11,7 @@ usage:
     @printf '%s\n' '  ucli setup-desktop     # install DE + snapshot (Arch minimal)'
     @printf '%s\n' '  ucli debloat-desktop   # remove DE packages you do not need'
     @printf '%s\n' '  ucli setup-system      # base packages + shell'
-    @printf '%s\n' '  ucli cli               # shell CLI experience'
+    @printf '%s\n' '  ucli cli               # shell: oh-my-zsh, plugins, prompt, aliases'
     @printf '%s\n' '  ucli devmode           # developer wizard (+ dev box)'
     @printf '%s\n' '  ucli gaming            # gaming profile'
     @printf '%s\n' '  ucli apps              # personal apps and overrides'

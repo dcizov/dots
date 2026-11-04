@@ -9,6 +9,7 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
+# base = a working machine: packages, system tools, desktop, fonts. The shell
+# experience (oh-my-zsh, plugins, default shell) is the CLI tier: `ucli cli`.
 "$script_dir/install-packages.sh" base
-"$script_dir/install-shell.sh"
 "$script_dir/install-flatpaks.sh" base

@@ -1,14 +1,16 @@
-# Set up the machine profile.
+# Set up the machine profile (no shell opinion — use `ucli cli` for that).
 [group('Install')]
 setup-system:
-    # bootstrap + cpu + gpu + zsh + system-tools + fonts + desktop
+    # bootstrap + cpu + gpu + system-tools + fonts + desktop + ucli runtime
     @~/.local/share/ucli/scripts/install/install-profile.sh
 
-# Set up shell CLI experience.
+# Set up the shell experience: oh-my-zsh + plugins + zsh as login shell, then
+# the cosmetic tooling (starship, eza, bat, zoxide, atuin, …).
 [group('Install')]
 cli:
-    # opt-in shell CLI experience (atuin, fd, bat, eza, starship, …)
+    # opt-in shell tier (oh-my-zsh, plugins, prompt, aliases, fuzzy find)
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
+    @~/.local/share/ucli/scripts/install/install-shell.sh
 
 # `ucli devmode` flags:
 #   ucli devmode           wizard on a TTY, everything otherwise

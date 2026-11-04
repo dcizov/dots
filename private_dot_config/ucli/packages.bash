@@ -43,6 +43,16 @@ BOOTSTRAP=(
   wget
 )
 
+# What `ucli cli` needs before it can build the shell experience: the zsh
+# binary, git to clone oh-my-zsh/plugins, curl for the omz installer. Kept apart
+# from CLI because they are dependencies, not cosmetics — and apart from
+# BOOTSTRAP because a machine without the shell tier should not need them.
+SHELL_DEPS=(
+  zsh
+  git
+  curl
+)
+
 # Deliberately empty: these three used to be installed as Arch packages, which
 # put them in /usr/share/zsh/plugins — a location the dev box (Debian) does not
 # have. They are now cloned into $ZSH_CUSTOM/plugins by install-shell.sh and

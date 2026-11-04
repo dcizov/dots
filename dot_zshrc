@@ -37,7 +37,7 @@ plugins=(
 if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
   source "$ZSH/oh-my-zsh.sh"
 else
-  echo "warning: oh-my-zsh not found at $ZSH; run 'ucli shell' to install" >&2
+  echo "warning: oh-my-zsh not found at $ZSH; run 'ucli cli' to install" >&2
 fi
 
 # Load modular config in numeric order.

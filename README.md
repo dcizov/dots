@@ -37,11 +37,14 @@ just debloat-desktop
 # 5. System-level Snapper/Limine setup
 ucli setup-snapshots
 
-# 6. Dev packages + personal apps
+# 6. Shell experience (oh-my-zsh, plugins, prompt) — optional but expected
+ucli cli
+
+# 7. Dev packages + personal apps
 ucli devmode
 ucli apps
 
-# 7. Backup your GNOME configuration (after customizing it)
+# 8. Backup your GNOME configuration (after customizing it)
 ucli backup-gnome-settings
 ```
 
@@ -49,6 +52,7 @@ On **CachyOS**, skip steps 1, 3, 5 — Calamares already did DE + Snapper/Limine
 
 ```bash
 chezmoi init --apply https://github.com/dcizov/dots.git
+ucli cli                     # shell tier (optional)
 ucli devmode
 ucli apps
 ucli backup-gnome-settings   # optional, after customizing GNOME
@@ -90,6 +94,7 @@ chezmoi apply -v
 
 # 4. Continue with ucli:
 ucli setup-system
+ucli cli
 ucli devmode
 ucli apps
 ```
@@ -185,7 +190,7 @@ ucli inventory            package/app/settings inventory
 
 ```bash
 ucli setup-system         first-machine profile (packages + basic setup)
-ucli cli                  shell cosmetics (prompt, aliases, history, fuzzy find)
+ucli cli                  shell tier: oh-my-zsh + plugins + zsh login shell + cosmetics
 ucli devmode              developer wizard — plumbing, apps, dev box (re-runnable)
 ucli gaming               gaming profile
 ucli apps                 personal apps and overrides
@@ -196,13 +201,20 @@ Four package tiers live in `private_dot_config/ucli/packages.bash`:
 | Tier | What it is | Installed by |
 |---|---|---|
 | `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
-| `CLI` | shell cosmetics: `starship bat eza zoxide atuin tealdeer glow fzf` — nothing here builds code, the shell just feels worse without it | `ucli cli` |
+| `CLI` | the shell tier: `starship bat eza zoxide atuin tealdeer glow fzf` **plus** what `install-shell.sh` does — oh-my-zsh, the four plugin clones into `$ZSH_CUSTOM/plugins`, and `chsh -s zsh` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
 | `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin` | `ucli devmode` (`--force` bypasses the role check) |
 
 `dev` mode selects `dev-cli` first, so the heavy stack always arrives with its
-plumbing. `ucli full-profile` (a.k.a. `install-packages.sh full`) is
+plumbing. `ucli cli` pulls its own prerequisites first (`SHELL_DEPS`: zsh, git,
+curl), so it works on a machine that never ran `ucli setup-system`.
+`ucli full-profile` (a.k.a. `install-packages.sh full`) is
 `base + cli + dev + gaming`.
+
+`base` installs the zsh *binary* (it is in `BOOTSTRAP`, and the dev box and the
+dotfiles expect it) but takes no opinion on your login shell — oh-my-zsh,
+plugins and `chsh` belong to `ucli cli`. Without it, `~/.zshrc` still works: it
+sources oh-my-zsh only when present and prints a hint otherwise.
 
 `ucli devmode` is a wizard, modelled on `ujust devmode`: one `gum choose
 --no-limit` screen with sections and preselection, a summary + confirm, a

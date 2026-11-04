@@ -10,6 +10,20 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # Pass real_home to oh-my-zsh installer via env so it uses the right home.
 export UCLI_REAL_HOME="$real_home"
 
+# The shell tier owns its prerequisites: zsh (the omz installer needs it),
+# git (plugins are cloned) and curl (omz is fetched). `ucli cli` therefore works
+# on a machine that never ran `ucli setup-system`.
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" shell-deps
+fi
+
+for cmd in zsh git curl; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "error: '$cmd' is missing; run: ucli cli (or install it manually)" >&2
+    exit 1
+  fi
+done
+
 "$script_dir/install-oh-my-zsh.sh"
 
 # All zsh plugins go to ONE place, $ZSH_CUSTOM/plugins, on the host and in the
@@ -36,11 +50,11 @@ done
 # Set zsh as the default login shell so a fresh shell after chezmoi apply
 # runs zsh with the deployed ~/.zshrc and PATH from 00-env.zsh.
 if command -v chsh >/dev/null 2>&1; then
-  current_shell="$(getent passwd "$USER" | cut -d: -f7 2>/dev/null || true)"
+  current_shell="$(getent passwd "$real_user" | cut -d: -f7 2>/dev/null || true)"
   zsh_path="$(command -v zsh)"
   if [[ -n "$current_shell" && "$current_shell" != "$zsh_path" ]]; then
-    echo "Setting zsh as default shell for $USER ..."
-    chsh -s "$zsh_path" "$USER" 2>/dev/null || \
-      echo "warning: chsh failed; run 'chsh -s $(which zsh)' manually" >&2
+    echo "Setting zsh as default shell for $real_user ..."
+    chsh -s "$zsh_path" "$real_user" 2>/dev/null || \
+      echo "warning: chsh failed; run 'chsh -s $(command -v zsh)' manually" >&2
   fi
 fi
