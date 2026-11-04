@@ -10,11 +10,15 @@ cli:
     # opt-in shell CLI experience (atuin, fd, bat, eza, starship, …)
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
 
-# Set up developer tools.
+# Set up developer tools (interactive wizard, like `ujust devmode`).
+# Re-running offers "add more tools?" and preselects the previous picks.
+#   ucli devmode          # wizard on a TTY, everything otherwise
+#   ucli devmode --all    # every item, no menu
+#   ucli devmode --status # marker + version gates
 [group('Install')]
-devmode:
+devmode *ARGS:
     # opt-in dev-cli + developer packages (vscodium, podman, distrobox, …)
-    @~/.local/share/ucli/scripts/install/install-dev-profile.sh
+    @~/.local/share/ucli/scripts/install/install-dev-profile.sh {{ARGS}}
 
 # Install gaming profile.
 [group('Install')]
@@ -34,11 +38,11 @@ install-paru:
     # install paru with PGP signature verification
     @~/.local/share/ucli/scripts/install/install-paru.sh
 
-# Install VSCodium extensions.
+# Install VSCodium extensions (skipped when extensions.txt is unchanged).
 [group('Install')]
-vscodium-extensions:
-    # install configured VSCodium extensions
-    @~/.local/share/ucli/scripts/install/install-vscodium-extensions.sh
+vscodium-extensions *ARGS:
+    # install configured VSCodium extensions (--force to reinstall)
+    @~/.local/share/ucli/scripts/install/install-vscodium-extensions.sh {{ARGS}}
 
 # Install gnome-extensions-cli (gext) via pipx.
 # Required before running install-gnome-extension-set.sh.

@@ -21,6 +21,29 @@ update:
     step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
     have() { command -v "$1" >/dev/null 2>&1; }
 
+    # Guard, ported from `ujust update`: Bluefin refuses to update while the
+    # image has layered packages, because that breaks its zero-maintenance
+    # promise. The Arch equivalent of "layered" is foreign (AUR / locally built)
+    # packages: they can need a rebuild or an upstream fix mid-upgrade, so show
+    # them first and ask. UCLI_YES=1 (or a non-interactive run) proceeds.
+    if have pacman; then
+      foreign="$(pacman -Qm 2>/dev/null || true)"
+      if [ -n "$foreign" ]; then
+        n=$(printf '%s\n' "$foreign" | wc -l | tr -d ' ')
+        step "foreign / AUR packages: $n"
+        printf '%s\n' "$foreign" | awk 'NR<=10 { printf "    %s\n", $0 }'
+        if [ "$n" -gt 10 ]; then printf '    … and %s more\n' "$((n - 10))"; fi
+        printf '    Not from the official repos: AUR rebuilds are your responsibility.\n'
+        if [ "${UCLI_YES:-0}" != 1 ] && [ -t 0 ]; then
+          read -r -p "Continue with the upgrade? [y/N] " answer
+          case "${answer:-}" in
+            [yY]*) ;;
+            *) printf 'aborted.\n'; exit 1 ;;
+          esac
+        fi
+      fi
+    fi
+
     step "pacman: system upgrade"
     sudo pacman -Syu --noconfirm || true
 
@@ -184,6 +207,32 @@ bios-info:
     fi
     printf 'no /sys/class/dmi/id and dmidecode is not installed\n' >&2
     exit 1
+
+# Show ucli state: versioned setup gates (lib/version-script.sh) and the
+# devmode marker. Handy when a step "did not run" — the gate tells you why.
+[group('Maintenance')]
+state:
+    # versioned setup gates + devmode marker
+    #!/usr/bin/env bash
+    set -euo pipefail
+    . "$HOME/.config/ucli/scripts/lib/version-script.sh"
+    statedir="${XDG_STATE_HOME:-$HOME/.local/state}/ucli"
+    printf 'state dir: %s\n\n' "$statedir"
+
+    printf 'version gates:\n'
+    gates="$(vs_list)"
+    if [ -n "$gates" ]; then
+    printf '%s\n' "$gates" | awk -F'\t' '{ printf "  %-8s %-26s %s\n", $1, $2, $3 }'
+    else
+    printf '  (none)\n'
+    fi
+
+    printf '\ndevmode:\n'
+    if [ -r "$statedir/devmode" ]; then
+    sed 's/^/  /' "$statedir/devmode"
+    else
+    printf '  not configured (ucli devmode sets it up)\n'
+    fi
 
 # Packages changed in the most recent pacman transaction.
 [group('Maintenance')]

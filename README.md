@@ -186,9 +186,22 @@ ucli inventory            package/app/settings inventory
 ```bash
 ucli setup-system         first-machine profile (packages + basic setup)
 ucli cli                  shell CLI experience
-ucli devmode              developer tools — this also reconciles the dev box
+ucli devmode              developer wizard — toolchain, apps, dev box (re-runnable)
 ucli gaming               gaming profile
 ucli apps                 personal apps and overrides
+```
+
+`ucli devmode` is a wizard, modelled on `ujust devmode`: one `gum choose
+--no-limit` screen with sections and preselection, a summary + confirm, a
+progress bar with per-step ✓/✗, and a marker at
+`~/.local/state/ucli/devmode`. Re-running offers *"add more tools?"* and
+preselects last time's picks. Non-TTY runs install everything:
+
+```bash
+ucli devmode              # wizard on a TTY, everything otherwise
+ucli devmode --all        # every item, no menu (CI)
+ucli devmode --status     # marker + version gates
+ucli devmode --reset      # forget the marker, wizard from scratch
 ```
 
 `private_dot_config/ucli/packages.bash` is the package source of truth;
@@ -282,9 +295,26 @@ ucli clean-system      # dangling images, unused flatpaks, old pkg cache (asks f
 ucli report            # machine + toolchain facts to ~/report-<date>.txt
 ucli logs              # menu: this boot / last boot / devbox provision log / pacman
 ucli changelogs        # what the last pacman transaction changed
+ucli state             # versioned setup gates + devmode marker
 ucli bios              # reboot into firmware settings (asks first)
 ucli bios-info         # board + firmware version
 ```
+
+`ucli update` warns about foreign (AUR / locally built) packages and asks
+before upgrading — the Arch analogue of `ujust update` refusing to run while
+the bootc image has layered packages. `UCLI_YES=1` (or a non-interactive run)
+proceeds silently.
+
+Two shared helpers were ported from Bluefin and are reused across scripts:
+
+| File | What it gives you |
+|---|---|
+| `~/.config/ucli/scripts/lib/ui.sh` | `ui_title` / `ui_box` / `ui_summary`, `ui_choose_multi` (sections + preselect), `ui_step` (block progress bar with ✓/✗) |
+| `~/.config/ucli/scripts/lib/version-script.sh` | `vs_check` / `vs_commit` / `vs_list` — a versioned hook gate: a step runs once per version token (counter or content hash) and is retried until it succeeds |
+
+Current gates: `vscodium-extensions` (hash of `extensions.txt`), `devmode`.
+Inspect them with `ucli state`; force a re-run with `ucli devmode --reset` or
+`ucli vscodium-extensions --force`.
 
 `clean-system` never touches named volumes: `dev_pgdata`, `dev_mysql` and
 `dev_redis` survive it, and it only prunes *dangling* images and *anonymous*

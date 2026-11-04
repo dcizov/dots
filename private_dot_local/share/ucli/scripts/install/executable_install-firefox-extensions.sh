@@ -93,17 +93,36 @@ done < "$EXT_FILE"
 
 if ((${#ext_ids[@]} == 0)); then
   echo "==> no extensions to install."
-  echo "    Restart Firefox to activate new extensions."
   exit 0
 fi
+
+# Only download what is actually missing in at least one profile. This is the
+# cheap check that keeps a re-run (`ucli apps`, `ucli devmode`) off the network.
+missing_ids=()
+for ext_id in "${ext_ids[@]}"; do
+  need=0
+  for prof_dir in "${profile_dirs[@]}"; do
+    [[ -f "$prof_dir/extensions/${ext_id}.xpi" ]] || { need=1; break; }
+  done
+  (( need )) && missing_ids+=("$ext_id")
+done
+
+if ((${#missing_ids[@]} == 0)); then
+  echo "==> all ${#ext_ids[@]} extension(s) already present in every profile; nothing to download."
+  echo "    delete <profile>/extensions/<ext-id>.xpi to reinstall a single one"
+  exit 0
+fi
+
+echo "==> ${#missing_ids[@]} of ${#ext_ids[@]} extension(s) need installing"
 
 # Download XPIs to temp dir
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-declare -A xpi_map  # ext_id -> xpi_path
+declare -A xpi_map=()  # ext_id -> xpi_path
+downloaded=0
 
-for ext_id in "${ext_ids[@]}"; do
+for ext_id in "${missing_ids[@]}"; do
   slug="${AMO_SLUGS[$ext_id]:-}"
   if [[ -z "$slug" ]]; then
     echo "warning: no AMO slug mapping for $ext_id; skipping" >&2
@@ -130,9 +149,12 @@ for ext_id in "${ext_ids[@]}"; do
   size="$(du -h "$xpi_file" | cut -f1)"
   echo "    downloaded: $ext_id ($size)"
   xpi_map["$ext_id"]="$xpi_file"
+  downloaded=$((downloaded + 1))
 done
 
-if ((${#xpi_map[@]} == 0)); then
+# Counter, not ${#xpi_map[@]}: an empty associative array under `set -u` is
+# reported as unbound by older bash.
+if (( downloaded == 0 )); then
   echo "error: no extensions downloaded successfully" >&2
   exit 1
 fi
@@ -147,25 +169,15 @@ for ext_id in "${!xpi_map[@]}"; do
   xpi_file="${xpi_map[$ext_id]}"
   echo "==> installing $ext_id ..."
 
-  # Skip if XPI already exists in all profiles (idempotent re-runs)
-  already_installed=1
-  for prof_dir in "${profile_dirs[@]}"; do
-    if [[ ! -f "$prof_dir/extensions/${ext_id}.xpi" ]]; then
-      already_installed=0
-      break
-    fi
-  done
-
-  if (( already_installed )); then
-    echo "    already installed in all profiles; skipping"
-    total_skipped=$((total_skipped + 1))
-    continue
-  fi
-
   installed_any=0
   for prof_dir in "${profile_dirs[@]}"; do
     ext_dir="$prof_dir/extensions"
     mkdir -p "$ext_dir"
+    # profile already has it — leave the existing file alone
+    if [[ -f "$ext_dir/${ext_id}.xpi" ]]; then
+      echo "    already present in $ext_dir; skipping"
+      continue
+    fi
     if cp -f "$xpi_file" "$ext_dir/${ext_id}.xpi" 2>/dev/null; then
       echo "    placed in $ext_dir/${ext_id}.xpi"
       installed_any=1

@@ -5,11 +5,11 @@
 #   manifest     -> private_dot_config/distrobox/dev.ini
 #   provisioner  -> private_dot_config/distrobox/provision-dev.sh
 #   tunables     -> private_dot_config/distrobox/devbox.env   (node/php channel)
-#   reconcile    -> private_dot_config/ucli/scripts/devbox/devbox-reconcile.sh
+#   reconcile    -> private_dot_local/share/ucli/scripts/devbox/executable_devbox-reconcile.sh
 #   (no hook)    -> chezmoi ships these files only; nothing in run_* starts,
 #                   stops or enters a container
 #   compose file -> private_dot_config/dev-services/compose.yml
-#   vscodium ext -> private_dot_config/ucli/scripts/install/install-vscodium-extensions.sh
+#   vscodium ext -> private_dot_local/share/ucli/scripts/install/executable_install-vscodium-extensions.sh
 #
 # The reconcile reads the Debian version from `image=debian:<N>` in dev.ini and
 # the box name from its `[section]`, so dev.ini is the single source of truth.
@@ -20,7 +20,7 @@ devbox:
     # Enter the `dev` container, creating it first from dev.ini if it doesn't
     # exist yet. If dev.ini is missing, fall back to distrobox's default image
     # (fedora-toolbox) — that is the intentional no-config route.
-    @[ -f "$HOME/.config/distrobox/dev.ini" ] && "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" >/dev/null 2>&1 || true
+    @[ -f "$HOME/.config/distrobox/dev.ini" ] && "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" >/dev/null 2>&1 || true
     @distrobox enter dev
 
 # Create or update the box: Debian base + nvm Node + sury PHP + composer.
@@ -35,7 +35,7 @@ devbox-reconcile:
 _devbox-recreate:
     #!/usr/bin/env bash
     set -euo pipefail
-    DISTROBOX_RECREATE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    DISTROBOX_RECREATE=1 exec "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Versions inside the box (what the rest of the tooling assumes).
 _devbox-versions:
@@ -51,7 +51,7 @@ _devbox-log:
 _devbox-reprovision:
     #!/usr/bin/env bash
     set -euo pipefail
-    DEVBOX_FORCE=1 exec "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh"
+    DEVBOX_FORCE=1 exec "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
 
 # Print the exact command assemble would run for this manifest.
 _devbox-dry-run:

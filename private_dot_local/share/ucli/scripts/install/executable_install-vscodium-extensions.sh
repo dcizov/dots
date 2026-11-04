@@ -29,6 +29,20 @@ if ! command -v codium >/dev/null 2>&1; then
     exit 1
 fi
 
+# Versioned gate (ported from Bluefin's /usr/lib/ublue/setup-services/libsetup.sh):
+# the token is a hash of extensions.txt, so the slow `codium --install-extension`
+# loop only runs when the list actually changed. `--force` re-runs it anyway.
+# shellcheck source=/dev/null
+. "${HOME}/.config/ucli/scripts/lib/version-script.sh"
+EXT_VERSION="$(vs_hash "$EXT_FILE")"
+FORCE=0
+[[ "${1:-}" == "--force" ]] && FORCE=1
+if (( ! FORCE )) && ! vs_check vscodium-extensions user "$EXT_VERSION"; then
+    echo "VSCodium extensions unchanged since the last run (${EXT_VERSION}); skipping."
+    echo "    re-run with --force to install again, or edit $EXT_FILE"
+    exit 0
+fi
+
 count=0
 while IFS= read -r line || [[ -n "$line" ]]; do
     # strip leading/trailing whitespace, skip blanks and comments
@@ -40,6 +54,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     codium --install-extension "$line" || echo "    (failed or already present: $line)"
     count=$((count + 1))
 done < "$EXT_FILE"
+
+vs_commit vscodium-extensions user "$EXT_VERSION"
 
 echo "==> done. $count extension entries processed."
 echo "    Verify installed list:  codium --list-extensions"

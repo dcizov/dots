@@ -11,6 +11,11 @@ set -euo pipefail
 # pacman/paru by install-packages.sh. This script handles non-repo extensions
 # via gext (gnome-extensions-cli) and enables all extensions.
 #
+# Enabling is ONE write to org.gnome.shell enabled-extensions instead of N
+# `gext enable` calls (ipted from Bluefin, which sets the whole list in its
+# gschema override). The existing list is preserved and merged, so extensions
+# the user enabled themselves are never dropped.
+#
 # Source: https://github.com/essembeh/gnome-extensions-cli
 
 usage() {
@@ -48,16 +53,20 @@ if ! command -v gext >/dev/null 2>&1; then
   exit 1
 fi
 
-# Run gext as the real user (not root) when invoked via sudo.
-# GNOME extensions are per-user; installing as root puts them in root's
-# profile, not the user's.
-run_gext() {
+# Run a command as the real user (not root) when invoked via sudo.
+# Extensions and dconf are per-user: as root they would land in root's
+# profile/database instead of the user's. HOME is forced too, because dconf
+# resolves its database from it.
+as_user() {
   if [[ "$EUID" -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
-    runuser -u "$real_user" -- env PATH="$real_home/.local/bin:$PATH" gext "$@"
+    runuser -u "$real_user" -- env -u XDG_CONFIG_HOME HOME="$real_home" \
+      PATH="$real_home/.local/bin:$PATH" "$@"
   else
-    gext "$@"
+    "$@"
   fi
 }
+
+run_gext() { as_user gext "$@"; }
 
 # Check if a GNOME extension UUID is already installed.
 is_extension_installed() {
@@ -65,7 +74,7 @@ is_extension_installed() {
   run_gext list 2>/dev/null | grep -qF "$uuid"
 }
 
-# Install an extension from extensions.gnome.org by primary key, then enable it.
+# Install an extension from extensions.gnome.org by primary key.
 # Skips if the extension UUID is already installed (idempotent re-runs).
 install_extension_by_pk() {
   local pk="$1" uuid="$2"
@@ -80,41 +89,92 @@ install_extension_by_pk() {
     echo "warning: could not install extension pk=$pk" >&2
     return 1
   fi
+}
 
-  if [[ -n "$uuid" ]]; then
-    run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid" >&2
+# --- enabled-extensions, written once ---------------------------------------
+
+# Current enabled list, one UUID per line.
+enabled_extensions() {
+  local raw=""
+  if command -v dconf >/dev/null 2>&1; then
+    raw="$(as_user dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
   fi
+  if [[ -z "$raw" ]] && command -v gsettings >/dev/null 2>&1; then
+    raw="$(as_user gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true)"
+  fi
+  [[ -n "$raw" ]] || return 0
+  printf '%s\n' "$raw" | grep -o "'[^']*'" | tr -d "'" || true
+}
+
+# enable_uuids <uuid...> — merge into the current list and write it once.
+enable_uuids() {
+  (($#)) || return 0
+
+  local -a current=() merged=()
+  mapfile -t current < <(enabled_extensions)
+  ((${#current[@]})) && merged=("${current[@]}")
+
+  local uuid existing
+  for uuid in "$@"; do
+    [[ -n "$uuid" ]] || continue
+    for existing in "${merged[@]:-}"; do
+      [[ "$existing" == "$uuid" ]] && continue 2
+    done
+    merged+=("$uuid")
+  done
+
+  local current_joined="" merged_joined=""
+  ((${#current[@]})) && current_joined="$(printf '%s,' "${current[@]}")"
+  ((${#merged[@]})) && merged_joined="$(printf '%s,' "${merged[@]}")"
+
+  if [[ "$current_joined" == "$merged_joined" ]]; then
+    echo "enabled-extensions already up to date (${#merged[@]} entries)"
+    return 0
+  fi
+
+  local literal="[" i
+  for i in "${!merged[@]}"; do
+    (( i )) && literal+=", "
+    literal+="'${merged[$i]}'"
+  done
+  literal+="]"
+
+  if command -v dconf >/dev/null 2>&1 &&
+     as_user dconf write /org/gnome/shell/enabled-extensions "$literal" 2>/dev/null; then
+    echo "  enabled-extensions = $literal"
+    return 0
+  fi
+  if command -v gsettings >/dev/null 2>&1 &&
+     as_user gsettings set org.gnome.shell enabled-extensions "$literal" 2>/dev/null; then
+    echo "  enabled-extensions = $literal"
+    return 0
+  fi
+
+  echo "warning: single-write enable failed; falling back to per-extension gext enable" >&2
+  local u
+  for u in "$@"; do
+    [[ -n "$u" ]] || continue
+    run_gext enable "$u" >/dev/null 2>&1 || echo "warning: could not enable $u (may need shell restart)" >&2
+  done
 }
 
 case "$mode" in
   system)
-    echo "enabling system GNOME extensions ..."
-    for uuid in "${GNOME_SYSTEM_EXTENSION_UUIDS[@]:-}"; do
-      if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
-        echo "extension $uuid already enabled; skipping"
-      else
-        run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
-      fi
-    done
-    # Install non-repo extensions by primary key via gext
+    echo "system GNOME extensions ..."
+    # Install anything not packaged by pacman first, then enable in one write.
     for i in "${!GNOME_SYSTEM_EXTENSION_PKS[@]}"; do
-      install_extension_by_pk "${GNOME_SYSTEM_EXTENSION_PKS[$i]}" "${GNOME_SYSTEM_EXTENSION_UUIDS[$i]:-}"
+      install_extension_by_pk "${GNOME_SYSTEM_EXTENSION_PKS[$i]}" "${GNOME_SYSTEM_EXTENSION_UUIDS[$i]:-}" || true
     done
+    enable_uuids "${GNOME_SYSTEM_EXTENSION_UUIDS[@]:-}"
     ;;
   overrides)
-    echo "installing GNOME app overrides ..."
+    echo "GNOME app overrides ..."
     # App overrides are pacman packages installed by install-packages.sh apps mode.
     # Shell override themes are also pacman packages.
-    for uuid in "${GNOME_OVERRIDE_EXTENSION_UUIDS[@]:-}"; do
-      if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
-        echo "extension $uuid already enabled; skipping"
-      else
-        run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
-      fi
-    done
     for i in "${!GNOME_OVERRIDE_EXTENSION_PKS[@]}"; do
-      install_extension_by_pk "${GNOME_OVERRIDE_EXTENSION_PKS[$i]}" "${GNOME_OVERRIDE_EXTENSION_UUIDS[$i]:-}"
+      install_extension_by_pk "${GNOME_OVERRIDE_EXTENSION_PKS[$i]}" "${GNOME_OVERRIDE_EXTENSION_UUIDS[$i]:-}" || true
     done
+    enable_uuids "${GNOME_OVERRIDE_EXTENSION_UUIDS[@]:-}"
     ;;
   *)
     echo "unknown mode: $mode (use 'system' or 'overrides')" >&2
