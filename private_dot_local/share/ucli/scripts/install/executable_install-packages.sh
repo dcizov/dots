@@ -24,7 +24,6 @@ Modes:
   hardware        fprintd / libinput-tools, only if the hardware is present
   dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
-  perf            opt-in performance/profiling tooling (perf, bcc, sysprof, …)
   gaming          opt-in gaming packages
   virt            virtual machines: qemu/libvirt/virt-manager (+ `ucli virt` for the service)
   snapshot        Btrfs/Snapper/Limine packages
@@ -271,18 +270,6 @@ select_packages() {
       fi
       ;;
     dev-cli) add_array DEV_CLI ;;
-    perf)
-      add_array DEV_PERF
-      # perf is part of Arch's linux-tools and therefore built against `linux`.
-      # On any other kernel the binary still profiles userspace, but the kernel
-      # side of it (tracepoints, some counters) follows the kernel it was built
-      # for. Say that here, where perf is actually chosen, instead of leaving it
-      # to be discovered as "perf list is short".
-      case "$(uname -r 2>/dev/null || true)" in
-        ""|*-arch[0-9]*) ;;
-        *) echo "note: kernel $(uname -r 2>/dev/null) is not Arch's 'linux' — perf's kernel-side events may not match; use your kernel's perf package for those" >&2 ;;
-      esac
-      ;;
     dev)
       if (( force )) || [[ "$role" == *dev* ]]; then
         select_packages dev-cli
