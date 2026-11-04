@@ -27,6 +27,7 @@
 # fx_profile_root [home] — the profile root Firefox actually uses on this machine.
 # Prints a path even when nothing exists yet (the 147+ default), so callers can
 # test it with [[ -d ]].
+# shellcheck disable=SC2120  # optional argument: callers pass $HOME, the CLI path does not
 fx_profile_root() {
   local home="${1:-$HOME}"
   local xdg="$home/.config/mozilla/firefox"

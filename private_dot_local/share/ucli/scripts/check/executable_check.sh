@@ -21,7 +21,11 @@
 #      only.
 #   5. shellcheck (if installed), severity=warning: the repo is clean at that
 #      level, and a warning is exactly the class of thing that turns into a bug
-#      later (unused state, word splitting, masked exit codes).
+#      later (unused state, word splitting, masked exit codes). Note the version
+#      gap: CI installs Ubuntu's shellcheck (0.9.x), a workstation may have 0.11,
+#      and the two do not flag the same set — the tree is clean on both, so a
+#      FAIL here that your local shellcheck does not reproduce means yours is
+#      newer, not that CI is wrong.
 set -euo pipefail
 
 root=""
