@@ -311,6 +311,11 @@ apply_replacements() {
 
 apply_replacements "$desktop"
 
+# Fonts and themes needed by backed-up settings (Ghostty, Adwaita, Papirus)
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" fonts
+fi
+
 # GNOME extensions are handled by the extension-set script via gext.
 # Ensure gext is installed (via pipx) before installing extensions.
 if [[ "$desktop" == "gnome" ]]; then
