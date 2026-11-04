@@ -48,18 +48,29 @@ if ! command -v gext >/dev/null 2>&1; then
   exit 1
 fi
 
+# Run gext as the real user (not root) when invoked via sudo.
+# GNOME extensions are per-user; installing as root puts them in root's
+# profile, not the user's.
+run_gext() {
+  if [[ "$EUID" -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
+    runuser -u "$real_user" -- env PATH="$real_home/.local/bin:$PATH" gext "$@"
+  else
+    gext "$@"
+  fi
+}
+
 # Install an extension from extensions.gnome.org by primary key, then enable it.
 install_extension_by_pk() {
   local pk="$1" uuid="$2"
 
   echo "installing extension pk=$pk ..."
-  if ! gext install "$pk" >/dev/null 2>&1; then
+  if ! run_gext install "$pk" >/dev/null 2>&1; then
     echo "warning: could not install extension pk=$pk" >&2
     return 1
   fi
 
   if [[ -n "$uuid" ]]; then
-    gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid" >&2
+    run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid" >&2
   fi
 }
 
@@ -67,7 +78,7 @@ case "$mode" in
   system)
     echo "enabling system GNOME extensions ..."
     for uuid in "${GNOME_SYSTEM_EXTENSION_UUIDS[@]:-}"; do
-      gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
     done
     # Install non-repo extensions by primary key via gext
     for i in "${!GNOME_SYSTEM_EXTENSION_PKS[@]}"; do
@@ -79,7 +90,7 @@ case "$mode" in
     # App overrides are pacman packages installed by install-packages.sh apps mode.
     # Shell override themes are also pacman packages.
     for uuid in "${GNOME_OVERRIDE_EXTENSION_UUIDS[@]:-}"; do
-      gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
+      run_gext enable "$uuid" >/dev/null 2>&1 || echo "warning: could not enable $uuid (may need shell restart)" >&2
     done
     for i in "${!GNOME_OVERRIDE_EXTENSION_PKS[@]}"; do
       install_extension_by_pk "${GNOME_OVERRIDE_EXTENSION_PKS[$i]}" "${GNOME_OVERRIDE_EXTENSION_UUIDS[$i]:-}"
