@@ -34,7 +34,11 @@ if ! command -v pacman >/dev/null 2>&1; then
   exit 1
 fi
 
-sudo pacman -S --needed git base-devel
+if (( yes_flag )); then
+  sudo pacman -S --needed --noconfirm git base-devel
+else
+  sudo pacman -S --needed git base-devel
+fi
 
 # When run as root (e.g. from setup-desktop.sh), drop to the invoking user
 # for the AUR build since makepkg refuses to run as root.

@@ -85,7 +85,7 @@ echo "flatpak apps: ${apps[*]:-(none)}"
 (( dry_run )) && exit 0
 
 if ! command -v flatpak >/dev/null 2>&1; then
-  sudo pacman -S --needed flatpak
+  sudo pacman -S --needed --noconfirm flatpak
 fi
 if [[ "$scope" == --user ]]; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo

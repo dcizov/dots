@@ -292,9 +292,13 @@ if ((${#aur_packages[@]})); then
   aur_helper="$("$script_dir/install-aur-helper.sh" "${yes_flag:+--yes}")"
   echo "AUR helper: $aur_helper"
   if [[ "$aur_helper" == "paru" ]]; then
-    paru -S --needed "${yes_flag:+--noconfirm}" "${aur_packages[@]}"
+    paru "${paru_args[@]}" "${aur_packages[@]}"
   elif [[ "$aur_helper" == "shelly" ]]; then
-    shelly aur install --no-confirm "${aur_packages[@]}"
+    if (( yes_flag )); then
+      shelly aur install --no-confirm "${aur_packages[@]}"
+    else
+      shelly aur install "${aur_packages[@]}"
+    fi
   fi
 fi
 

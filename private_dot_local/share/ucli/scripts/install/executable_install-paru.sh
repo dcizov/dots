@@ -36,7 +36,11 @@ fi
 . /etc/os-release
 id_like=" ${ID:-} ${ID_LIKE:-} "
 
-sudo pacman -S --needed git base-devel
+if (( yes_flag )); then
+  sudo pacman -S --needed --noconfirm git base-devel
+else
+  sudo pacman -S --needed git base-devel
+fi
 
 # When run as root (e.g. from setup-desktop.sh), drop to the invoking user
 # for the AUR build since makepkg refuses to run as root.
@@ -45,7 +49,11 @@ if [[ "$EUID" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
 fi
 
 if [[ " $id_like " == *" cachyos "* ]] || pacman -Si paru >/dev/null 2>&1; then
-  sudo pacman -S --needed paru
+  if (( yes_flag )); then
+    sudo pacman -S --needed --noconfirm paru
+  else
+    sudo pacman -S --needed paru
+  fi
   exit 0
 fi
 

@@ -90,7 +90,11 @@ done
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Install packages: pacman part first, then AUR helper part as the invoking sudo user.
-run pacman -S --needed btrfs-progs snapper snap-pac limine
+if (( yes_flag )); then
+  run pacman -S --needed --noconfirm btrfs-progs snapper snap-pac limine
+else
+  run pacman -S --needed btrfs-progs snapper snap-pac limine
+fi
 aur_helper="$("$script_dir/../install/install-aur-helper.sh" "${yes_flag:+--yes}")"
 echo "AUR helper: $aur_helper"
 if ! command -v "$aur_helper" >/dev/null 2>&1; then
@@ -98,7 +102,11 @@ if ! command -v "$aur_helper" >/dev/null 2>&1; then
   exit 1
 fi
 if [[ "$aur_helper" == "paru" ]]; then
-  run sudo -u "${SUDO_USER:-$USER}" paru -S --needed limine-snapper-sync limine-mkinitcpio-hook
+  if (( yes_flag )); then
+    run sudo -u "${SUDO_USER:-$USER}" paru -S --needed --noconfirm limine-snapper-sync limine-mkinitcpio-hook
+  else
+    run sudo -u "${SUDO_USER:-$USER}" paru -S --needed limine-snapper-sync limine-mkinitcpio-hook
+  fi
 elif [[ "$aur_helper" == "shelly" ]]; then
   run sudo -u "${SUDO_USER:-$USER}" shelly aur install --no-confirm limine-snapper-sync limine-mkinitcpio-hook
 fi
