@@ -306,9 +306,9 @@ apply_replacements() {
           # shelly install = repos, shelly install aur = AUR
           # --needed skips already-installed packages (idempotent re-runs)
           if pacman -Si "${replace_with[$i]}" >/dev/null 2>&1; then
-            runuser -u "$real_user" -- shelly install --needed --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+            runuser -u "$real_user" -- shelly install "${replace_with[$i]}" --needed --no-confirm 2>/dev/null || true
           else
-            runuser -u "$real_user" -- shelly install aur --needed --no-confirm "${replace_with[$i]}" 2>/dev/null || true
+            runuser -u "$real_user" -- shelly install aur "${replace_with[$i]}" --needed --no-confirm 2>/dev/null || true
           fi
         else
           sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \

@@ -108,7 +108,7 @@ if [[ "$aur_helper" == "paru" ]]; then
     run sudo -u "${SUDO_USER:-$USER}" paru -S --needed limine-snapper-sync limine-mkinitcpio-hook
   fi
 elif [[ "$aur_helper" == "shelly" ]]; then
-  run sudo -u "${SUDO_USER:-$USER}" shelly install aur --needed --no-confirm limine-snapper-sync limine-mkinitcpio-hook
+  run sudo -u "${SUDO_USER:-$USER}" shelly install aur limine-snapper-sync limine-mkinitcpio-hook --needed --no-confirm
 fi
 
 # Remove home snapper config/subvolume created by archinstall if requested.

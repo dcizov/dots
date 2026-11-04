@@ -297,9 +297,9 @@ if ((${#aur_packages[@]})); then
   elif [[ "$aur_helper" == "shelly" ]]; then
     # --needed skips already-installed AUR packages (idempotent re-runs)
     if (( yes_flag )); then
-      shelly install aur --needed --no-confirm "${aur_packages[@]}"
+      shelly install aur "${aur_packages[@]}" --needed --no-confirm
     else
-      shelly install aur --needed "${aur_packages[@]}"
+      shelly install aur "${aur_packages[@]}" --needed
     fi
   fi
 fi
