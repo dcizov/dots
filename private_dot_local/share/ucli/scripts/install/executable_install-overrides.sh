@@ -14,4 +14,7 @@ source "$real_home/.config/ucli/scripts/lib/detect.sh"
 
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides || true
+  # Firefox GNOME theme — only makes sense on GNOME desktop
+  # Requires Firefox to have been run at least once (profile must exist)
+  "$script_dir/install-firefox-gnome-theme.sh" || true
 fi
