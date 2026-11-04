@@ -67,9 +67,30 @@ pre_args=()
 sudo "$script_dir/../system/snapshot-fresh-install.sh" ${pre_args[@]+"${pre_args[@]}"} \
   "before setup-system" || echo "warning: could not take a restore point; continuing" >&2
 
+# Each step names itself and reports its own failure. Before this, a step that
+# exited 1 without a message surfaced as `error: recipe `setup-system` failed on
+# line 5`, with no way to tell which of the three it was.
+run_step() {
+  local label="$1" hint="$2"
+  shift 2
+  ui_rule "$label"
+  local rc=0
+  "$@" || rc=$?
+  if (( rc != 0 )); then
+    ui_fail "$label failed (exit $rc)"
+    printf '  %s\n' "$hint" >&2
+    exit "$rc"
+  fi
+}
+
 # base = the machine itself: bootstrap, cpu/gpu, system tools, fonts, ucli runtime.
-"$script_dir/install-packages.sh" base
-"$script_dir/install-flatpaks.sh" base
+run_step "base packages" \
+  "fix the error above, then re-run: ucli setup-system${desktop:+ $desktop}" \
+  "$script_dir/install-packages.sh" base
+
+run_step "base flatpaks" \
+  "fix the error above, then re-run: ucli setup-system${desktop:+ $desktop}" \
+  "$script_dir/install-flatpaks.sh" base
 
 # The desktop is one owner: setup-desktop.sh installs the DE with the
 # replacement matrix, adds ghostty + firefox, installs/enables the GNOME
@@ -80,7 +101,12 @@ desktop_args=()
 (( take_snapshot )) || desktop_args+=(--no-snapshot)
 (( firefox_force )) && desktop_args+=(--force)
 if [[ -x "$script_dir/setup-desktop.sh" ]]; then
-  sudo "$script_dir/setup-desktop.sh" ${desktop_args[@]+"${desktop_args[@]}"}
+  run_step "desktop${desktop:+ ($desktop)}" \
+    "fix the error above, then re-run: sudo ucli setup-desktop${desktop:+ $desktop}" \
+    sudo "$script_dir/setup-desktop.sh" ${desktop_args[@]+"${desktop_args[@]}"}
 else
   echo "warning: setup-desktop.sh missing; install the desktop yourself" >&2
 fi
+
+ui_rule "setup-system done"
+ui_note "next: ucli cli   then   ucli apps   (re-login when both are done)"

@@ -199,8 +199,11 @@ detect_desktop() {
     printf '%s\n' "$installed"
     return 0
   fi
+  # "none" is an answer, not a failure: callers do `$(detect_desktop || echo
+  # none)`, and a non-zero return made that print none twice ("none\nnone"),
+  # which then matched no case anywhere.
   printf 'none\n'
-  return 1
+  return 0
 }
 
 detect_terminal() {

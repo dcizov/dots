@@ -97,4 +97,10 @@ if [[ "$scope" == --user ]]; then
 else
   sudo flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 fi
-((${#apps[@]})) && flatpak install "$scope" -y flathub "${apps[@]}"
+# Not `((${#apps[@]})) && flatpak install …`: on `base` there are no apps, the
+# test returns 1, and as the last line of the script that became the script's
+# own exit status — a silent `ucli setup-system` failure after the packages were
+# already in.
+if ((${#apps[@]})); then
+  flatpak install "$scope" -y flathub "${apps[@]}"
+fi

@@ -25,7 +25,12 @@
 #      (the `gnome` menu, `devbox-shell` and `full-profile` verbs were all named
 #      in docs long after they stopped existing); the prose allowlist below is
 #      the same idea as shellcheck's disable comments, and it must stay short.
-#   6. shellcheck (if installed), severity=warning: the repo is clean at that
+#   6. Exit codes: a script must not end on a bare conditional. `(( 0 )) && …`
+#      in the middle of a script is exempt from `set -e`, but as the LAST line
+#      its false test becomes the script's exit status — which is how
+#      `install-flatpaks.sh base` failed `ucli setup-system` silently after the
+#      packages were already installed.
+#   7. shellcheck (if installed), severity=warning: the repo is clean at that
 #      level, and a warning is exactly the class of thing that turns into a bug
 #      later (unused state, word splitting, masked exit codes). Note the version
 #      gap: CI installs Ubuntu's shellcheck (0.9.x), a workstation may have 0.11,
@@ -232,7 +237,23 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 6. shellcheck (optional)
+# 6. exit codes: no script may end on a bare conditional
+# ---------------------------------------------------------------------------
+lastfail=0
+for f in "${bash_files[@]:-}"; do
+  [[ -n "$f" ]] || continue
+  last="$(grep -v '^[[:space:]]*$' "$f" | tail -1)"
+  case "$last" in
+    *'[['*'&&'* | *'(('*'&&'*)
+      fail_msg x "ends with a conditional (false test = exit 1): ${f#"$root"/}"
+      lastfail=1
+      ;;
+  esac
+done
+[[ $lastfail -eq 0 ]] && note "exit codes" "no script ends with a bare conditional"
+
+# ---------------------------------------------------------------------------
+# 7. shellcheck (optional)
 # ---------------------------------------------------------------------------
 if command -v shellcheck >/dev/null 2>&1; then
   sc_fail=0

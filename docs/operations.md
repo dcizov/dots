@@ -183,6 +183,7 @@ bash ~/.local/share/ucli/scripts/check/check.sh ~/dots   # or any checkout
 | `zsh -n` on `~/.zshrc`, `pre-omz.zsh`, `conf.d/*.zsh` | a broken shell config you would only notice by opening a terminal |
 | `just --list` | recipes that silently degrade to line-wise mode (a comment above the `#!` body) |
 | array consistency | a package array renamed in `packages.bash` but not in `validate-packages.sh`/`install-packages.sh` — `SHELL_DEPS` → `SHELL_TOOLS` was exactly this bug |
+| exit codes | a script that ends on a bare `(( … )) && …` / `[[ … ]] && …`: mid-script that is exempt from `set -e`, as the last line its false test *becomes* the script's exit status — `install-flatpaks.sh base` failed `ucli setup-system` that way, silently, after the packages were installed |
 | stale verbs | a doc, comment or `echo` that still names a recipe which no longer exists (the `gnome` menu and `devbox-shell` verbs were both removed while docs kept naming them) — the prose allowlist in `check.sh` is deliberately tiny |
 | `shellcheck --severity=warning` | real shell bugs and the unused-state / word-splitting class, when it is installed |
 
