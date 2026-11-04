@@ -12,6 +12,10 @@ source "$real_home/.config/ucli/scripts/lib/detect.sh"
 "$script_dir/install-packages.sh" apps
 "$script_dir/install-flatpaks.sh" apps
 
+# Firefox Betterfox user.js — applies on all desktops (Firefox is desktop-agnostic)
+# Requires Firefox to have been run at least once (profile must exist)
+"$script_dir/install-firefox-betterfox.sh" || true
+
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides || true
   # Firefox GNOME theme — only makes sense on GNOME desktop
