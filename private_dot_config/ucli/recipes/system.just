@@ -18,6 +18,38 @@ _check:
 _snapshots-dry-run:
     sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh --dry-run
 
+# Show or hide the login banner (fastfetch). on = login shells, always = every shell.
+[group('System')]
+motd mode="status":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    state="${XDG_STATE_HOME:-$HOME/.local/state}/ucli"
+    flag="$state/motd"
+    case "{{mode}}" in
+    on|login)
+    mkdir -p "$state"
+    printf 'on\n' >"$flag"
+    echo "motd: on — login shells only (TTY, SSH, zsh -l)"
+    ;;
+    always|all)
+    mkdir -p "$state"
+    printf 'always\n' >"$flag"
+    echo "motd: always — every interactive shell"
+    ;;
+    off|no)
+    mkdir -p "$state"
+    printf 'off\n' >"$flag"
+    echo "motd: off"
+    ;;
+    status)
+    printf 'motd: %s\n' "$(cat "$flag" 2>/dev/null || echo 'on (default, login shells)')"
+    ;;
+    *)
+    echo "usage: ucli motd [on|always|off|status]" >&2
+    exit 2
+    ;;
+    esac
+
 # Create a named Snapper snapshot (needs `ucli setup-snapshots` first).
 [group('System')]
 snapshot desc="Fresh Arch Linux Installation":

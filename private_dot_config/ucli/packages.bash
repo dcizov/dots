@@ -156,6 +156,10 @@ CLI=(
 )
 
 # Engineering plumbing.
+# ugrep is here as its own command (`ug`): recursive by default, searches inside
+# archives/PDFs, has an interactive -Q mode. `grep` is deliberately NOT aliased to
+# it — ug changes pipeline behaviour (ug pattern recurses, grep waits on stdin)
+# and that is not something to discover inside a script.
 DEV_CLI=(
   direnv
   duf
@@ -168,6 +172,7 @@ DEV_CLI=(
   shfmt
   tmux
   tree
+  ugrep
   vim
   yq
 )

@@ -34,6 +34,7 @@ usage:
     @printf '%s\n' '  ucli setup-snapshots   # snapper + limine'
     @printf '%s\n' '  ucli system            # checks and maintenance helpers'
     @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
+    @printf '%s\n' '  ucli motd [on|always|off]  # login banner (fastfetch)'
     @printf '%s\n' ''
     @printf '%s\n' 'Maintenance:'
     @printf '%s\n' '  ucli update            # full system upgrade'

@@ -103,6 +103,17 @@ if [[ -r "$zsh_dir/plugins.txt" ]]; then
   fi
 fi
 
+motd_mode="$(cat "${XDG_STATE_HOME:-$real_home/.local/state}/ucli/motd" 2>/dev/null || echo "on (default)")"
+if have fastfetch; then
+  if [[ "$motd_mode" == "off" ]]; then
+    ok "motd off (fastfetch installed)"
+  else
+    ok "motd: $motd_mode (fastfetch installed)"
+  fi
+else
+  warn "fastfetch missing — the login banner is skipped (ucli motd off silences the check)"
+fi
+
 if [[ -r "$zsh_dir/local.zsh" ]]; then
   ok "~/.config/zsh/local.zsh (machine overrides)"
 else
