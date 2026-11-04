@@ -263,10 +263,9 @@ user_pref("extensions.formautofill.creditCards.enabled", false);
 // --- Passkeys: disabled ---
 user_pref("security.webauth.webauthn", false);
 
-// --- Secure DNS: Max Protection (mode 3) ---
-// NOTE: custom network.trr.uri removed — did not work with current config.
-// Firefox will use its built-in DoH provider.
+// --- Secure DNS: Max Protection (mode 3) + AdGuard DoH ---
 user_pref("network.trr.mode", 3);
+user_pref("network.trr.uri", "https://dns.adguard-dns.com/dns-query");
 
 // --- New tab: hide topsites, weather, dropdown suggestions ---
 user_pref("browser.newtabpage.activity-stream.feeds.topsites", false);
@@ -282,5 +281,33 @@ user_pref("privacy.clearOnShutdown_v2.downloads", false);
 user_pref("privacy.clearOnShutdown_v2.formdata", true);
 
 /****************************************************************************
+ // --- ResistFingerprinting (via Fingerprinting Protection + overrides) ---
+// Use privacy.fingerprintingProtection instead of privacy.resistFingerprinting
+// so we can selectively override individual protections that cause breakage.
+// +AllTargets = enable all fingerprinting protections (equivalent to RFP)
+// -CSSPrefersColorScheme = allow websites to see your color scheme (dark/white theme works)
+//
+// Other override targets you can remove (each reduces fingerprinting protection):
+//   -JSDateTimeUTC        don't spoof timezone to UTC (fixes calendars/scheduling)
+//   -WebGLRenderCapability don't mask WebGL capabilities (fixes WebGL rendering)
+//   -SiteSpecificZoom     allow per-site zoom level memory
+//   -FrameRate            allow frame rate reporting
+//   -KeyboardEvents       allow keyboard event reporting
+//   -CanvasExtractionBeforeUserInputIsBlocked allow canvas readback without user input
+//
+// Site-specific exceptions via granularOverrides (JSON array):
+//   [{"firstPartyDomain":"example.com","overrides":"-WebGLRenderCapability,-CanvasExtractionBeforeUserInputIsBlocked"}]
+//
+// Note: privacy.resistFingerprinting must be FALSE for FPP overrides to take effect.
+// RFP is all-or-nothing; FPP is the granular replacement.
+user_pref("privacy.resistFingerprinting", false);
+user_pref("privacy.fingerprintingProtection", true);
+user_pref("privacy.fingerprintingProtection.overrides", "+AllTargets,-CSSPrefersColorScheme");
+
+// --- layout.css.prefers-color-scheme.content-override ---
+// 0 = force dark, 1 = force light, 2 = system, 3 = theme colors
+// Kept at default (2=system) so sites respect your OS/theme preference.
+// With -CSSPrefersColorScheme above, this preference is honored by websites.
+
  * END: BETTERFOX                                                           *
-****************************************************************************/
+ ****************************************************************************/
