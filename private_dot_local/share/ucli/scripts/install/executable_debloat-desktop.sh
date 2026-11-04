@@ -108,8 +108,10 @@ case "$desktop" in
         candidates+=("$pkg")
       done < <(pacman -Qg gnome 2>/dev/null)
     fi
-    # Add override packages (gnome-boxes, gdm-settings, nautilus-*, etc.)
-    for pkg in "${GNOME_APP_OVERRIDES[@]:-}"; do
+    # Add override packages (gnome-boxes, gdm-settings, nautilus-*, etc.) and the
+    # extension machinery (extension-manager + the repo-packaged extensions): all
+    # of it is optional, and `ucli setup-extensions` puts the extension side back.
+    for pkg in "${GNOME_APP_OVERRIDES[@]:-}" "${GNOME_SYSTEM_EXTENSION_PACKAGES[@]:-}"; do
       if pacman -Q "$pkg" >/dev/null 2>&1; then
         candidates+=("$pkg")
       fi

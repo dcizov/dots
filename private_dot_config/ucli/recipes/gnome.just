@@ -8,6 +8,14 @@ setup-extensions *ARGS:
     script_dir="$HOME/.local/share/ucli/scripts/install"
     # pipx + gum: gext is a pipx app, and the hooks below use gum for prompts
     "$script_dir/install-packages.sh" ucli-runtime || true
+    failed=()
+    # The machinery, not just the extensions: Extension Manager (the GUI that
+    # browses, enables and tunes them) plus the repo-packaged extensions. Installing
+    # extensions with no way to see or switch them off is half the job.
+    if ! "$script_dir/install-packages.sh" gnome-extensions; then
+        printf '✗ could not install the extension packages (Extension Manager)\n' >&2
+        failed+=(packages)
+    fi
     if ! command -v gext >/dev/null 2>&1 && [[ -x "$script_dir/install-gnome-extensions-cli.sh" ]]; then
     "$script_dir/install-gnome-extensions-cli.sh"
     fi
@@ -21,7 +29,6 @@ setup-extensions *ARGS:
     # 22" tells you nothing about which half of it broke. The set scripts already
     # print what is missing and that nothing was recorded, so this only adds the
     # name and keeps going (a broken personal overlay must not hide the system set).
-    failed=()
     run_set() {
         local which="$1"
         if "$script_dir/install-gnome-extension-set.sh" "$which" ${force_args[@]+"${force_args[@]}"}; then
@@ -40,4 +47,4 @@ setup-extensions *ARGS:
         printf '  retry: ucli setup-extensions --force\n' >&2
         exit 1
     fi
-    printf 'ok: extensions installed and enabled (log out/in if the shell has not reloaded)\n'
+    printf 'ok: extensions installed and enabled, Extension Manager available (log out/in if the shell has not reloaded)\n'

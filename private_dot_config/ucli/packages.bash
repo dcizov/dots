@@ -287,9 +287,9 @@ DESKTOP_GNOME_BASE=(
 )
 
 # GNOME has no ADDITIONS tier: the gnome group is complete, and the optional
-# extras (gnome-boxes, the Nautilus extensions, extension-manager) are
-# GNOME_APP_OVERRIDES below — they belong to `ucli apps`, not to the desktop
-# install. The empty array exists so setup-desktop can read
+# extras (gnome-boxes, the Nautilus extensions) are GNOME_APP_OVERRIDES below —
+# they belong to `ucli apps`, not to the desktop install. (Extension Manager is
+# not in that list: it ships with the extension set below.) The empty array exists so setup-desktop can read
 # DESKTOP_<DE>_BASE + DESKTOP_<DE>_ADDITIONS for every desktop alike.
 DESKTOP_GNOME_ADDITIONS=()
 
@@ -311,6 +311,9 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
   gnome-shell-extensions                     # user-theme + classic set
   gnome-shell-extension-caffeine             # keep the screen awake
   gnome-shell-extension-appindicator         # tray icons (615 on EGO)
+  extension-manager                          # the GUI for everything below:
+                                             # browse/install/tune extensions
+                                             # (0.6.5, Extra — not the Flatpak)
   libgda6                                    # Copyous: database backend
   gsound                                     # Copyous: clipboard sound feedback
 )
@@ -385,8 +388,11 @@ GNOME_APP_OVERRIDES=(
   nautilus-admin-gtk4    # Nautilus: open as admin
   nautilus-my-computer   # Nautilus: "My Computer" entry
   nautilus-open-any-terminal  # Nautilus: "Open in terminal"
-  extension-manager      # manage GNOME extensions without a browser
 )
+# extension-manager used to live here, as one of `ucli apps`' GNOME extras. It is
+# not an app extra: it is how you look at, enable and tune the extensions the
+# desktop step installs, so it belongs to GNOME_SYSTEM_EXTENSION_PACKAGES and
+# arrives with the desktop (and with `ucli setup-extensions`).
 
 # ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings

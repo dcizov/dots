@@ -19,6 +19,8 @@ Modes:
   fonts-ms        Microsoft core fonts (AUR ttf-ms-fonts)
   desktop         desktop environment packages (+ that desktop's terminal & firefox)
   essentials      firefox + the terminal for the chosen desktop (used by setup-desktop)
+  gnome-extensions the extension machinery: Extension Manager + the repo-packaged
+                  extensions (part of essentials on GNOME; also `ucli setup-extensions`)
   apps            firefox + that desktop's terminal + personal apps and overrides
   media-codecs    gstreamer plugin set + ffmpeg (part of `base`)
   hardware        fprintd / libinput-tools, only if the hardware is present
@@ -244,6 +246,16 @@ select_packages() {
     fonts) add_array FONTS_THEMES ;;
     fonts-ms) add_array FONTS_MS ;;
     essentials) select_essentials ;;
+    gnome-extensions)
+      # Extension Manager and the repo-packaged extensions, without the rest of
+      # the desktop: what `ucli setup-extensions` needs to be usable on its own.
+      # On a non-GNOME machine there is nothing to manage, so say so quietly.
+      if [[ "$desktop" == gnome ]]; then
+        add_array GNOME_SYSTEM_EXTENSION_PACKAGES
+      else
+        echo "gnome-extensions: no GNOME desktop detected; nothing to install" >&2
+      fi
+      ;;
     desktop) select_desktop ;;
     apps)
       select_essentials              # the desktop's terminal, idempotent with desktop mode

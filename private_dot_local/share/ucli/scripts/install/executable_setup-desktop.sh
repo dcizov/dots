@@ -192,7 +192,7 @@ if (( choose )); then
   add_group extras "optional ${desktop} apps and tools" "DESKTOP_${desktop^^}_ADDITIONS"
   case "$desktop" in
     gnome)
-      add_group apps "GNOME extras: boxes, Nautilus extensions, extension manager" GNOME_APP_OVERRIDES
+      add_group apps "GNOME extras: boxes, Nautilus extensions" GNOME_APP_OVERRIDES
       add_group terminal "Terminal (ghostty, the configured one)" DESKTOP_TERMINAL_GNOME
       ;;
     hyprland)

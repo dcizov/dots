@@ -37,7 +37,7 @@ https://aur.archlinux.org/packages/shelly
 ## GNOME
 
 ```bash
-ucli setup-extensions     install + enable the managed extension sets
+ucli setup-extensions     extension packages + the managed sets, installed and enabled
 ucli backup-gnome-settings    dconf + extension list -> ~/.local/share/ucli/settings/gnome
 ucli restore-gnome-settings   put them back
 ```
@@ -49,8 +49,16 @@ GNOME is curated in `packages.bash`. Package group contents from
 
 | | Where | Installed by |
 |---|---|---|
-| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extensions` (carries `user-theme`, which the Firefox GNOME theme styles the shell through), `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator` | `install-packages.sh essentials` — i.e. the desktop step |
+| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extensions` (carries `user-theme`, which the Firefox GNOME theme styles the shell through), `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator`, plus **Extension Manager** (`extension-manager`, Extra 0.6.5) and Copyous' `libgda6`/`gsound` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
 | extensions.gnome.org | `GNOME_SYSTEM_EXTENSIONS`, the opinionated layout set | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
+
+**Extension Manager** is part of that package set on purpose. Before it, this was
+in `GNOME_APP_OVERRIDES`, i.e. `ucli apps`: you could have extensions installed and
+enabled by the desktop step with no GUI to look at them, tune their settings or
+switch one off, until you ran a later tier. Installing extensions and installing
+the tool that manages them are the same job, so they ship together (pacman
+`extension-manager`, not the Flathub build, and `ucli debloat-desktop` can still
+remove it because the extension packages are among its candidates).
 
 The layout set is deliberately small — five extensions, the same five Bluefin
 ships a variation of:
