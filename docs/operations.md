@@ -17,6 +17,7 @@ ucli config-audit      # unmerged .pacnew files + locally modified package files
 ucli sync              # Syncthing: folder sync between two machines
 ucli virt              # qemu/libvirt/virt-manager + libvirtd + the libvirt group
 ucli ms-fonts          # Microsoft core fonts (AUR ttf-ms-fonts)
+ucli mirrors           # rank pacman mirrors, keep the old list as *.bak
 ucli fingerprint       # reader working in the DE's Settings (see below)
 ```
 
@@ -29,6 +30,39 @@ either way — drift is normal, but it should not be invisible. Read-only.
 not root) and prints the Web GUI and this machine's device ID; pairing is the
 same two-click dance as Bluefin's *Sync Folder*, because writing `config.xml`
 behind the GUI's back would only fight it.
+
+### Mirrors
+
+`ucli mirrors` is a port of CachyOS' `cachyos-rate-mirrors` with this repo's
+rules on top:
+
+```bash
+ucli mirrors                  # rank, show the top mirrors, ask, then write
+ucli mirrors --dry-run        # rank and show only — nothing is touched
+ucli mirrors --country DE     # skip the geoip lookup
+ucli mirrors --no-geo         # no lookup at all, engine default entry country
+ucli mirrors --repos arch     # only /etc/pacman.d/mirrorlist
+ucli mirrors --tool reflector # use reflector instead of rate-mirrors
+```
+
+| | |
+|---|---|
+| engine | `rate-mirrors` from **[extra]** (no AUR helper needed; `reflector` works too) |
+| repos | `arch` always, plus `cachyos` when `/etc/pacman.d/cachyos-mirrorlist` exists |
+| writes | `/etc/pacman.d/mirrorlist`, previous file kept as `mirrorlist.bak` |
+| safety | Snapper snapshot first when snapper is configured (`--no-snapshot` off), confirmation before writing (`--yes` to skip) |
+
+It runs as **your user**, not as root: rate-mirrors refuses root on purpose, and
+only the final `install` needs `sudo`. Two things from the CachyOS original are
+deliberately not copied — the four hardcoded RU mirrors it force-inserts at the
+top of the list (this repo does not pin third-party mirrors on your machine), and
+the `--allow-root` dance. The geoip entry country (`geoip.kde.org`, same source
+as the original) and the China special case (test only Chinese mirrors, no
+neighbours) are kept, both fail-soft.
+
+Ranking takes ~30 s per repository and is measured, not guessed: the engine
+downloads from candidate mirrors in parallel, so run it when the network is in
+the state you want to optimise for.
 
 ### Fingerprint reader
 
@@ -84,8 +118,16 @@ Two shared helpers were ported from Bluefin and are reused across scripts:
 
 | File | What it gives you |
 |---|---|
-| `~/.config/ucli/scripts/lib/ui.sh` | `ui_title` / `ui_box` / `ui_summary`, `ui_choose_multi` (sections + preselect), `ui_step` (block progress bar with ✓/✗) |
+| `~/.local/share/ucli/scripts/lib/ui.sh` | the whole interactive grammar: `ui_title` / `ui_rule` / `ui_box` / `ui_summary`, `ui_choose` (single), `ui_choose_multi` (sections + preselect), `ui_confirm`, `ui_step` (block progress bar with ✓/✗) |
 | `~/.config/ucli/scripts/lib/version-script.sh` | `vs_check` / `vs_commit` / `vs_list` — a versioned hook gate: a step runs once per version token (counter or content hash) and is retried until it succeeds |
+
+`ui.sh` lives next to the scripts rather than in `~/.config` so a script running
+under sudo can load it from its own path (`$(dirname "$0")/../lib/ui.sh`); that
+is why `ucli devmode`, `ucli setup-desktop --choose`, `ucli debloat-desktop`,
+`ucli mirrors`, `ucli update` and the `ucli` chooser all look and behave the
+same. Two rules for new menus: menu labels carry no commas (gum's `--selected`
+is comma-separated) and a category is a left-hand column, never a row you can
+tick (gum cannot render an untogglable row).
 
 Current gates: `vscodium-extensions` (hash of `extensions.txt`), `devmode`.
 Inspect them with `ucli state`; force a re-run with `ucli devmode --reset` or

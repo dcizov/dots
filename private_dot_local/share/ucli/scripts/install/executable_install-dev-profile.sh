@@ -4,8 +4,10 @@
 # Modelled on Bluefin's `ujust devmode` (projectbluefin/common, system.just
 # `toggle-devmode`):
 #
-#   * gum title banner and one sectioned `gum choose --no-limit` screen
-#     instead of a pile of separate prompts,
+#   * gum title banner and one `gum choose --no-limit` screen as the whole
+#     questionnaire instead of a pile of separate prompts, with the categories
+#     (toolchain / apps / containers) as the left-hand column — not as heading
+#     rows, because gum cannot render a row you cannot toggle,
 #   * summary box + confirmation before anything runs,
 #   * block-character progress bar with per-step ✓/✗,
 #   * a marker file so a re-run offers "already set up, add more tools?" and
@@ -28,11 +30,12 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
-lib="$real_home/.config/ucli/scripts/lib"
+# The UI layer ships next to the scripts (../lib), so it resolves from this
+# file's own path even when the script runs under sudo.
 # shellcheck source=/dev/null
-. "$lib/ui.sh"
+. "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../lib" && pwd)/ui.sh"
 # shellcheck source=/dev/null
-. "$lib/version-script.sh"
+. "$real_home/.config/ucli/scripts/lib/version-script.sh"
 
 DEVMODE_VERSION=1
 state_dir="${XDG_STATE_HOME:-$real_home/.local/state}/ucli"
@@ -57,32 +60,33 @@ done
 
 # --- item catalogue ---------------------------------------------------------
 
-# Display order. Lines starting with "──" are section headings: shown in the
-# menu, never returned as a choice.
+# Display order: "section|id". The section is the left-hand column of the menu,
+# not a heading row — gum cannot render a row that cannot be toggled, and a
+# heading you can tick but that does nothing (the old "── Toolchain ──" rows)
+# was exactly that bug. `label_for` turns an id into the row text.
+#
+# Labels carry no comma on purpose: gum's --selected is a comma-separated list,
+# so one comma in a label silently breaks the "preselect last time's picks".
 MENU_LAYOUT=(
-  "── Toolchain ───────────────────────────────"
-  dev-cli
-  dev-pkgs
-  "── Apps ────────────────────────────────────"
-  flatpaks
-  vscodium
-  firefox
-  "── Containers ──────────────────────────────"
-  devbox
+  "toolchain|dev-cli"
+  "toolchain|dev-pkgs"
+  "apps|flatpaks"
+  "apps|vscodium"
+  "apps|firefox"
+  "containers|devbox"
 )
 
-is_header() { [[ "$1" == ──* ]]; }
-is_id()     { ! is_header "$1"; }
+item_id() { printf '%s' "${1#*|}" ; }
 
 label_for() {
   case "$1" in
-    dev-cli)  printf '  Dev CLI (jq, ripgrep, fd, neovim, tmux, mise, …)' ;;
-    dev-pkgs) printf '  Dev packages (docker, podman for distrobox, distrobox, vscodium)' ;;
-    flatpaks) printf '  Dev flatpaks (podman desktop, …)' ;;
-    vscodium) printf '  VSCodium extensions' ;;
-    firefox)  printf '  Firefox dev extensions (React DevTools)' ;;
-    devbox)   printf '  Dev box (Debian distrobox + node/php)' ;;
-    *)        printf '  %s' "$1" ;;
+    dev-cli)  printf 'Dev CLI (jq · ripgrep · fd · neovim · tmux · mise …)' ;;
+    dev-pkgs) printf 'Dev packages (docker · podman for distrobox · distrobox · vscodium)' ;;
+    flatpaks) printf 'Dev flatpaks (podman desktop …)' ;;
+    vscodium) printf 'VSCodium extensions' ;;
+    firefox)  printf 'Firefox dev extensions (React DevTools)' ;;
+    devbox)   printf 'Dev box (Debian distrobox + node + php)' ;;
+    *)        printf '%s' "$1" ;;
   esac
 }
 
@@ -123,8 +127,7 @@ cmd_for() {
 all_ids() {
   local entry
   for entry in "${MENU_LAYOUT[@]}"; do
-    is_id "$entry" || continue
-    printf '%s\n' "$entry"
+    printf '%s\n' "${entry#*|}"
   done
 }
 
@@ -189,9 +192,14 @@ ui_title "Turn on Developer Mode"
 echo
 
 if [[ -r "$marker" ]]; then
+  prev_names=""
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    prev_names+="${prev_names:+, }$(name_for "$id")"
+  done < <(marker_items)
   ui_summary "Developer mode is already set up." \
-    "last run: $(marker_value updated)" \
-    "items:    $(marker_value items)"
+    "last run:  $(marker_value updated)" \
+    "installed: ${prev_names:-(nothing yet)}"
   echo
   if [[ "$mode" == wizard ]] && ! ui_confirm "Add more tools?"; then
     exit 0
@@ -212,22 +220,21 @@ else
 
   menu=()
   for entry in "${MENU_LAYOUT[@]}"; do
-    if is_header "$entry"; then menu+=("$entry"); else menu+=("$(label_for "$entry")"); fi
+    menu+=("${entry%%|*}|$(label_for "${entry#*|}")")
   done
 
   menu_args=()
   [[ -n "$prev_selected" ]] && menu_args+=(--selected "$prev_selected")
 
   picks=""
-  if picks="$(ui_choose_multi "What should I set up?" "${menu_args[@]}" --height 20 "${menu[@]}")"; then
+  if picks="$(ui_choose_multi "What should I set up?" "${menu_args[@]}" --height 12 "${menu[@]}")"; then
     while IFS= read -r pick; do
       [[ -n "$pick" ]] || continue
       for entry in "${MENU_LAYOUT[@]}"; do
-        is_id "$entry" || continue
-        lbl="$(label_for "$entry")"
-        # ui_choose_multi strips the two-space indentation from its results
-        if [[ "${pick}" == "${lbl#  }" ]]; then
-          selected+=("$entry")
+        id="${entry#*|}"
+        # ui_choose_multi returns the label, not the section column
+        if [[ "$pick" == "$(label_for "$id")" ]]; then
+          selected+=("$id")
           break
         fi
       done

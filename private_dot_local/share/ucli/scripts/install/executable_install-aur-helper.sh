@@ -34,6 +34,8 @@ for arg in "$@"; do
 done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/ui.sh"
 
 STATE_FILE="${HOME:-$(getent passwd "${USER:-root}" | cut -d: -f6)}/.local/share/ucli/aur-helper"
 
@@ -132,12 +134,12 @@ main() {
         printf 'paru\n'
       else
         echo "No AUR helper configured." >&2
-        echo "1) paru  — mature AUR helper (default)" >&2
-        echo "2) shelly — modern AUR helper (preinstalled on CachyOS)" >&2
-        read -rp "Choose AUR helper (1/2): " choice
+        choice="$(ui_choose "Which AUR helper?" \
+          'paru|mature AUR helper (the default)' \
+          'shelly|modern AUR helper, preinstalled on CachyOS')" || exit 2
         case "$choice" in
-          1|paru|"") install_paru "${yes_flag:+--yes}"; store_helper paru; printf 'paru\n' ;;
-          2|shelly) install_shelly "${yes_flag:+--yes}"; store_helper shelly; printf 'shelly\n' ;;
+          paru)   install_paru "${yes_flag:+--yes}"; store_helper paru; printf 'paru\n' ;;
+          shelly) install_shelly "${yes_flag:+--yes}"; store_helper shelly; printf 'shelly\n' ;;
           *) echo "Invalid choice" >&2; exit 2 ;;
         esac
       fi

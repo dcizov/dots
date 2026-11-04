@@ -14,8 +14,13 @@
 # --no-snapshot, or when snapper is not configured): removing packages is the
 # one destructive thing in this repo, and the restore point is free.
 #
-# Interactive selector order: gum -> fzf -> plain select.
+# The multi-select is the shared one from lib/ui.sh (gum, numbered prompt
+# without it), so this screen looks like `ucli devmode` and `ucli setup-desktop`.
 set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/ui.sh"
 
 if (( EUID != 0 )); then
   echo "Run as root: sudo $0 <gnome|hyprland|kde>" >&2
@@ -52,7 +57,8 @@ if [[ -z "$desktop" || "$desktop" == "none" ]]; then
   fi
 fi
 if [[ -z "$desktop" || "$desktop" == "none" ]]; then
-  read -rp "Desktop [gnome/hyprland/kde]: " desktop
+  desktop="$(ui_choose "Which desktop?" \
+    'gnome|GNOME Shell' 'hyprland|Hyprland' 'kde|KDE Plasma')" || exit 2
 fi
 case "$desktop" in
   gnome|hyprland|kde) ;;
@@ -147,38 +153,13 @@ echo
 # --- Multi-select ----------------------------------------------------------
 
 chosen=()
-if command -v gum >/dev/null 2>&1; then
-  # gum choose defaults to multi-select (space to toggle, enter to confirm)
-  tmpfile="$(mktemp)"
-  # gum choose --no-limit enables multi-select (space to toggle)
-  if ! printf '%s\n' "${final_candidates[@]}" | gum choose --no-limit --header "$desktop debloat — select packages to remove" > "$tmpfile"; then
-    echo "Cancelled."
-    rm -f "$tmpfile"
-    exit 0
-  fi
-  mapfile -t chosen < "$tmpfile"
-  rm -f "$tmpfile"
-elif command -v fzf >/dev/null 2>&1; then
-  tmpfile="$(mktemp)"
-  if ! printf '%s\n' "${final_candidates[@]}" | fzf --multi --header "Select $desktop packages to remove" > "$tmpfile"; then
-    echo "Cancelled."
-    rm -f "$tmpfile"
-    exit 0
-  fi
-  mapfile -t chosen < "$tmpfile"
-  rm -f "$tmpfile"
+items=()
+for pkg in "${final_candidates[@]}"; do items+=("$pkg"); done
+if picked="$(ui_choose_multi "$desktop debloat — packages to remove" --height 18 "${items[@]}")"; then
+  mapfile -t chosen <<<"$picked"
 else
-  i=0
-  for pkg in "${final_candidates[@]}"; do
-    printf '  %d) %s\n' "$((++i))" "$pkg"
-  done
-  echo
-  read -rp "Select package numbers (space-separated): " sels
-  for s in $sels; do
-    if (( s >= 1 && s <= ${#final_candidates[@]} )); then
-      chosen+=("${final_candidates[$((s - 1))]}")
-    fi
-  done
+  echo "Cancelled."
+  exit 0
 fi
 
 if (( ${#chosen[@]} == 0 )); then

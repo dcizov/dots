@@ -29,6 +29,7 @@ ucli setup-system gnome                          # base + DE + terminal + browse
 ucli cli                                         # shell cosmetics
 ucli apps                                        # apps, flatpaks, Firefox config
 ucli devmode                                     # optional: dev tools + dev box
+ucli mirrors                                     # optional: rank the pacman mirrors
 ```
 
 `install.wtfaq.tech` is retired, so the bootstrap is a plain GitHub raw file.
@@ -86,7 +87,7 @@ why the snapshot comes before the rest.
 | `dot_bash_profile` | `~/.bash_profile` | `~/.local/bin` on `PATH` for the console epoch (ssh, TTYs, `su -`) |
 | `private_dot_config/ucli/` | `~/.config/ucli/` | `justfile`, `recipes/*.just`, `packages.bash` (every package array), `scripts/lib/` |
 | `private_dot_local/share/ucli/scripts/` | `~/.local/share/ucli/scripts/` | install, check (`check.sh`, `doctor.sh`), system, gnome, devbox, inventory scripts |
-| `private_dot_local/bin/executable_ucli` | `~/.local/bin/ucli` | the `just` wrapper (`ucli <recipe>`, `ucli --choose`) |
+| `private_dot_local/bin/executable_ucli` | `~/.local/bin/ucli` | the `just` wrapper: `ucli` alone opens the grouped gum menu, `ucli <recipe>` runs one, `ucli --choose` is the fzf list |
 | `private_dot_config/` `ghostty`, `kitty`, `VSCodium`, `ucli/firefox` | the matching `~/.config` paths | terminal (only the installed one), editor, and ucli's Firefox sources (`user.js`, extension lists) |
 | `private_dot_config/distrobox/` | `~/.config/distrobox/` | dev box definition + `provision-dev.sh` |
 | `run_*.sh.tmpl`, `install.sh` | — (run by chezmoi / the bootstrap) | bootstrap, plugin repair hook, theme scripts |

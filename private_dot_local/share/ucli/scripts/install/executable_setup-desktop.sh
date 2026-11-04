@@ -27,6 +27,10 @@
 # ~/.config/ucli/firefox out of $HOME, so the fresh-install snapshot stays minimal.
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/ui.sh"
+
 choose=0
 take_snapshot=1
 firefox_force=0
@@ -71,7 +75,8 @@ if [[ -z "$desktop" || "$desktop" == "none" ]]; then
   fi
 fi
 if [[ -z "$desktop" || "$desktop" == "none" ]]; then
-  read -rp "Desktop [gnome/hyprland/kde]: " desktop
+  desktop="$(ui_choose "Which desktop?" \
+    'gnome|GNOME Shell' 'hyprland|Hyprland' 'kde|KDE Plasma')" || exit 2
 fi
 case "$desktop" in
   gnome|hyprland|kde) ;;
@@ -208,28 +213,18 @@ if (( choose )); then
   done
   sorted=("${items[@]}")
 
-  choose_one() {
-    local prompt="$1"; shift
-    if command -v gum >/dev/null 2>&1; then
-      printf '%s\n' "$@" | gum choose --header "$desktop packages"
-    elif command -v fzf >/dev/null 2>&1; then
-      printf '%s\n' "$@" | fzf --prompt "$prompt " --header "$desktop packages" --multi
-    else
-      local i=0
-      for item in "$@"; do
-        printf '  %d) %s\n' "$((++i))" "$item"
-      done
-      read -rp "Select group numbers (space-separated): " sels
-      for s in $sels; do
-        printf '%s\n' "${sorted[$((s - 1))]}"
-      done
-    fi
-  }
-
+  # Same multi-select as `ucli devmode`, so this menu behaves identically: space
+  # toggles, enter confirms, and the numbered prompt is the no-gum fallback.
   chosen=()
-  while IFS= read -r line; do
-    [ -n "$line" ] && chosen+=("$line")
-  done < <(choose_one 'Select groups to install (space/Enter to confirm):' "${sorted[@]:-}")
+  menu_args=()
+  # the session group is required, so start with it ticked
+  if (( ${#sorted[@]} )); then menu_args+=(--selected "${sorted[0]}"); fi
+  if picked="$(ui_choose_multi "$desktop packages" --height 10 \
+        "${menu_args[@]}" "${sorted[@]}")"; then
+    while IFS= read -r line; do
+      [ -n "$line" ] && chosen+=("$line")
+    done <<<"$picked"
+  fi
 
   if (( ${#chosen[@]} == 0 )); then
     echo "No groups selected. Aborting."

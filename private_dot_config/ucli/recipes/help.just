@@ -41,6 +41,7 @@ usage:
     @printf '%s\n' 'System:'
     @printf '%s\n' '  ucli setup-snapshots   # snapper + limine'
     @printf '%s\n' '  ucli system            # checks and maintenance helpers'
+    @printf '%s\n' '  ucli mirrors           # rank pacman mirrors (rate-mirrors, keeps a .bak)'
     @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
     @printf '%s\n' '  ucli motd [on|always|off]  # login banner (fastfetch)'
     @printf '%s\n' '  ucli fingerprint       # reader in the DE Settings UI (--pam for login/sudo)'

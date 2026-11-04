@@ -60,11 +60,22 @@ backup() {
   run cp -a "$path" "$bak"
 }
 
+# Confirmation uses the shared UI layer when it is deployed (gum confirm, the
+# same prompt every other ucli step shows) and degrades to a plain y/N read when
+# it is not — important here, because this script may be deleting it.
+ui_lib="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../lib" 2>/dev/null && pwd)/ui.sh"
+if [[ -r "$ui_lib" ]]; then
+  # shellcheck source=/dev/null
+  . "$ui_lib"
+fi
+if ! declare -F ui_confirm >/dev/null 2>&1; then
+  ui_confirm() { local a; read -r -p "$1 [y/N] " a; [[ "${a:-}" == [yY]* ]]; }
+fi
+
 confirm() {
   local msg="$1"
   (( yes_flag )) && return 0
-  read -r -p "$msg [y/N] " ans
-  [[ "$ans" == y || "$ans" == Y || "$ans" == yes ]]
+  ui_confirm "$msg"
 }
 
 if (( EUID != 0 )); then

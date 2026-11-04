@@ -10,6 +10,10 @@
 #        devbox-create.sh --list
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/ui.sh"
+
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
   exit 0
@@ -37,7 +41,9 @@ fi
 
 distro="${1:-}"
 if [[ -z "$distro" ]]; then
-  read -rp "Distro [ubuntu/fedora/wolfi/debian/arch/alpine]: " distro
+  distro="$(ui_choose "Which distro?" \
+    'ubuntu|Ubuntu (LTS)' 'fedora|Fedora' 'wolfi|Wolfi (apk, minimal)' \
+    'debian|Debian' 'arch|Arch Linux' 'alpine|Alpine')" || exit 0
 fi
 image="$(image_for "$distro" 2>/dev/null || true)"
 if [[ -z "$image" ]]; then

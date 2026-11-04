@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/ui.sh"
 
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
 real_user="${SUDO_USER:-$USER}"
@@ -50,8 +52,7 @@ if [[ ! -f /etc/snapper/configs/root ]] && [[ "$UCLI_NO_SNAPSHOT" != "1" ]]; the
   echo "warning: no Snapper config found — the desktop step will not be able to"
   echo "         create a restore point first. 'ucli setup-snapshots' sets it up."
   if [[ -t 0 && "${UCLI_YES:-0}" != "1" ]]; then
-    read -rp "Continue without snapshots? [y/N] " reply
-    if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+    if ! ui_confirm "Continue without snapshots?"; then
       echo "aborted. run 'ucli setup-snapshots' first."
       exit 1
     fi

@@ -11,6 +11,12 @@ import 'recipes/inventory.just'
 import 'recipes/devbox.just'
 import 'recipes/maintenance.just'
 
-# Run the interactive chooser by default (like ujust with no args).
+# Run the interactive chooser by default (like ujust with no args): groups, then
+# recipes, in the same gum UI as every other ucli menu. `just --choose` (fzf,
+# type-to-filter) stays as the fallback if the menu script is not deployed.
 _default:
-    @just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" --choose
+    #!/usr/bin/env bash
+    set -euo pipefail
+    menu="$HOME/.local/share/ucli/scripts/system/ucli-menu.sh"
+    if [ -x "$menu" ]; then exec "$menu"; fi
+    exec just --justfile "{{justfile()}}" --working-directory "{{justfile_directory()}}" --choose

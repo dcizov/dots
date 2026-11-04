@@ -19,7 +19,7 @@ update:
     #!/usr/bin/env bash
     # full system upgrade: pacman + AUR + flatpaks + mise + dev box
     set -uo pipefail
-    step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
+    . "$HOME/.local/share/ucli/scripts/lib/ui.sh"
     have() { command -v "$1" >/dev/null 2>&1; }
 
     # Guard, ported from `ujust update`: Bluefin refuses to update while the
@@ -31,49 +31,45 @@ update:
       foreign="$(pacman -Qm 2>/dev/null || true)"
       if [ -n "$foreign" ]; then
         n=$(printf '%s\n' "$foreign" | wc -l | tr -d ' ')
-        step "foreign / AUR packages: $n"
+        ui_rule "foreign / AUR packages: $n"
         printf '%s\n' "$foreign" | awk 'NR<=10 { printf "    %s\n", $0 }'
         if [ "$n" -gt 10 ]; then printf '    … and %s more\n' "$((n - 10))"; fi
         printf '    Not from the official repos: AUR rebuilds are your responsibility.\n'
         if [ "${UCLI_YES:-0}" != 1 ] && [ -t 0 ]; then
-          read -r -p "Continue with the upgrade? [y/N] " answer
-          case "${answer:-}" in
-            [yY]*) ;;
-            *) printf 'aborted.\n'; exit 1 ;;
-          esac
+          ui_confirm "Continue with the upgrade?" || { printf 'aborted.\n'; exit 1; }
         fi
       fi
     fi
 
-    step "pacman: system upgrade"
+    ui_rule "pacman: system upgrade"
     sudo pacman -Syu --noconfirm || true
 
     if have paru; then
-    step "paru: AUR upgrades"
+    ui_rule "paru: AUR upgrades"
     paru -Sua --noconfirm || printf 'paru: nothing to do, or it failed\n' >&2
     elif have yay; then
-    step "yay: AUR upgrades"
+    ui_rule "yay: AUR upgrades"
     yay -Sua --noconfirm || printf 'yay: nothing to do, or it failed\n' >&2
     fi
 
     if have flatpak; then
-    step "flatpak: updates"
+    ui_rule "flatpak: updates"
     flatpak update -y || true
     fi
 
     if have mise; then
-    step "mise: runtimes"
+    ui_rule "mise: runtimes"
     mise upgrade || true
     fi
 
-    step "dev box"
+    ui_rule "dev box"
     if [[ -x "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
     "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" || true
     else
-    step "dev box: skipped (devbox-reconcile.sh not found)"
+    ui_rule "dev box: skipped (devbox-reconcile.sh not found)"
     fi
 
-    step "done"
+    ui_rule "done"
     printf 'A reboot is only needed for kernel/driver updates.\n'
 
 # Named volumes are NEVER touched — dev_pgdata / dev_mysql hold your databases.
@@ -83,28 +79,27 @@ clean-system:
     #!/usr/bin/env bash
     # prune dangling images, unused flatpaks, old package cache (asks first)
     set -euo pipefail
-    . "$HOME/.config/ucli/scripts/lib/choose.sh"
+    . "$HOME/.local/share/ucli/scripts/lib/ui.sh"
     have() { command -v "$1" >/dev/null 2>&1; }
-    step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 
     if have podman; then
-    step "podman: dangling images"
+    ui_rule "podman: dangling images"
     podman image ls --filter dangling=true || true
-    step "podman: anonymous volumes not in use"
+    ui_rule "podman: anonymous volumes not in use"
     podman volume ls --filter dangling=true || true
     fi
     if have docker; then
-    step "docker: dangling images"
+    ui_rule "docker: dangling images"
     docker image ls --filter dangling=true || true
-    step "docker: anonymous volumes not in use"
+    ui_rule "docker: anonymous volumes not in use"
     docker volume ls --filter dangling=true || true
     fi
     if have flatpak; then
-    step "flatpak: unused runtimes"
+    ui_rule "flatpak: unused runtimes"
     flatpak uninstall --unused --dry-run || true
     fi
     if have pacman; then
-    step "pacman: cache size"
+    ui_rule "pacman: cache size"
     du -sh /var/cache/pacman/pkg 2>/dev/null || true
     fi
 
@@ -121,7 +116,7 @@ clean-system:
     fi
     have flatpak && flatpak uninstall --unused -y
     have pacman && sudo pacman -Sc --noconfirm
-    step "done"
+    ui_rule "done"
     else
     printf '\nNothing removed.\n'
     fi

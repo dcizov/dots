@@ -5,6 +5,26 @@ setup-snapshots *ARGS:
     # --no-snapshot: configure only, take no snapshot
     @sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh {{ARGS}}
 
+# Rank the fastest pacman mirrors and write them to /etc/pacman.d — the Arch
+# equivalent of `ujust`-style mirror tuning, ported from CachyOS'
+# cachyos-rate-mirrors.
+#
+#   engine   rate-mirrors from [extra] (no AUR), reflector as the fallback
+#   repos    arch always; cachyos-mirrorlist too when this is a CachyOS install
+#   writes   /etc/pacman.d/mirrorlist, previous file kept as mirrorlist.bak
+#   safety   Snapper snapshot first when snapper is configured, and nothing is
+#            written without a confirmation (--yes for non-interactive)
+#
+#   ucli mirrors                 rank, show the top mirrors, ask, write
+#   ucli mirrors --dry-run       rank and show only
+#   ucli mirrors --country DE    skip the geoip lookup (--no-geo: no lookup at all)
+#
+# Rank pacman mirrors and install the ranking.
+[group('System')]
+mirrors *ARGS:
+    # rate-mirrors over /etc/pacman.d/mirrorlist (+ cachyos-mirrorlist), with a backup
+    @~/.local/share/ucli/scripts/system/rate-mirrors.sh {{ARGS}}
+
 # System menu. Use `ucli --choose` to pick a system recipe interactively.
 [group('System')]
 system:
