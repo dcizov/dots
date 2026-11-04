@@ -17,14 +17,18 @@
 # Dev box menu. Use `ucli --choose` to pick a devbox recipe interactively.
 [group('Dev box')]
 devbox:
-    # open an interactive shell inside dev
-    @distrobox enter dev
-
-# Open an interactive shell inside dev.
-[group('Dev box')]
-devbox-shell:
-    # open an interactive shell inside the dev container
-    @distrobox enter dev
+    # Enter the `dev` container, creating it first from dev.ini if it doesn't
+    # exist yet. If dev.ini is missing, fall back to distrobox's default image
+    # (fedora-toolbox) — that is the intentional no-config route.
+    #!/usr/bin/env bash
+    set -euo pipefail
+    INI="$HOME/.config/distrobox/dev.ini"
+    if [ -f "$INI" ]; then
+      # Ensure the box exists per dev.ini (image=debian:13) before entering.
+      # reconcile is idempotent: no-op when nothing changed.
+      "$HOME/.config/ucli/scripts/devbox/devbox-reconcile.sh" >/dev/null 2>&1 || true
+    fi
+    distrobox enter dev
 
 # Create or update the box: Debian base + nvm Node + sury PHP + composer.
 # Silent and instant when dev.ini / provision-dev.sh / devbox.env are unchanged.
