@@ -43,6 +43,37 @@ ucli gnome                GNOME menu (extensions, settings backup, apply)
 GNOME is curated in `packages.bash`. Package group contents from
 [archlinux.org/groups/x86_64/gnome/](https://archlinux.org/groups/x86_64/gnome/).
 
+### Two extension sets, two sources
+
+| | Where | Installed by |
+|---|---|---|
+| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extensions` (carries `user-theme`, which the Firefox GNOME theme styles the shell through), `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator` | `install-packages.sh essentials` — i.e. the desktop step |
+| extensions.gnome.org | `GNOME_SYSTEM_EXTENSIONS`, the opinionated layout set | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
+
+The layout set is deliberately small — five extensions, the same five Bluefin
+ships a variation of:
+
+| PK | UUID | Why |
+|---|---|---|
+| 307 | `dash-to-dock@micxgx.gmail.com` | Ubuntu-like dock |
+| 3193 | `blur-my-shell@aunetx` | blur behind shell UI |
+| 1319 | `gsconnect@andyholmes.github.io` | phone integration (KDE Connect protocol) |
+| 5489 | `search-light@icedman.github.com` | Spotlight-style launcher on Super+Space |
+| 8834 | `copyous@boerdereinar.dev` | clipboard history (needs `libgda6` + `gsound`) |
+
+Each entry is `"PK:UUID"` on one line: PK is what `gext install` takes, UUID is
+what GNOME enables. They used to be two parallel arrays, and they drifted badly —
+the list installed Search Light while enabling GSConnect, whose PK is 1319 (the
+list claimed that was AppIndicator support, actually 615). One line per extension
+cannot drift.
+
+#### The personal set
+
+Everything that is taste lives in `PERSONAL_GNOME_EXTENSIONS` in
+`~/.config/ucli/packages.local.bash` and is installed by the `personal` set
+(`ucli setup-extensions` runs both). The example file ships just-perfection,
+logo-menu, GNOME UI Tune, BetterTrayIcons and user-accent-colors.
+
 ## GNOME settings backup & restore
 
 Back up your GNOME configuration after customizing it, then restore on reinstall:

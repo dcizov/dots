@@ -117,12 +117,12 @@ This is the one big compound step. `install-profile.sh` runs these in order:
 |---|---|---|
 | 1 | preflight | warns (and asks, on a TTY) when there is no snapper config |
 | 2 | restore point | `before setup-system` — the same snapshot script as every other step |
-| 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools, fonts, `UCLI_RUNTIME` (gum + python-pipx) — no flatpaks yet |
+| 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools (+ `fwupd`), multimedia codecs, hardware-detected extras (`fprintd`, `libinput-tools`), fonts, `UCLI_RUNTIME` (gum + python-pipx) — no flatpaks yet |
 | 4 | the desktop | the DE package set through the skip/replace matrix in `packages.bash` (`gnome` group, `plasma`, or the Hyprland set) |
 | 5 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE |
 | 6 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
 | 7 | dotfiles | `chezmoi apply` as you — now that the programs exist, `~/.zshrc`, `~/.config/zsh`, `starship.toml`, `~/.config/ghostty`, `~/.config/ucli/firefox` deploy |
-| 8 | GNOME extensions | `gext` via pipx, then the `system` and `overrides` extension sets (GNOME only) |
+| 8 | GNOME extensions | `gext` via pipx, then the `system` set (dash-to-dock, blur-my-shell, gsconnect, search-light, copyous) and the `personal` set if you defined one (GNOME only) |
 | 9 | Firefox profile | creates the profile headlessly, copies the Betterfox `user.js` into it, and on GNOME installs firefox-gnome-theme |
 | 10 | snapshot | `<DE> Setup` |
 
@@ -155,7 +155,7 @@ Each is independent; run what you want, when you want.
 | Command | Installs | Notes |
 |---|---|---|
 | `ucli cli` | `CLI`: atuin, bat, eza, fzf, glow, tealdeer, zoxide | re-runs the shell tier first, so it works even if you skipped step 3 |
-| `ucli apps` | `APPS` + `APP_FLATPAKS` + `MANUAL_AUR` (shelly), then the Firefox extension list and the GNOME override extension set | Firefox + terminal are included, so this also works as a one-shot "give me a browser" — and the profile config (Betterfox, theme) comes with it via the shared script |
+| `ucli apps` | `APPS` + `APP_FLATPAKS` (desktop tooling + flatpak housekeeping) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay, then the Firefox extension lists and the personal GNOME extension set | Firefox + terminal are included, so this also works as a one-shot "give me a browser" — and the profile config (Betterfox, theme) comes with it via the shared script |
 | `ucli devmode` | wizard: dev CLI (jq, ripgrep, tmux, neovim, mise, …), dev stack (podman, docker, distrobox, vscodium), dev flatpaks, VSCodium extensions, Firefox dev extensions, the Debian dev box | `--all` everything, `--status`, `--reset`; re-running offers "add more?" |
 | `ucli gaming` | `GAMING`: steam, mangohud, gamemode + 32-bit bits | role-gated; `--force` overrides |
 
@@ -191,7 +191,7 @@ turn it off, delete the line to get the default (on).
 `local.zsh` is sourced before `conf.d/*`, is never chezmoi-managed, and
 `ucli doctor` tells you if it is missing.
 
-### 2. What gets installed — `~/.config/ucli/packages.bash`
+### 2. What gets installed — `packages.bash` + `packages.local.bash`
 
 One file, plain bash arrays. Add a package by adding a line; remove one by
 deleting it. The interesting arrays:
@@ -205,6 +205,24 @@ deleting it. The interesting arrays:
 | `CLI` / `DEV_CLI` / `DEV` / `GAMING` | steps 4 | the opt-in tiers |
 | `APPS` / `APP_FLATPAKS` / `MANUAL_AUR` | `ucli apps` | personal apps |
 | `DESKTOP_SKIP_<DE>` / `DESKTOP_REPLACE_<DE>` | step 3 | the skip/replace matrix |
+
+Anything personal — a password manager, Spotify, `neovim`, a wallpaper tool, your
+own GNOME extensions — belongs in the **overlay** instead, so the repo keeps
+installing the same opinionated set on every machine:
+
+```bash
+cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
+```
+
+| Overlay array | Installed by |
+|---|---|
+| `PERSONAL_PKGS` | `ucli apps` |
+| `PERSONAL_DEV` | `ucli devmode` |
+| `PERSONAL_FLATPAKS` | `ucli apps` |
+| `PERSONAL_GNOME_EXTENSIONS` (`"PK:UUID"`) | `ucli setup-extensions` |
+
+Firefox works the same way but with files: `~/.config/ucli/firefox/extensions.txt`
+ships empty, and `personal-extensions.txt` (copy the `.example`) is yours.
 
 Then re-run the step that owns the array (or nothing at all — `ucli setup-system`
 and `ucli apps` are both cheap no-ops for what is already installed). Check it
@@ -240,7 +258,7 @@ Three things are skipped when their input has not changed, so a re-run is instan
 
 | Gate | Keyed on | Force with |
 |---|---|---|
-| `gnome-extensions-system`, `-overrides` | hash of `packages.bash` | `ucli setup-extensions --force` |
+| `gnome-extensions-system`, `-personal` | hash of `packages.bash` (+ overlay for `personal`) | `ucli setup-extensions --force` |
 | `firefox-betterfox` | hash of `~/.config/ucli/firefox/user.js` | `ucli setup-desktop --force` (or `ucli apps --force`) |
 | `vscodium-extensions` | hash of `extensions.txt` | `ucli vscodium-extensions --force` |
 

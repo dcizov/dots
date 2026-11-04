@@ -21,7 +21,7 @@ ucli setup-system         first-machine profile (packages + basic setup)
 ucli cli                  shell tier: oh-my-zsh + plugins + zsh login shell + cosmetics
 ucli devmode              developer wizard — plumbing, apps, dev box (re-runnable)
 ucli gaming               gaming profile
-ucli apps                 personal apps and overrides
+ucli apps                 desktop apps, flatpaks, Firefox extensions (+ your overlay)
 ```
 
 Every package list lives in `private_dot_config/ucli/packages.bash`:
@@ -35,8 +35,10 @@ Every package list lives in `private_dot_config/ucli/packages.bash`:
 | `DESKTOP_TERMINAL_KDE` | `kwi` — KDE's new terminal (Qt Quick + Kirigami, GPU-rendered, libghostty-vt underneath); AUR-only today as `kwi-git`, so the AUR resolver maps the name, and Konsole from the `plasma` group is the safety net | same, plus `ucli apps` when the desktop is known |
 | `SHELL_TOOLS` | the shell tier: `zsh`, `git`, `curl`, `starship` — what `install-shell.sh` needs to build oh-my-zsh, clone the plugins and initialise the prompt | `ucli setup-system`/`setup-desktop` and `ucli cli` |
 | `CLI` | shell cosmetics on top: `eza bat zoxide atuin tealdeer glow fzf` | `ucli cli` |
-| `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
-| `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin` | `ucli devmode` (`--force` bypasses the role check) |
+| `DEV_CLI` | engineering plumbing: `jq yq ripgrep ugrep fd tree duf direnv mise lazygit vim tmux shfmt` — needed the moment you touch a repo (`neovim` is a personal pick, see the overlay below) | `ucli devmode` |
+| `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin vscodium-bin-marketplace` | `ucli devmode` (`--force` bypasses the role check) |
+| `SYSTEM_MEDIA_CODECS` | `gst-plugins-good bad ugly`, `gst-libav`, `ffmpeg` — archinstall installs none of them, and GNOME's own video apps only pull `gst-plugins-base` | `base` → `ucli setup-system` |
+| `HARDWARE_FINGERPRINT` / `HARDWARE_TOUCHPAD` | `fprintd` when a reader is found (USB ids 138a/06cb/27c6/08ff/0483), `libinput-tools` when a touchpad or trackpoint is | `base`, decided by `lib/detect.sh` — never on hardware that does not need it |
 
 `ugrep` ships as its own command (`ug`), not as an alias for `grep`: it is
 recursive by default and searches inside archives, so swapping it under `grep`
@@ -84,7 +86,7 @@ ucli devmode --reset      # forget the marker, wizard from scratch
 `ucli validate` checks the arrays against it.
 
 Extras that are deliberately not top-level: `ucli --choose` exposes the rest
-(`shell`, `paru`, `shell-overrides`, `full-setup`, …).
+(`shell`, `paru`, `full-setup`, …).
 
 ### Per-machine overrides
 
@@ -109,6 +111,29 @@ history) without forking the repo. A flag only gates the aliases — the binary
 stays installed and callable by its own name. `ucli doctor` lists the flags and
 whether `local.zsh` exists.
 
+### Personal picks (the overlay)
+`packages.bash` holds the opinionated sets. Anything that is a taste, an account,
+a subscription or one specific piece of hardware goes into
+`~/.config/ucli/packages.local.bash` instead:
+
+```bash
+cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
+```
+
+| Array | Installed by | Holds |
+|---|---|---|
+| `PERSONAL_PKGS` | `ucli apps` | pacman/AUR packages (password manager, torrent client, `neovim`, …) |
+| `PERSONAL_DEV` | `ucli devmode` | extra dev packages on top of `DEV_CLI` + `DEV` |
+| `PERSONAL_FLATPAKS` | `ucli apps` | flatpak IDs (Spotify, Obsidian, Bottles, wallpaper tools, …) |
+| `PERSONAL_GNOME_EXTENSIONS` | `ucli setup-extensions` (`personal` set) | `"PK:UUID"` pairs from extensions.gnome.org |
+
+The same idea as `~/.config/zsh/local.zsh`: never chezmoi-managed, never
+required, and read only if it exists. The Firefox equivalents are files —
+`~/.config/ucli/firefox/personal-extensions.txt` and `personal-dev-extensions.txt`
+— because the repo's `extensions.txt` ships empty: which add-ons you run is not a
+default anyone should inherit. `ucli doctor` reports whether the overlay is in
+play.
+
 ### Reruns and gates
 
 Steps that are slow or hit the network are gated by a content hash
@@ -116,7 +141,7 @@ Steps that are slow or hit the network are gated by a content hash
 
 | Step | Token | Re-runs when |
 |---|---|---|
-| GNOME extension sets (`system`, `overrides`) | hash of `packages.bash` | the extension lists change |
+| GNOME extension sets (`system`, `personal`) | hash of `packages.bash` (+ `packages.local.bash` for `personal`) | the extension lists change |
 | Betterfox `user.js` | hash of `~/.config/ucli/firefox/user.js` | you edit `user.js` |
 | VSCodium extensions | hash of `extensions.txt` | the list changes |
 

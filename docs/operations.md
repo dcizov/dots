@@ -87,7 +87,9 @@ justfile, `.bash_profile` PATH, `.zshrc`, `plugins.txt`); shell (parses, login
 shell, oh-my-zsh, starship + `starship.toml`, plugins against `plugins.txt`,
 `local.zsh`, the available flags, motd); ucli runtime (just/gum/pipx/gext/AUR
 helper/flatpak); apps (Firefox profile + Betterfox, snapper config, GNOME
-enabled-extension count); committed gates; dev box. Exit status is 1 when
+enabled-extension count); the personal overlay (`packages.local.bash`); the
+archinstall baseline (bluez, pipewire, wireplumber, cups, power-profiles-daemon —
+reported, never installed); committed gates; dev box. Exit status is 1 when
 anything is MISSING; warnings alone do not fail it.
 
 On a console-only box (no desktop yet) the shell-tier items — `.zshrc`,
