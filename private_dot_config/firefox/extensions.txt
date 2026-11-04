@@ -1,0 +1,15 @@
+# Firefox extensions installed during `ucli apps` (all desktops)
+# Format: one extension ID per line (AMO addon ID, e.g. uBlock0@raymondhill.net)
+# Lines starting with # are ignored.
+#
+# To find an extension's ID, visit its addons.mozilla.org page and look for
+# the ID in the URL or page source.
+
+# Password manager (Firefox's built-in manager is disabled in Betterfox)
+bitwarden-browser-extension@bitwarden.com
+
+# Dark theme for websites
+darkreader@darkreader.org
+
+# Userscript manager (for adguard scripts and custom userscripts)
+violentmonkey@violentmonkey.net

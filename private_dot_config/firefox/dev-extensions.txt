@@ -1,0 +1,6 @@
+# Firefox extensions installed during `ucli devmode` (development only)
+# Format: one extension ID per line (AMO addon ID)
+# Lines starting with # are ignored.
+
+# React Developer Tools - only needed for React development
+react-devtools@mozilla.com

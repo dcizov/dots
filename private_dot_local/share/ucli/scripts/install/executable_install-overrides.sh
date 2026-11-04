@@ -16,6 +16,10 @@ source "$real_home/.config/ucli/scripts/lib/detect.sh"
 # Requires Firefox to have been run at least once (profile must exist)
 "$script_dir/install-firefox-betterfox.sh" || true
 
+# Firefox extensions (regular) — installed during ucli apps
+# Requires Firefox to have been run at least once (profile must exist)
+"$script_dir/install-firefox-extensions.sh" "$real_home/.config/firefox/extensions.txt" || true
+
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides || true
   # Firefox GNOME theme — only makes sense on GNOME desktop

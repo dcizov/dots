@@ -18,6 +18,10 @@ if command -v codium >/dev/null 2>&1 && [[ -x "$script_dir/install-vscodium-exte
   "$script_dir/install-vscodium-extensions.sh" || true
 fi
 
+# Firefox dev extensions — only installed during devmode
+# Requires Firefox to have been run at least once (profile must exist)
+"$script_dir/install-firefox-extensions.sh" "$real_home/.config/firefox/dev-extensions.txt" || true
+
 # The dev box is part of the dev profile: create it, or bring an existing one
 # in line with the current dotfiles commit. Non-fatal — a missing podman or
 # distrobox should not fail the package install.
