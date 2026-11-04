@@ -1,0 +1,35 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Repair pass, run on every apply: clone any zsh plugin from the shared list
+# that is missing. It deliberately never pulls — updating clones belongs to
+# `ucli cli` (install-shell.sh) — so an offline `chezmoi apply` stays fast and
+# quiet.
+#
+# The list is ~/.config/zsh/plugins.txt, deployed by this same apply and shared
+# with ~/.zshrc, install-shell.sh and distrobox/provision-dev.sh. That is why
+# this script no longer carries its own copy of the repositories: one list, four
+# readers.
+#
+# Installing these as distro packages does not work — Arch puts them in
+# /usr/share/zsh/plugins and Debian somewhere else again, and the box then
+# silently ran without them (no zle-line-pre-redraw hooks, so a prompt misdraw
+# was never repaired and Tab ate a line).
+
+plugins_file="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/plugins.txt"
+[[ -r "$plugins_file" ]] || exit 0
+command -v git >/dev/null 2>&1 || exit 0
+[[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}" || -d "$HOME/.oh-my-zsh" ]] || exit 0
+
+root="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+mkdir -p "$root"
+while read -r repo; do
+  [[ -n "$repo" ]] || continue
+  name="${repo#*/}"
+  [[ -d "$root/$name/.git" ]] && continue
+  echo "zsh plugin: cloning $name"
+  git clone --depth=1 "https://github.com/$repo.git" "$root/$name" \
+    || echo "zsh plugin: could not clone $name (offline?)" >&2
+done < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$plugins_file" | grep -v '^$')
+{{- end -}}

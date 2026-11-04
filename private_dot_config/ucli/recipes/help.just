@@ -33,6 +33,7 @@ usage:
     @printf '%s\n' 'System:'
     @printf '%s\n' '  ucli setup-snapshots   # snapper + limine'
     @printf '%s\n' '  ucli system            # checks and maintenance helpers'
+    @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
     @printf '%s\n' ''
     @printf '%s\n' 'Maintenance:'
     @printf '%s\n' '  ucli update            # full system upgrade'
@@ -102,6 +103,13 @@ doctor:
     else
     printf 'MISSING: distrobox\n'
     fi
+
+# Run the offline checks: bash -n, zsh -n, just parses, package arrays, shellcheck.
+[group('Help')]
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    exec "$HOME/.local/share/ucli/scripts/check/check.sh" "$HOME"
 
 # Validate package arrays.
 [group('Help')]

@@ -1,0 +1,17 @@
+# zsh plugins, cloned into $ZSH_CUSTOM/plugins.
+#
+# ONE list, four readers — add a plugin here and everything picks it up:
+#   ~/.zshrc                                plugins=() array (host + dev box)
+#   run_after_95-zsh-plugins.sh.tmpl        chezmoi: clone anything missing
+#   ucli/scripts/install/install-shell.sh   ucli cli / setup-desktop: clone + pull
+#   distrobox/provision-dev.sh             the dev box
+#
+# Format: <github owner>/<repo>, one per line, blank lines and # comments ok.
+# ORDER IS LOAD ORDER and it matters: zsh-syntax-highlighting must stay last
+# because it wraps every widget bound before it. The built-in oh-my-zsh plugins
+# (git, fzf, extract) are added by ~/.zshrc and are not listed here.
+
+Aloxaf/fzf-tab
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-history-substring-search
+zsh-users/zsh-syntax-highlighting

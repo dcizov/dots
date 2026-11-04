@@ -632,11 +632,21 @@ fi
 
 if [ -d "$DEV_HOME/.oh-my-zsh" ]; then
   step "zsh: plugins"
-  for repo in \
-    zsh-users/zsh-autosuggestions \
-    zsh-users/zsh-syntax-highlighting \
-    zsh-users/zsh-history-substring-search \
-    Aloxaf/fzf-tab
+  # The plugin list is chezmoi's ~/.config/zsh/plugins.txt, shared with the host's
+  # ~/.zshrc and install-shell.sh. distrobox mounts the host home, so the file is
+  # already here; the inline list only covers a box provisioned from a machine
+  # whose dotfiles were never applied.
+  DEV_PLUGINS_FILE="$DEV_HOME/.config/zsh/plugins.txt"
+  if [ -r "$DEV_PLUGINS_FILE" ]; then
+    DEV_PLUGIN_REPOS="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DEV_PLUGINS_FILE" | grep -v '^$')"
+  else
+    warn "zsh: $DEV_PLUGINS_FILE missing, using the built-in plugin list"
+    DEV_PLUGIN_REPOS="zsh-users/zsh-autosuggestions
+zsh-users/zsh-syntax-highlighting
+zsh-users/zsh-history-substring-search
+Aloxaf/fzf-tab"
+  fi
+  for repo in $DEV_PLUGIN_REPOS
   do
     name="${repo#*/}"
     dest="$DEV_HOME/.oh-my-zsh/custom/plugins/$name"

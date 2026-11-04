@@ -58,12 +58,12 @@ What each layer actually puts on disk:
 
 | Layer | Comes from | Contents |
 |---|---|---|
-| dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty`, `~/.config/mozilla` |
+| dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty`, `~/.config/mozilla` |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
 | desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **ghostty**, **firefox**, GNOME extension set, snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
 | cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
-| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + Betterfox `user.js`, extension list, Firefox GNOME theme |
+| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + a headless first run of Firefox if it has no profile yet, then Betterfox `user.js`, the extension list and the Firefox GNOME theme |
 | dev | `ucli devmode` | `DEV_CLI` plumbing + `DEV` stack + dev box |
 
 `ucli cli` on top of a plain zsh: oh-my-zsh + plugins + starship is the standard
@@ -429,19 +429,31 @@ chezmoi apply --force ~/.vscode-oss/argv.json
 
 ## Checks
 
+One script does the offline checks, and it runs in both places: against the repo
+checkout (CI) and against a deployed home (`ucli check`).
+
 ```bash
-chezmoi cd
-just --justfile private_dot_config/ucli/justfile --list
-find . \( -name '*[*]*' -o -name '*(http*' \) -print    # autolinked filenames
-bash -n private_dot_config/distrobox/executable_provision-dev.sh
-bash -n private_dot_config/ucli/scripts/devbox/executable_devbox-reconcile.sh
-chezmoi execute-template < run_once_before_00-bootstrap-arch.sh.tmpl | sed -n '1,8p'
-chezmoi execute-template < run_onchange_after_90-ucli-install.sh.tmpl | sed -n '1,12p'
-exit
-chezmoi diff
-chezmoi apply -v
-ucli doctor
-ucli validate
+ucli check                      # deployed: ~/.local/share/ucli/scripts/check/check.sh
+bash ~/.local/share/ucli/scripts/check/check.sh ~/dots   # or any checkout
+```
+
+| Check | Catches |
+|---|---|
+| `bash -n` on every shipped script | syntax errors in code that only runs during setup |
+| `zsh -n` on `~/.zshrc`, `pre-omz.zsh`, `conf.d/*.zsh` | a broken shell config you would only notice by opening a terminal |
+| `just --list` | recipes that silently degrade to line-wise mode (a comment above the `#!` body) |
+| array consistency | a package array renamed in `packages.bash` but not in `validate-packages.sh`/`install-packages.sh` — `SHELL_DEPS` → `SHELL_TOOLS` was exactly this bug |
+| `shellcheck --severity=error` | real shell bugs, when it is installed |
+
+CI runs the same script from `.github/workflows/check.yml` on every push and PR
+(Ubuntu, with `just`, `zsh` and `shellcheck` installed). The heavier,
+network-bound checks stay manual:
+
+```bash
+ucli validate                   # every package array against pacman/AUR
+ucli doctor                     # chezmoi, zsh, commands, dev box health
+chezmoi cd && chezmoi diff
+chezmoi execute-template < run_after_95-zsh-plugins.sh.tmpl | sed -n '1,8p'
 ```
 
 ## Fresh install readiness

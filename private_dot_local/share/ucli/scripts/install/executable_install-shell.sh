@@ -31,16 +31,21 @@ done
 "$script_dir/install-oh-my-zsh.sh"
 
 # All zsh plugins go to ONE place, $ZSH_CUSTOM/plugins, on the host and in the
-# dev box alike (provision-dev.sh clones the same list). oh-my-zsh loads them
-# from there through plugins=(...) in ~/.zshrc. Every one of these repositories
-# ships <name>/<name>.plugin.zsh, which is what oh-my-zsh's loader looks for.
+# dev box alike. oh-my-zsh loads them from there through plugins=(...) in
+# ~/.zshrc. Every one of these repositories ships <name>/<name>.plugin.zsh, which
+# is what oh-my-zsh's loader looks for.
+#
+# WHICH plugins is not decided here: ~/.config/zsh/plugins.txt (chezmoi) is the
+# single list, also read by ~/.zshrc, the chezmoi repair hook and the dev box.
+plugins_file="${real_home}/.config/zsh/plugins.txt"
+if [[ ! -r "$plugins_file" ]]; then
+  echo "error: $plugins_file missing — run 'ucli chezmoi-apply' first (it ships the plugin list)" >&2
+  exit 1
+fi
+mapfile -t plugin_repos < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$plugins_file" | grep -v '^$')
 plugin_root="${ZSH_CUSTOM:-$real_home/.oh-my-zsh/custom}/plugins"
 mkdir -p "$plugin_root"
-for repo in \
-  Aloxaf/fzf-tab \
-  zsh-users/zsh-autosuggestions \
-  zsh-users/zsh-syntax-highlighting \
-  zsh-users/zsh-history-substring-search
+for repo in "${plugin_repos[@]}"
 do
   name="${repo#*/}"
   if [[ -d "$plugin_root/$name/.git" ]]; then

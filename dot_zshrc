@@ -18,19 +18,25 @@ ZSH_CONFIG_DIR="${ZSH_CONFIG_DIR:-$HOME/.config/zsh}"
 [[ -r "$ZSH_CONFIG_DIR/pre-omz.zsh" ]] && source "$ZSH_CONFIG_DIR/pre-omz.zsh"
 
 # Every plugin lives in one place: $ZSH_CUSTOM/plugins (git clone there, both on
-# the host and in the dev box — see ucli/scripts/install/install-shell.sh and
-# distrobox/provision-dev.sh). oh-my-zsh loads them from this array only, so
+# the host and in the dev box). oh-my-zsh loads them from this array only, so
 # Arch's /usr/share/zsh/plugins packages and Debian's paths stop mattering.
-plugins=(
-  git
-  fzf
-  extract
-  fzf-tab
-  zsh-autosuggestions
-  zsh-history-substring-search
-  # must stay last: it wraps every widget bound before it
-  zsh-syntax-highlighting
-)
+#
+# WHICH plugins is one list — ~/.config/zsh/plugins.txt — shared with
+# install-shell.sh, the chezmoi repair hook and distrobox/provision-dev.sh, so
+# there is exactly one place to add or remove one. Load order is file order, and
+# that file keeps zsh-syntax-highlighting last (it wraps every widget bound
+# before it). Built-in oh-my-zsh plugins are listed here and nowhere else.
+plugins=(git fzf extract)
+if [[ -r "$ZSH_CONFIG_DIR/plugins.txt" ]]; then
+  while IFS= read -r plugin; do
+    plugins+=("$plugin")
+  done < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$ZSH_CONFIG_DIR/plugins.txt" \
+             | grep -v '^$' | sed -e 's|.*/||')
+  unset plugin
+else
+  echo "warning: $ZSH_CONFIG_DIR/plugins.txt missing; run 'ucli chezmoi-apply'" >&2
+  plugins+=(fzf-tab zsh-autosuggestions zsh-history-substring-search zsh-syntax-highlighting)
+fi
 
 # Only source oh-my-zsh if it was actually installed (install-shell.sh clones
 # plugins but omz itself is installed by install-oh-my-zsh.sh).

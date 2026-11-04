@@ -1,0 +1,36 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: offline checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same script `ucli check` runs on a deployed machine, pointed at the
+      # repo checkout instead: bash -n over every script, zsh -n over the shell
+      # config, `just --list` (catches recipes that silently degrade to
+      # line-wise mode), package-array consistency between packages.bash and the
+      # scripts, and shellcheck at severity=error.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Install zsh and shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zsh shellcheck
+
+      - name: Run checks
+        run: bash private_dot_local/share/ucli/scripts/check/executable_check.sh "$PWD"
