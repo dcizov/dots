@@ -13,7 +13,19 @@ ucli changelogs        # what the last pacman transaction changed
 ucli state             # versioned setup gates + devmode marker
 ucli bios              # reboot into firmware settings (asks first)
 ucli bios-info         # board + firmware version
+ucli config-audit      # unmerged .pacnew files + locally modified package files
+ucli sync              # Syncthing: folder sync between two machines
 ```
+
+`ucli config-audit` is the Arch answer to Bluefin's `ujust check-local-overrides`
+(which diffs `/usr/etc` against `/etc`): it lists what `pacdiff -o` says is
+waiting to be merged plus every packaged file whose checksum changed, and exits 0
+either way — drift is normal, but it should not be invisible. Read-only.
+
+`ucli sync` installs Syncthing, enables `syncthing@<user>.service` (runs as you,
+not root) and prints the Web GUI and this machine's device ID; pairing is the
+same two-click dance as Bluefin's *Sync Folder*, because writing `config.xml`
+behind the GUI's back would only fight it.
 
 `ucli update` warns about foreign (AUR / locally built) packages and asks
 before upgrading — the Arch analogue of `ujust update` refusing to run while

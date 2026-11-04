@@ -6,6 +6,7 @@
 #   ujust logs-this-boot  -> ucli logs           (menu: this/last boot, devbox)
 #   ujust bios, bios-info -> ucli bios, ucli bios-info
 #   ujust changelogs      -> ucli changelogs     (from /var/log/pacman.log)
+#   ujust check-local-overrides -> ucli config-audit (.pacnew + pacman -Qkk)
 #
 # Deliberately NOT ported: toggle-updates / rebase-helper / powerwash (bootc
 # image concepts), enroll-secure-boot-key (ublue/Nvidia specific), benchmark and
@@ -209,6 +210,14 @@ bios-info:
     exit 1
 
 # Handy when a step "did not run": the gate tells you why.
+# What no longer matches its package: unmerged .pacnew/.pacsave files and files
+# edited since install (pacman -Qkk). Read-only — the Arch answer to Bluefin's
+# `ujust check-local-overrides`.
+# Show unmerged .pacnew files and locally modified package files.
+[group('Maintenance')]
+config-audit *ARGS:
+    @~/.local/share/ucli/scripts/check/config-audit.sh {{ARGS}}
+
 # Show ucli state: versioned setup gates (lib/version-script.sh) and the devmode marker.
 [group('Maintenance')]
 state:

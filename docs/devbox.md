@@ -38,6 +38,22 @@ no PHP, nothing provisioned. Always go through `ucli devbox-reconcile`
 After a full run: `debian 13.x`, `node v26.x`, `php 8.5.x`, `composer 2.x`,
 sshd on `$DEVBOX_SSH_PORT` (default 2222).
 
+### Throwaway boxes
+
+`dev` is the box that gets provisioned. For anything else there is
+`ucli devbox-create`:
+
+```bash
+ucli devbox-create --list           # ubuntu fedora wolfi debian arch alpine
+ucli devbox-create ubuntu           # container named "ubuntu"
+ucli devbox-create fedora scratch   # custom name
+```
+
+That is `distrobox create --image <stock image> --yes` with a checked image
+list — the Bluefin "preconfigured Ubuntu/Fedora/Wolfi boxes" idea without a
+second provisioning path. No node/php, no sshd, no reconcile: delete it with
+`distrobox rm -f <name>` when you are done.
+
 Dev databases run on the host, not in the box:
 
 ```bash

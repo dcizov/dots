@@ -48,6 +48,15 @@ apps *ARGS:
     # the Firefox profile itself (Betterfox, GNOME theme) comes with the browser
     @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
+# Syncthing: keep a folder in sync between two machines (Bluefin's "Sync Folder",
+# without the tray applet). Installs the daemon, enables syncthing@<user>.service
+# and prints the Web GUI + this machine's device ID; pairing stays two clicks.
+# Keep a folder in sync between two machines (Syncthing).
+[group('Install')]
+sync *ARGS:
+    # --status shows the service + device ID, --no-service installs only
+    @~/.local/share/ucli/scripts/install/install-sync.sh {{ARGS}}
+
 # Install paru idempotently (AUR helper).
 [group('Install')]
 install-paru:

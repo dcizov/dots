@@ -63,6 +63,7 @@ MENU_LAYOUT=(
   "── Toolchain ───────────────────────────────"
   dev-cli
   dev-pkgs
+  perf
   "── Apps ────────────────────────────────────"
   flatpaks
   vscodium
@@ -77,7 +78,8 @@ is_id()     { ! is_header "$1"; }
 label_for() {
   case "$1" in
     dev-cli)  printf '  Dev CLI (jq, ripgrep, fd, neovim, tmux, mise, …)' ;;
-    dev-pkgs) printf '  Dev packages (podman, docker, distrobox, vscodium)' ;;
+    dev-pkgs) printf '  Dev packages (docker, podman for distrobox, distrobox, vscodium)' ;;
+    perf)     printf '  Performance tooling (perf, bcc, bpftrace, sysprof, sysstat, …)' ;;
     flatpaks) printf '  Dev flatpaks (podman desktop, …)' ;;
     vscodium) printf '  VSCodium extensions' ;;
     firefox)  printf '  Firefox dev extensions (React DevTools)' ;;
@@ -91,6 +93,7 @@ name_for() {
   case "$1" in
     dev-cli)  printf 'dev CLI packages' ;;
     dev-pkgs) printf 'dev packages' ;;
+    perf)     printf 'performance tooling' ;;
     flatpaks) printf 'dev flatpaks' ;;
     vscodium) printf 'VSCodium extensions' ;;
     firefox)  printf 'Firefox dev extensions' ;;
@@ -108,7 +111,11 @@ cmd_for() {
   local reconcile="$real_home/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
   case "$1" in
     dev-cli)  printf '%s' "\"$script_dir/install-packages.sh\" dev-cli" ;;
-    dev-pkgs) printf '%s' "\"$script_dir/install-packages.sh\" --force dev" ;;
+    # docker needs more than the package: the daemon off by default and the
+    # group missing is why `docker ps` fails or asks for sudo. podman is left
+    # alone on purpose — it is distrobox's rootless backend, nothing else.
+    dev-pkgs) printf '%s' "\"$script_dir/install-packages.sh\" --force dev && \"$script_dir/enable-docker-access.sh\"" ;;
+    perf)     printf '%s' "\"$script_dir/install-packages.sh\" perf" ;;
     flatpaks) printf '%s' "\"$script_dir/install-flatpaks.sh\" dev" ;;
     vscodium) printf '%s' "command -v codium >/dev/null || { echo 'skipped: codium is not installed'; exit 0; }; \"$script_dir/install-vscodium-extensions.sh\"" ;;
     firefox)  printf '%s' "\"$script_dir/install-firefox-extensions.sh\" \"$real_home/.config/ucli/firefox/dev-extensions.txt\"" ;;

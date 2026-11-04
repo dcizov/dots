@@ -222,6 +222,23 @@ DEV=(
   vscodium-bin-marketplace
 )
 
+# Performance / profiling tooling: the set Ubuntu ships for that purpose and
+# Bluefin's DX image follows (Brendan Gregg's list). `perf` is Linux's own
+# profiler; bcc/bpftrace are the eBPF front ends; sysprof is the graphical one
+# GNOME apps are profiled with.
+#   nicstat is AUR-only; Bluefin's `tiptop` has no Arch package at all and is
+#   left out rather than pointed at a guess.
+DEV_PERF=(
+  perf
+  sysprof
+  bcc
+  bpftrace
+  sysstat
+  trace-cmd
+  numactl
+  nicstat
+)
+
 GAMING=(
   steam
   mangohud

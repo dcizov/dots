@@ -156,7 +156,7 @@ Each is independent; run what you want, when you want.
 |---|---|---|
 | `ucli cli` | `CLI`: atuin, bat, eza, fzf, glow, tealdeer, zoxide | re-runs the shell tier first, so it works even if you skipped step 3 |
 | `ucli apps` | `APPS` + `APP_FLATPAKS` (desktop tooling + flatpak housekeeping) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay, then the Firefox extension lists and the personal GNOME extension set | Firefox + terminal are included, so this also works as a one-shot "give me a browser" — and the profile config (Betterfox, theme) comes with it via the shared script |
-| `ucli devmode` | wizard: dev CLI (jq, ripgrep, tmux, neovim, mise, …), dev stack (podman, docker, distrobox, vscodium), dev flatpaks, VSCodium extensions, Firefox dev extensions, the Debian dev box | `--all` everything, `--status`, `--reset`; re-running offers "add more?" |
+| `ucli devmode` | wizard: dev CLI (jq, ripgrep, fd, tmux, mise, …), dev stack (docker, podman for distrobox, distrobox, vscodium) **with `docker.service` enabled and your user added to the `docker` group**, performance tooling (perf, bcc, bpftrace, sysprof, …), dev flatpaks, VSCodium extensions, Firefox dev extensions, the Debian dev box | `--all` everything, `--status`, `--reset`; re-running offers "add more?" |
 | `ucli gaming` | `GAMING`: steam, mangohud, gamemode + 32-bit bits | role-gated; `--force` overrides |
 
 ## Configuring it
@@ -293,6 +293,9 @@ ucli only copies `~/.config/ucli/firefox/user.js` into them.
 | `ucli check` | the offline static checks (also CI) |
 | `ucli logs` / `report` / `inventory` | log menu / a file you can paste / a package+app+settings dump |
 | `ucli motd on\|always\|off` | the login banner (fastfetch), login shells only by default |
+| `ucli config-audit` | `.pacnew` files waiting to be merged + packaged files you edited |
+| `ucli sync` | Syncthing between two machines (installs, enables the service, prints the device ID) |
+| `ucli devbox-create ubuntu` | throwaway container from a stock distro image |
 | `ucli chezmoi-apply` | re-deploy the dotfiles after editing the repo |
 
 [operations](operations.md) has the long version, including the chezmoi workflow.

@@ -23,6 +23,15 @@ devbox:
     @[ -f "$HOME/.config/distrobox/dev.ini" ] && "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" >/dev/null 2>&1 || true
     @distrobox enter dev
 
+# Throwaway "pet" container from a stock image (ubuntu, fedora, wolfi, debian,
+# arch, alpine) — what Bluefin ships preconfigured, as one command. The `dev`
+# box above stays the provisioned one; these are for a quick other-distro shell.
+# Create a throwaway container from a stock distro image.
+[group('Dev box')]
+devbox-create *ARGS:
+    # ucli devbox-create ubuntu [name]   •   --list shows the images
+    @~/.local/share/ucli/scripts/devbox/devbox-create.sh {{ARGS}}
+
 # Create or update the box: Debian base + nvm Node + sury PHP + composer.
 # Silent and instant when dev.ini / provision-dev.sh / devbox.env are unchanged.
 [group('Dev box')]

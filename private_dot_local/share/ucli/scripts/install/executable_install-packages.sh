@@ -24,6 +24,7 @@ Modes:
   hardware        fprintd / libinput-tools, only if the hardware is present
   dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
+  perf            opt-in performance/profiling tooling (perf, bcc, sysprof, …)
   gaming          opt-in gaming packages
   snapshot        Btrfs/Snapper/Limine packages
   full            base + cli + dev + gaming(if enabled)
@@ -301,6 +302,7 @@ select_packages() {
       fi
       ;;
     dev-cli) add_array DEV_CLI ;;
+    perf) add_array DEV_PERF ;;
     dev)
       if (( force )) || [[ "$role" == *dev* ]]; then
         select_packages dev-cli
