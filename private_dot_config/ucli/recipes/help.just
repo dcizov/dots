@@ -43,6 +43,7 @@ usage:
     @printf '%s\n' '  ucli system            # checks and maintenance helpers'
     @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
     @printf '%s\n' '  ucli motd [on|always|off]  # login banner (fastfetch)'
+    @printf '%s\n' '  ucli fingerprint       # reader in the DE Settings UI (--pam for login/sudo)'
     @printf '%s\n' ''
     @printf '%s\n' 'Maintenance:'
     @printf '%s\n' '  ucli update            # full system upgrade'

@@ -17,6 +17,7 @@ ucli config-audit      # unmerged .pacnew files + locally modified package files
 ucli sync              # Syncthing: folder sync between two machines
 ucli virt              # qemu/libvirt/virt-manager + libvirtd + the libvirt group
 ucli ms-fonts          # Microsoft core fonts (AUR ttf-ms-fonts)
+ucli fingerprint       # reader working in the DE's Settings (see below)
 ```
 
 `ucli config-audit` is the Arch answer to Bluefin's `ujust check-local-overrides`
@@ -28,6 +29,33 @@ either way — drift is normal, but it should not be invisible. Read-only.
 not root) and prints the Web GUI and this machine's device ID; pairing is the
 same two-click dance as Bluefin's *Sync Folder*, because writing `config.xml`
 behind the GUI's back would only fight it.
+
+### Fingerprint reader
+
+`fprintd` comes with `base` when a reader is present (the `HARDWARE_FINGERPRINT`
+array, decided by `lib/detect.sh`); what it does not do is make the finger
+useful. `ucli fingerprint` covers the rest:
+
+```bash
+ucli fingerprint            # fprintd + daemon, then prints the enrollment step
+ucli fingerprint --status   # reader, service, enrolled fingers, PAM state
+ucli fingerprint --enroll   # enroll from the terminal (desktops without a page)
+ucli fingerprint --pam      # also unlock/login/sudo with the finger
+```
+
+Enrollment is a **UI job on purpose**: GNOME has *Settings → System → Users →
+Fingerprint Login*, Plasma 6 has *System Settings → Users → Fingerprint*, and both
+talk to fprintd directly — so `ucli fingerprint` installs and starts the daemon and
+tells you where to click, instead of driving `fprintd-enroll` over your shoulder.
+Desktops older than that (Plasma 6.0, Hyprland, anything else) have no page, which
+is what `--enroll` is for.
+
+The **`--pam`** flag is opt-in for a reason. It appends
+`auth sufficient pam_fprintd.so` after the `pam_unix.so` line in
+`/etc/pam.d/system-auth` — the order that keeps your password working and adds the
+finger as an alternative. It copies the file to `system-auth.ucli-backup` first and
+refuses to touch anything if it cannot find that line. Test it by locking the
+screen with a root shell open, not by logging out.
 
 ### Firmware
 

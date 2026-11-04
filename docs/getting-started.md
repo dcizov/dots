@@ -160,6 +160,7 @@ Each is independent; run what you want, when you want.
 | `ucli gaming` | `GAMING`: steam, mangohud, gamemode + 32-bit bits | role-gated; `--force` overrides |
 | `ucli virt` | `VIRT`: qemu-desktop, libvirt, virt-manager, virt-viewer, edk2-ovmf, swtpm, dnsmasq — then libvirtd enabled, you in the `libvirt` group, libvirt's default NAT network up | deliberately not in `devmode`; `--status` checks `/dev/kvm` and group membership, `--no-service` installs only |
 | `ucli ms-fonts` | `FONTS_MS`: AUR `ttf-ms-fonts` (Arial, Times New Roman, …) | already tried by step 3; this is the retry |
+| `ucli fingerprint` | `fprintd` if a reader is present, plus the pointer to the DE's enrollment page (`--pam` also wires login/unlock/sudo) | never runs on a machine without a reader unless you pass `--force` |
 
 ## Configuring it
 

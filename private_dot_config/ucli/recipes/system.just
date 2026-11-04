@@ -51,6 +51,19 @@ motd mode="status":
     ;;
     esac
 
+# Fingerprint reader: install fprintd, then enroll from the desktop's own
+# Settings page — GNOME (Settings → System → Users → Fingerprint Login) and
+# Plasma 6 (System Settings → Users → Fingerprint) both drive fprintd directly,
+# so nothing here does the enrollment for you unless you ask for `--enroll`.
+# --pam additionally wires pam_fprintd into /etc/pam.d/system-auth (login,
+# screen unlock, sudo); it is opt-in because PAM is the one thing in this repo
+# that can keep you out, and it leaves a backup.
+# Set up the fingerprint reader for the desktop's Settings UI.
+[group('System')]
+fingerprint *ARGS:
+    # ucli fingerprint            •   --status  •   --enroll  •   --pam
+    @~/.local/share/ucli/scripts/install/install-fingerprint.sh {{ARGS}}
+
 # Create a named Snapper snapshot (needs `ucli setup-snapshots` first).
 #   ucli snapshot                       "Fresh Arch Linux Installation"
 #   ucli snapshot "before the upgrade"  your own description
