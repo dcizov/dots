@@ -58,3 +58,9 @@ if command -v chsh >/dev/null 2>&1; then
       echo "warning: chsh failed; run 'chsh -s $(command -v zsh)' manually" >&2
   fi
 fi
+
+# The "ucli layer" on top of stock zsh (aliases, functions, fzf, prompt) is
+# chezmoi's: ~/.config/zsh/conf.d/*.zsh, pre-omz.zsh and ~/.config/starship.toml.
+if [[ ! -d "$real_home/.config/zsh/conf.d" ]]; then
+  echo "warning: ~/.config/zsh/conf.d not found — run 'ucli chezmoi-apply' to deploy the ucli shell layer" >&2
+fi

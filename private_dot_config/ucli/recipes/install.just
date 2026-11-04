@@ -1,16 +1,28 @@
-# Set up the machine profile (no shell opinion — use `ucli cli` for that).
+# Set up the machine: base packages + desktop (DE, ghostty, firefox, snapshot).
 [group('Install')]
-setup-system:
-    # bootstrap + cpu + gpu + system-tools + fonts + desktop + ucli runtime
-    @~/.local/share/ucli/scripts/install/install-profile.sh
+setup-system *ARGS:
+    # base packages + desktop step (pass gnome/kde/hyprland, or omit to prompt)
+    @~/.local/share/ucli/scripts/install/install-profile.sh {{ARGS}}
 
-# Set up the shell experience: oh-my-zsh + plugins + zsh as login shell, then
-# the cosmetic tooling (starship, eza, bat, zoxide, atuin, …).
+# Set up the whole shell tier: oh-my-zsh + plugins + zsh login + cosmetics.
 [group('Install')]
 cli:
     # opt-in shell tier (oh-my-zsh, plugins, prompt, aliases, fuzzy find)
     @~/.local/share/ucli/scripts/install/install-packages.sh cli
     @~/.local/share/ucli/scripts/install/install-shell.sh
+
+# Alias of `ucli cli`, for symmetry with setup-system/setup-desktop/setup-apps.
+[group('Install')]
+setup-cli:
+    # alias of `ucli cli`: oh-my-zsh, plugins, prompt, cosmetic tooling
+    @~/.local/share/ucli/scripts/install/install-packages.sh cli
+    @~/.local/share/ucli/scripts/install/install-shell.sh
+
+# Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
+[group('Install')]
+setup-apps:
+    # alias of `ucli apps`: ghostty/firefox + personal apps, flatpaks, Firefox config
+    @~/.local/share/ucli/scripts/install/install-overrides.sh
 
 # `ucli devmode` flags:
 #   ucli devmode           wizard on a TTY, everything otherwise
@@ -29,7 +41,7 @@ gaming:
     # opt-in gaming packages (steam, mangohud, gamemode, lib32-*)
     @~/.local/share/ucli/scripts/install/install-gaming-profile.sh
 
-# Install personal apps and overrides.
+# Install personal apps and overrides (`ucli setup-apps` is the same thing).
 [group('Install')]
 apps:
     # personal apps and desktop overrides (bitwarden, firefox, spotify flatpak, …)

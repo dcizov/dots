@@ -277,8 +277,18 @@ GNOME_OVERRIDE_EXTENSION_UUIDS=(
 # ArchWiki: gnome-boxes, gdm-settings, nautilus-* are all optional — remove
 # any you don't use to debloat your GNOME install.
 # https://wiki.archlinux.org/title/GNOME
-GNOME_APP_OVERRIDES=(
+# Installed with every desktop (`setup-desktop`/`ucli setup-system`) and by
+# `ucli apps`, on gnome/hyprland/kde alike. Both are baked into the dotfiles:
+# ~/.config/ghostty is the only terminal config here, and Firefox carries the
+# Betterfox user.js, the extension list and the GNOME theme. Treating them as
+# "personal apps" meant a fresh `setup-system` machine had no browser and no
+# terminal until `ucli apps` ran.
+DESKTOP_ESSENTIALS=(
   ghostty
+  firefox
+)
+
+GNOME_APP_OVERRIDES=(
   gnome-boxes            # VM manager — remove if you don't use VMs
   gdm-settings           # GDM theme/config — remove if defaults are OK
   nautilus-admin-gtk4    # Nautilus extension — remove if you don't use Nautilus
@@ -347,10 +357,11 @@ SERVICES_KDE=(
 # Personal apps
 # -----------------------------
 
+# firefox moved to DESKTOP_ESSENTIALS: it belongs to the desktop, not to the
+# optional personal-apps step.
 APPS=(
   bitwarden
   btrfs-assistant
-  firefox
   fragments
   gparted
   webapp-manager

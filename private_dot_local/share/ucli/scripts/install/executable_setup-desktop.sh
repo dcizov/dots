@@ -344,6 +344,13 @@ if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" fonts
 fi
 
+# The desktop's own apps: ghostty (the configured terminal) and firefox (the
+# configured browser). Desktop-agnostic, so they land on gnome/hyprland/kde; the
+# DE install above only covers DE packages and the replacement matrix.
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" essentials || true
+fi
+
 # GNOME extensions are handled by the extension-set script via gext.
 # Ensure gext is installed (via pipx) before installing extensions.
 if [[ "$desktop" == "gnome" ]]; then
@@ -366,8 +373,11 @@ if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides || true
 fi
 
-# Create a snapshot capturing the DE-installed state.
-"$script_dir/../system/snapshot-fresh-install.sh" "$desktop Setup"
+# Create a snapshot capturing the DE-installed state. Not fatal: on a machine
+# where `ucli setup-snapshots` has not run yet there is no snapper config, and
+# failing the whole desktop setup over a restore point would be silly.
+"$script_dir/../system/snapshot-fresh-install.sh" "$desktop Setup" \
+  || echo "warning: snapshot skipped (no snapper config yet — run 'ucli setup-snapshots')" >&2
 
 echo "Desktop $desktop installed and snapshot created."
 echo "Next: run 'ucli setup-snapshots' (if not already done), then 'ucli devmode' and 'ucli apps'."

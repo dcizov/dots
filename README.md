@@ -15,47 +15,68 @@ All package decisions are backed by the [Arch Linux package database](https://ar
 
 ## Fresh install on Arch minimal (console → GUI)
 
-After archinstall with minimal profile, reboot, log in to console, then:
+The pipeline, in order. Every step is idempotent and every step is also
+runnable on its own (`setup-desktop`, `setup-extensions`, `setup-apps`), so you
+can stop in between, inspect, and continue.
 
 ```bash
-# 1. Bootstrap chezmoi/ucli
-curl -fsSL https://install.wtfaq.tech | bash   # or run install.sh manually
-#   --yes skips the confirmation prompt
-#   --dry-run shows what would happen without changes
+# 0. archinstall (minimal profile), reboot, log in to the console
 
-# 2. Deploy dotfiles
+# 1. bootstrap chezmoi/ucli
+curl -fsSL https://install.wtfaq.tech | bash   # --yes / --dry-run
+
+# 2. deploy dotfiles
 chezmoi apply -v
 
-# 3. Install desktop environment + create snapshot
-just setup-desktop          # full DE set, prompts: gnome / hyprland / kde
-# or interactively pick package groups:
-sudo setup-desktop.sh --choose gnome
+# 3. snapshots first, so everything after this point is reversible
+ucli setup-snapshots        # snapper + limine, creates snapshot #1
+ucli snapshot               # optional extra "clean machine" snapshot
 
-# 4. Debloat packages you don't need (optional, after step 3)
-just debloat-desktop
+# 4. the machine: base packages + the desktop you want
+ucli setup-system gnome     # gnome | kde | hyprland
+#    = bootstrap, cpu/gpu, system tools, fonts, ucli runtime
+#    + DE with the replacement matrix + ghostty + firefox
+#    + GNOME extensions (if gnome) + a "<DE> Setup" snapshot
 
-# 5. System-level Snapper/Limine setup
-ucli setup-snapshots
+# 5. optional: drop DE packages you never use (snapshot first, it is reversible)
+ucli debloat-desktop
 
-# 6. Shell experience (oh-my-zsh, plugins, prompt) — optional but expected
+# 6. extensions only (gnome) — same work step 4 did, rerunnable
+ucli setup-extensions
+
+# 7. the shell: stock zsh + the ucli layer
 ucli cli
 
-# 7. Dev packages + personal apps
-ucli devmode
+# 8. the apps: flatpaks, AUR, pacman, Firefox config
 ucli apps
 
-# 8. Backup your GNOME configuration (after customizing it)
-ucli backup-gnome-settings
+# 9. optional: developer stack
+ucli devmode
 ```
 
-On **CachyOS**, skip steps 1, 3, 5 — Calamares already did DE + Snapper/Limine. Just:
+What each layer actually puts on disk:
+
+| Layer | Comes from | Contents |
+|---|---|---|
+| dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty`, `~/.config/mozilla` |
+| system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
+| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **ghostty**, **firefox**, GNOME extension set, snapshot |
+| shell | `ucli cli` | oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, `chsh -s zsh`, cosmetic tooling (starship, eza, bat, zoxide, atuin, tealdeer, glow, fzf) |
+| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + Betterfox `user.js`, extension list, Firefox GNOME theme |
+| dev | `ucli devmode` | `DEV_CLI` plumbing + `DEV` stack + dev box |
+
+`ucli cli` on top of a plain zsh: oh-my-zsh + plugins is the standard setup, and
+the ucli layer rides on it through `plugins=()` and `~/.config/zsh/conf.d/*`
+(deployed by chezmoi, so `ucli chezmoi-apply` refreshes it). Nothing in that
+layer is ucli-specific magic — the same files work in the dev box.
+
+On **CachyOS**, skip steps 3–6 — Calamares already did DE + Snapper/Limine:
 
 ```bash
 chezmoi init --apply https://github.com/dcizov/dots.git
 ucli cli                     # shell tier (optional)
-ucli devmode
-ucli apps
-ucli backup-gnome-settings   # optional, after customizing GNOME
+ucli apps                    # apps, flatpaks, Firefox config (also adds ghostty/firefox)
+ucli devmode                 # optional
 ```
 
 ## Snapshot-only path (skip chezmoi initially)
@@ -201,6 +222,7 @@ Four package tiers live in `private_dot_config/ucli/packages.bash`:
 | Tier | What it is | Installed by |
 |---|---|---|
 | `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
+| `DESKTOP_ESSENTIALS` | `ghostty` + `firefox` — the terminal and browser the dotfiles assume | `desktop` mode → `ucli setup-system`/`setup-desktop`; also `ucli apps` |
 | `CLI` | the shell tier: `starship bat eza zoxide atuin tealdeer glow fzf` **plus** what `install-shell.sh` does — oh-my-zsh, the four plugin clones into `$ZSH_CUSTOM/plugins`, and `chsh -s zsh` | `ucli cli` |
 | `DEV_CLI` | engineering plumbing: `jq yq ripgrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
 | `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin` | `ucli devmode` (`--force` bypasses the role check) |
@@ -210,6 +232,10 @@ plumbing. `ucli cli` pulls its own prerequisites first (`SHELL_DEPS`: zsh, git,
 curl), so it works on a machine that never ran `ucli setup-system`.
 `ucli full-profile` (a.k.a. `install-packages.sh full`) is
 `base + cli + dev + gaming`.
+
+`base` does not install a desktop: `setup-desktop.sh` owns that step, so the
+skip/replace matrix, ghostty/firefox, the extension set and the snapshot all
+happen in one place. `install-packages.sh full` still includes `desktop`.
 
 `base` installs the zsh *binary* (it is in `BOOTSTRAP`, and the dev box and the
 dotfiles expect it) but takes no opinion on your login shell — oh-my-zsh,

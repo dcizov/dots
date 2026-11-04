@@ -6,7 +6,8 @@ usage() {
 usage: install-packages.sh [--dry-run] [--yes] [--distro=ID] [--cpu=VENDOR] [--gpu=VENDOR] [--desktop=DE] [--base-desktop] [--additions-only] MODE
 
 Modes:
-  base            bootstrap + cpu + gpu + zsh + system-tools + fonts + desktop
+  base            bootstrap + cpu + gpu + zsh + system-tools + fonts + ucli runtime
+                  (desktop is setup-desktop's job; full includes it)
   bootstrap       packages needed for chezmoi/ucli bootstrap
   ucli-runtime    ucli's own helpers (gum menus, pipx) — part of base
   cli             opt-in shell cosmetics (starship, eza, bat, zoxide, …)
@@ -16,8 +17,9 @@ Modes:
   cpu             CPU microcode
   gpu             GPU support
   fonts           fonts/themes
-  desktop         desktop environment packages
-  apps            personal apps and desktop overrides, excluding shell overrides
+  desktop         desktop environment packages (+ ghostty, firefox)
+  essentials      ghostty + firefox only (used by setup-desktop)
+  apps            desktop essentials (ghostty, firefox) + personal apps and overrides
   shell-overrides explicit shell override packages
   dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
@@ -180,6 +182,11 @@ select_desktop() {
     none|"") echo "No desktop detected/configured; skipping desktop packages" ;;
     *) echo "Unsupported desktop: $desktop" >&2; exit 1 ;;
   esac
+
+  # ghostty + firefox: desktop-agnostic, and the dotfiles assume both exist.
+  if [[ "$desktop" != none && -n "$desktop" ]]; then
+    add_array DESKTOP_ESSENTIALS
+  fi
 }
 
 select_packages() {
@@ -213,8 +220,10 @@ select_packages() {
       case "$gpu" in amd) add_array GPU_AMD ;; intel) add_array GPU_INTEL ;; nvidia) add_array GPU_NVIDIA ;; *) echo "Unknown GPU: $gpu" >&2 ;; esac
       ;;
     fonts) add_array FONTS_THEMES ;;
+    essentials) add_array DESKTOP_ESSENTIALS ;;
     desktop) select_desktop ;;
     apps)
+      add_array DESKTOP_ESSENTIALS   # ghostty + firefox, idempotent with desktop mode
       add_array APPS
       add_array MANUAL_AUR       # shelly (AUR) — installed via the AUR helper
       case "$desktop" in gnome) add_array GNOME_APP_OVERRIDES ;; esac
@@ -243,6 +252,9 @@ select_packages() {
       add_array SNAPSHOT_LIMINE
       ;;
     base|first-install)
+      # No desktop here: setup-desktop.sh owns that step (replacement matrix,
+      # ghostty/firefox, GNOME extensions, snapshot). `ucli setup-system` chains
+      # into it; `install-packages.sh desktop` remains for manual use.
       select_packages ucli-runtime
       select_packages bootstrap
       select_packages cpu
@@ -250,10 +262,10 @@ select_packages() {
       select_packages zsh
       select_packages system-tools
       select_packages fonts
-      select_packages desktop
       ;;
     full)
       select_packages base
+      select_packages desktop
       select_packages cli
       select_packages dev
       select_packages gaming

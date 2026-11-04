@@ -18,6 +18,12 @@ _check:
 _snapshots-dry-run:
     sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh --dry-run
 
+# Create a named Snapper snapshot (needs `ucli setup-snapshots` first).
+[group('System')]
+snapshot desc="Fresh Arch Linux Installation":
+    # create a snapper snapshot with a description
+    @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh "{{desc}}"
+
 # Internal fresh-install snapshot helper. setup-snapshots calls this in its script.
 _fresh-snapshot:
     @sudo ~/.local/share/ucli/scripts/system/snapshot-fresh-install.sh
