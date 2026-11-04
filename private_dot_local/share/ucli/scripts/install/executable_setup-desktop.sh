@@ -188,7 +188,7 @@ if (( choose )); then
   choose_one() {
     local prompt="$1"; shift
     if command -v gum >/dev/null 2>&1; then
-      printf '%s\n' "$@" | gum choose --prompt "$prompt " --header "$desktop packages"
+      printf '%s\n' "$@" | gum choose --header "$desktop packages"
     elif command -v fzf >/dev/null 2>&1; then
       printf '%s\n' "$@" | fzf --prompt "$prompt " --header "$desktop packages" --multi
     else
