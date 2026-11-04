@@ -4,14 +4,13 @@
 # Usage:
 #   install-firefox-extensions.sh <extensions-file>
 #
-# Downloads XPI files from addons.mozilla.org and places them in each
-# Firefox profile's extensions/ directory with the extension ID as filename.
-# Firefox detects and installs them on next startup.
+# Downloads XPI files from addons.mozilla.org and installs them into each
+# Firefox profile using `firefox --install-extension <xpi-path>`.
 #
-# firefox --install-extension <id> does NOT work with extension IDs — it
-# expects XPI file paths. Direct profile placement is the reliable userspace
-# method (see https://dev.to/alanwest/how-to-programmatically-install-firefox-extensions-and-why-it-breaks-2b01).
+# `firefox --install-extension <id>` does NOT work with extension IDs — it
+# expects XPI file paths. Downloading XPIs first is the reliable method.
 #
+# Source: https://dev.to/alanwest/how-to-programmatically-install-firefox-extensions-and-why-it-breaks-2b01
 set -euo pipefail
 
 EXT_FILE="${1:?usage: install-firefox-extensions.sh <extensions-file>}"
@@ -38,6 +37,8 @@ if [[ -z "$PROFILE_DIR" ]]; then
   exit 0
 fi
 
+echo "Firefox profile dir: $PROFILE_DIR"
+
 # Map extension IDs to AMO slugs for XPI download
 declare -A AMO_SLUGS=(
   ["bitwarden-browser-extension@bitwarden.com"]="bitwarden-password-manager"
@@ -61,60 +62,59 @@ if ((${#ext_ids[@]} == 0)); then
   exit 0
 fi
 
-# Download XPIs and install into each profile
+# Download XPIs to temp dir
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-count=0
-skipped=0
+xpi_paths=()
 
 for ext_id in "${ext_ids[@]}"; do
   slug="${AMO_SLUGS[$ext_id]:-}"
   if [[ -z "$slug" ]]; then
     echo "warning: no AMO slug mapping for $ext_id; skipping" >&2
-    skipped=$((skipped + 1))
     continue
   fi
 
   xpi_url="https://addons.mozilla.org/firefox/downloads/latest/${slug}/latest.xpi"
-  xpi_file="$tmpdir/${ext_id}.xpi"
+  xpi_file="$tmpdir/${slug}.xpi"
 
-  echo "==> downloading $ext_id ..."
-  if ! curl -fsSL "$xpi_url" -o "$xpi_file" 2>/dev/null; then
+  echo "==> downloading $ext_id ($slug) ..."
+  if ! curl -fsSL -A "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0" \
+       "$xpi_url" -o "$xpi_file" 2>/dev/null; then
     echo "    warning: failed to download $ext_id from AMO" >&2
-    skipped=$((skipped + 1))
     continue
   fi
-  echo "    downloaded: $ext_id"
 
-  # Install into each Firefox profile (filename must be extension ID)
-  profiles_found=0
-  while IFS= read -r line; do
-    path="${line#Path=}"
-    if [[ "$path" != "$line" ]]; then
-      if [[ "$path" == /* ]]; then
-        prof_dir="$path"
-      else
-        prof_dir="$PROFILE_DIR/$path"
-      fi
-      if [[ -d "$prof_dir" ]]; then
-        ext_dir="$prof_dir/extensions"
-        mkdir -p "$ext_dir"
-        cp -f "$xpi_file" "$ext_dir/${ext_id}.xpi"
-        echo "    installed to $prof_dir/extensions/${ext_id}.xpi"
-        profiles_found=1
-      fi
-    fi
-  done < <(grep '^Path=' "$PROFILE_DIR/profiles.ini" 2>/dev/null || true)
-
-  if (( profiles_found )); then
-    count=$((count + 1))
-  else
-    echo "    warning: no Firefox profiles found for $ext_id" >&2
-    skipped=$((skipped + 1))
+  # Verify it's a valid ZIP/XPI
+  if ! command -v unzip >/dev/null 2>&1 || ! unzip -t "$xpi_file" >/dev/null 2>&1; then
+    echo "    warning: downloaded file is not a valid XPI for $ext_id" >&2
+    rm -f "$xpi_file"
+    continue
   fi
+
+  echo "    downloaded: $ext_id ($(du -h "$xpi_file" | cut -f1))"
+  xpi_paths+=("$xpi_file")
 done
 
+if ((${#xpi_paths[@]} == 0)); then
+  echo "error: no extensions downloaded successfully" >&2
+  exit 1
+fi
+
+# Install all XPIs in a single Firefox launch
+echo "==> installing ${#xpi_paths[@]} extension(s) via firefox --install-extension ..."
+if firefox --install-extension "${xpi_paths[@]}" >/dev/null 2>&1; then
+  echo "    all extensions installed successfully"
+else
+  echo "warning: batch install failed, trying individually..." >&2
+  for xpi in "${xpi_paths[@]}"; do
+    if firefox --install-extension "$xpi" >/dev/null 2>&1; then
+      echo "    installed: $xpi"
+    else
+      echo "    warning: failed to install $xpi" >&2
+    fi
+  done
+fi
+
 echo
-echo "==> done. $count installed, $skipped skipped/failed."
-echo "    Restart Firefox to activate new extensions."
+echo "==> done. Restart Firefox to activate new extensions."
