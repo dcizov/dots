@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Set up a desktop environment and snapshot afterwards.
 #
-# Usage: sudo setup-desktop.sh [--choose] [--no-snapshot] [gnome|hyprland|kde]
+# Usage: sudo setup-desktop.sh [--choose] [--no-snapshot] [--force] [gnome|hyprland|kde]
 #
 # Installs the desktop package set, then the firefox + terminal pair that desktop
 # is configured for, then the shell tier, then GNOME extensions, then applies the
-# dotfiles that need those programs to exist, then snapshots as "<DE> Setup".
+# dotfiles that need those programs to exist, then configures Firefox (profile,
+# Betterfox user.js, GNOME theme), then snapshots as "<DE> Setup".
 #
 # Intended for Arch minimal (archinstall) post-console-first-boot flow:
 #   1. curl -fsSL .../dcizov/dots/main/install.sh | bash   # git, chezmoi, just, ucli
@@ -15,6 +16,7 @@
 #
 # Run it plainly, or with --no-snapshot to install without the "<DE> Setup"
 # restore point (the same flag every other snapshot in the repo honours).
+# --force re-runs the gated Firefox steps (Betterfox copy, GNOME theme).
 #
 # Everything a TTY-only machine needs before step 3 is ucli itself: until the
 # desktop exists, .chezmoiignore keeps ~/.zshrc, starship, ~/.config/ghostty and
@@ -23,12 +25,14 @@ set -euo pipefail
 
 choose=0
 take_snapshot=1
+firefox_force=0
 while (($#)); do
   case "$1" in
     --choose) choose=1 ;;
     --no-snapshot) take_snapshot=0 ;;
+    --force) firefox_force=1 ;;
     --help|-h)
-      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"
       exit 0
       ;;
     -*) echo "unknown option: $1" >&2; exit 2 ;;
@@ -38,7 +42,7 @@ while (($#)); do
 done
 
 if (( EUID != 0 )); then
-  echo "Run as root: sudo $0 [--choose] <gnome|hyprland|kde>" >&2
+  echo "Run as root: sudo $0 [--choose] [--no-snapshot] [--force] <gnome|hyprland|kde>" >&2
   exit 1
 fi
 
@@ -421,6 +425,21 @@ if [[ "$desktop" == "gnome" ]]; then
   # System extensions first, then user/personal overrides.
   "$script_dir/install-gnome-extension-set.sh" system || true
   "$script_dir/install-gnome-extension-set.sh" overrides || true
+fi
+
+# Firefox ships configured: the profile, the Betterfox user.js and (on GNOME) the
+# GNOME theme are part of installing the browser, not of the later `ucli apps`
+# step. Runs after the chezmoi apply above so ~/.config/ucli/firefox/user.js
+# exists, and as the real user so the profile is user-owned. Not fatal.
+if [[ -x "$script_dir/install-firefox-profile.sh" ]]; then
+  fx_label="Betterfox"
+  [[ "$desktop" == "gnome" ]] && fx_label="Betterfox + GNOME theme"
+  echo "Configuring Firefox for $real_user ($fx_label) ..."
+  fx_args=()
+  (( firefox_force )) && fx_args+=(--force)
+  runuser -u "$real_user" -- env HOME="$real_home" "$script_dir/install-firefox-profile.sh" \
+    ${fx_args[@]+"${fx_args[@]}"} \
+    || echo "warning: Firefox profile setup failed; run 'ucli apps' as $real_user" >&2
 fi
 
 # Create a snapshot capturing the DE-installed state. Not fatal: on a machine

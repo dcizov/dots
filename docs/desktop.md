@@ -17,7 +17,11 @@ Edit `DESKTOP_SKIP_<DE>` and `DESKTOP_REPLACE_<DE>` in `packages.bash` to custom
 
 ### The terminal is chosen per desktop
 
-`setup-desktop` installs firefox everywhere, and then one terminal:
+`setup-desktop` installs firefox everywhere — and configures it in the same
+step: a profile is created headlessly, the Betterfox `user.js` is copied in, and
+on GNOME firefox-gnome-theme is installed, all before the `<DE> Setup` snapshot.
+`ucli apps` only adds the extension list and calls the same script. Then one
+terminal:
 
 | Desktop | Terminal array | Why |
 |---|---|---|

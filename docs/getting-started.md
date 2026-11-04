@@ -123,7 +123,8 @@ This is the one big compound step. `install-profile.sh` runs these in order:
 | 6 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
 | 7 | dotfiles | `chezmoi apply` as you — now that the programs exist, `~/.zshrc`, `~/.config/zsh`, `starship.toml`, `~/.config/ghostty`, `~/.config/ucli/firefox` deploy |
 | 8 | GNOME extensions | `gext` via pipx, then the `system` and `overrides` extension sets (GNOME only) |
-| 9 | snapshot | `<DE> Setup` |
+| 9 | Firefox profile | creates the profile headlessly, copies the Betterfox `user.js` into it, and on GNOME installs firefox-gnome-theme |
+| 10 | snapshot | `<DE> Setup` |
 
 On CachyOS, microcode, GPU and bootloader support are skipped — `chwd` and the
 installer own them.
@@ -136,6 +137,7 @@ load with the session.
 | `ucli setup-system kde` / `hyprland` | pick the desktop explicitly (omit it to auto-detect, then prompt) |
 | `--no-snapshot` | no restore points this run — forwarded to every snapshot, including the desktop one |
 | `--yes` | do not ask about the missing-snapper warning |
+| `--force` | re-run the gated Firefox steps (Betterfox copy, GNOME theme) |
 
 **Check it**
 
@@ -153,7 +155,7 @@ Each is independent; run what you want, when you want.
 | Command | Installs | Notes |
 |---|---|---|
 | `ucli cli` | `CLI`: atuin, bat, eza, fzf, glow, tealdeer, zoxide | re-runs the shell tier first, so it works even if you skipped step 3 |
-| `ucli apps` | `APPS` + `APP_FLATPAKS` + `MANUAL_AUR` (shelly), then the Firefox profile bootstrap, Betterfox `user.js`, the extension list, and the GNOME theme on GNOME | Firefox + terminal are included, so this also works as a one-shot "give me a browser" |
+| `ucli apps` | `APPS` + `APP_FLATPAKS` + `MANUAL_AUR` (shelly), then the Firefox extension list and the GNOME override extension set | Firefox + terminal are included, so this also works as a one-shot "give me a browser" — and the profile config (Betterfox, theme) comes with it via the shared script |
 | `ucli devmode` | wizard: dev CLI (jq, ripgrep, tmux, neovim, mise, …), dev stack (podman, docker, distrobox, vscodium), dev flatpaks, VSCodium extensions, Firefox dev extensions, the Debian dev box | `--all` everything, `--status`, `--reset`; re-running offers "add more?" |
 | `ucli gaming` | `GAMING`: steam, mangohud, gamemode + 32-bit bits | role-gated; `--force` overrides |
 
@@ -239,7 +241,7 @@ Three things are skipped when their input has not changed, so a re-run is instan
 | Gate | Keyed on | Force with |
 |---|---|---|
 | `gnome-extensions-system`, `-overrides` | hash of `packages.bash` | `ucli setup-extensions --force` |
-| `firefox-betterfox` | hash of `~/.config/ucli/firefox/user.js` | `ucli apps --force` |
+| `firefox-betterfox` | hash of `~/.config/ucli/firefox/user.js` | `ucli setup-desktop --force` (or `ucli apps --force`) |
 | `vscodium-extensions` | hash of `extensions.txt` | `ucli vscodium-extensions --force` |
 
 `ucli state` lists them with their hashes. Gates only commit on success, so a

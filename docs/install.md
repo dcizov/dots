@@ -81,10 +81,10 @@ What each layer actually puts on disk:
 | bootstrap | `install.sh` | `~/.local/bin/ucli`, `~/.config/ucli`, `~/.local/share/ucli`, `~/.bash_profile` (`~/.local/bin` on PATH) |
 | dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty` or `~/.config/kitty`, `~/.config/ucli/firefox` (copied into every Firefox profile) |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools, fonts, gum + pipx |
-| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), GNOME extension set, `chezmoi apply`, snapshot |
+| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), GNOME extension set, `chezmoi apply`, the Firefox profile (Betterfox `user.js` + GNOME theme), then a snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
 | cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
-| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + a headless first run of Firefox if it has no profile yet, then Betterfox `user.js`, the extension list and the Firefox GNOME theme |
+| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + the Firefox extension list + the GNOME override extension set. The Firefox *profile* (Betterfox, GNOME theme) belongs to the browser: the desktop step installs it, and `ucli apps` calls the same script so it still works when Firefox is installed from here |
 | dev | `ucli devmode` | `DEV_CLI` plumbing + `DEV` stack + dev box |
 
 `ucli cli` on top of a plain zsh: oh-my-zsh + plugins + starship is the standard

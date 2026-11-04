@@ -21,7 +21,7 @@ setup-cli:
 # Alias of `ucli apps`, for symmetry with setup-system/setup-desktop/setup-cli.
 [group('Install')]
 setup-apps *ARGS:
-    # alias of `ucli apps`: firefox + terminal + personal apps, flatpaks, Firefox config
+    # alias of `ucli apps`: firefox + terminal + personal apps, flatpaks, Firefox extensions
     @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
 # `ucli devmode` flags:
@@ -45,6 +45,7 @@ gaming:
 [group('Install')]
 apps *ARGS:
     # personal apps and desktop overrides (bitwarden, firefox, spotify flatpak, …)
+    # the Firefox profile itself (Betterfox, GNOME theme) comes with the browser
     @~/.local/share/ucli/scripts/install/install-overrides.sh {{ARGS}}
 
 # Install paru idempotently (AUR helper).

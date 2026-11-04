@@ -29,7 +29,7 @@ Every package list lives in `private_dot_config/ucli/packages.bash`:
 | Tier | What it is | Installed by |
 |---|---|---|
 | `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
-| `DESKTOP_BROWSER` | `firefox` — the browser the dotfiles configure (Betterfox `user.js`, extension list, GNOME theme) | `desktop` mode → `ucli setup-system`/`setup-desktop`; `ucli apps` always, even when no desktop is detected |
+| `DESKTOP_BROWSER` | `firefox` — the browser the dotfiles configure. The config ships with the browser: `setup-desktop` creates the profile, copies the Betterfox `user.js` and (on GNOME) installs firefox-gnome-theme before its snapshot. Only the extension list is opted in later, via `ucli apps` | `desktop` mode → `ucli setup-system`/`setup-desktop`; `ucli apps` always, even when no desktop is detected |
 | `DESKTOP_TERMINAL_GNOME` | `ghostty` — GTK4, already inside the Adwaita stack | same, plus `ucli apps` when the desktop is known |
 | `DESKTOP_TERMINAL_HYPRLAND` | `ghostty` — native wlroots/Wayland client, honours window rules; `kitty` is no longer in `DESKTOP_HYPRLAND_BASE` | same, plus `ucli apps` when the desktop is known |
 | `DESKTOP_TERMINAL_KDE` | `kwi` — KDE's new terminal (Qt Quick + Kirigami, GPU-rendered, libghostty-vt underneath); AUR-only today as `kwi-git`, so the AUR resolver maps the name, and Konsole from the `plasma` group is the safety net | same, plus `ucli apps` when the desktop is known |
@@ -121,7 +121,7 @@ Steps that are slow or hit the network are gated by a content hash
 | VSCodium extensions | hash of `extensions.txt` | the list changes |
 
 `--force` redoes the work anyway (`ucli setup-extensions --force`,
-`ucli apps --force`, `ucli vscodium-extensions --force`). A gate is only
+`ucli setup-desktop --force` / `ucli apps --force`, `ucli vscodium-extensions --force`). A gate is only
 committed after the step succeeded, so a failed run is retried next time instead
 of being skipped forever. `ucli state` prints the committed gates, and
 `ucli doctor` lists them next to the rest of the machine's health.

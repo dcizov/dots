@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# Personal apps and desktop overrides (this is `ucli apps`).
+#
+#   packages   APPS + this desktop's app overrides, MANUAL_AUR (shelly), firefox
+#              and the desktop's terminal (idempotent with setup-desktop.sh)
+#   flatpaks   APP_FLATPAKS + this desktop's flatpaks
+#   firefox    profile + Betterfox + GNOME theme via install-firefox-profile.sh
+#              (shared with setup-desktop.sh, so normally already done), then the
+#              extension list — the only part of Firefox that is personal
+#   gnome      the "overrides" GNOME extension set, on GNOME only
+#
+# Usage: install-overrides.sh [--force]
+#   --force re-runs the versioned steps (Betterfox copy, override extension set)
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -6,13 +18,11 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
-# --force re-runs the versioned steps (Betterfox copy, GNOME extension sets) even
-# when their content hash says nothing changed.
 force_args=()
 for arg in "$@"; do
   case "$arg" in
     --force) force_args=(--force) ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -26,67 +36,25 @@ desktop="$(detect_desktop 2>/dev/null || echo none)"
 "$script_dir/install-packages.sh" apps
 "$script_dir/install-flatpaks.sh" apps
 
-# Firefox writes user.js and extensions into a *profile*, and a profile only
-# exists after Firefox has started once. On a fresh machine that used to mean
-# both steps below silently skipped themselves and you ended up with a stock
-# browser. Create the profile headlessly instead of asking the user to remember.
 fx_lib="$real_home/.config/ucli/scripts/lib/firefox.sh"
 if [[ -r "$fx_lib" ]]; then
   # shellcheck source=/dev/null
   source "$fx_lib"
 else
-  echo "warning: $fx_lib missing; Firefox profile handling is skipped (run: ucli chezmoi-apply)" >&2
+  echo "warning: $fx_lib missing; Firefox handling is skipped (run: ucli chezmoi-apply)" >&2
   exit 1
 fi
 
-firefox_profiles_ini() {
-  local root
-  root="$(fx_profile_root "$real_home")"
-  [[ -f "$root/profiles.ini" ]] || return 1
-  printf '%s\n' "$root/profiles.ini"
-}
+# Everything that makes Firefox a configured browser — profile creation, Betterfox
+# user.js, and on GNOME the GNOME theme — lives with the browser, not here. The
+# desktop step already ran it; this call keeps `ucli apps` self-sufficient when
+# firefox is installed from this path, and is a no-op otherwise.
+"$script_dir/install-firefox-profile.sh" ${force_args[@]+"${force_args[@]}"} || true
 
-firefox_headless() {
-  # --screenshot exits on its own once it has written the file, which is the
-  # cheapest way to make Firefox create its profile and quit. Older builds may
-  # not exit, so everything is wrapped in timeout and failures are ignored.
-  local shot
-  shot="$(mktemp -u "${TMPDIR:-/tmp}/ucli-firefox-XXXXXX.png")"
-  if [[ "$EUID" -eq 0 ]]; then
-    runuser -u "$real_user" -- timeout 40 firefox --headless --screenshot "$shot" about:blank \
-      >/dev/null 2>&1 || true
-  else
-    timeout 40 firefox --headless --screenshot "$shot" about:blank >/dev/null 2>&1 || true
-  fi
-  rm -f "$shot"
-}
-
-ensure_firefox_profile() {
-  firefox_profiles_ini >/dev/null && return 0
-  if ! command -v firefox >/dev/null 2>&1; then
-    echo "warning: firefox is not installed; skipping profile setup" >&2
-    return 0
-  fi
-  echo "Firefox has no profile yet; creating one headlessly ..."
-  firefox_headless
-  if firefox_profiles_ini >/dev/null; then
-    echo "Firefox profile created."
-  else
-    echo "warning: could not create a Firefox profile; launch Firefox once, then re-run 'ucli apps'" >&2
-  fi
-}
-
-ensure_firefox_profile
-
-# Firefox Betterfox user.js — applies on all desktops (Firefox is desktop-agnostic).
-# The profile now exists by construction: ensure_firefox_profile above.
-"$script_dir/install-firefox-betterfox.sh" ${force_args[@]+"${force_args[@]}"} || true
-
-# Firefox extensions (regular) — same profile, now guaranteed above
+# The extension lists stay in apps on purpose: which add-ons you want (and which
+# dev add-ons, via ucli devmode) is personal, the config above is not.
 "$script_dir/install-firefox-extensions.sh" "$(fx_config_dir "$real_home")/extensions.txt" || true
 
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" overrides ${force_args[@]+"${force_args[@]}"} || true
-  # Firefox GNOME theme — only makes sense on GNOME desktop (same profile)
-  "$script_dir/install-firefox-gnome-theme.sh" || true
 fi

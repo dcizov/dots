@@ -9,21 +9,25 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # Args: an optional desktop name, plus the flags shared by the machine-setup steps.
 #   --no-snapshot   no restore point before or after (also UCLI_NO_SNAPSHOT=1)
 #   --yes           assume yes for the preflight question
+#   --force         re-run the gated Firefox steps in the desktop step
 desktop=""
 take_snapshot=1
+firefox_force=0
 for arg in "$@"; do
   case "$arg" in
     --no-snapshot) take_snapshot=0 ;;
     --yes|-y) UCLI_YES=1 ;;
+    --force) firefox_force=1 ;;
     --help|-h)
       cat <<'EOF'
-usage: install-profile.sh [--no-snapshot] [--yes] [gnome|kde|hyprland]
+usage: install-profile.sh [--no-snapshot] [--yes] [--force] [gnome|kde|hyprland]
 
 The machine step: base packages, then the desktop step (DE, firefox + terminal,
-shell tier, dotfiles, GNOME extensions, snapshot).
+shell tier, dotfiles, GNOME extensions, Firefox profile, snapshot).
 
   --no-snapshot   skip every Snapper snapshot of this run (UCLI_NO_SNAPSHOT=1 too)
   --yes           do not ask when there is no snapper config
+  --force         re-run the gated Firefox steps (Betterfox copy, GNOME theme)
 EOF
       exit 0
       ;;
@@ -73,6 +77,7 @@ sudo "$script_dir/../system/snapshot-fresh-install.sh" ${pre_args[@]+"${pre_args
 desktop_args=()
 [[ -n "$desktop" ]] && desktop_args+=("$desktop")
 (( take_snapshot )) || desktop_args+=(--no-snapshot)
+(( firefox_force )) && desktop_args+=(--force)
 if [[ -x "$script_dir/setup-desktop.sh" ]]; then
   sudo "$script_dir/setup-desktop.sh" ${desktop_args[@]+"${desktop_args[@]}"}
 else
