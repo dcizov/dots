@@ -231,15 +231,26 @@ DEV=(
 )
 
 # Performance / profiling tooling: the set Ubuntu ships for that purpose and
-# Bluefin's DX image follows (Brendan Gregg's list). `perf` is Linux's own
-# profiler; bcc/bpftrace are the eBPF front ends; sysprof is the graphical one
-# GNOME apps are profiled with.
+# Bluefin's DX image follows (Brendan Gregg's list), from the Ubuntu spec
+# "Include performance tooling in Ubuntu". `perf` is Linux's own profiler;
+# bcc/bpftrace are the eBPF front ends; sysprof is the graphical one GNOME apps
+# are profiled with; sysstat is the historical metrics set (sar/iostat/mpstat);
+# trace-cmd drives ftrace; numactl pins and reports NUMA placement.
+#
+# Ubuntu's list also names `iproute2` and `util-linux`. Both are deliberately
+# absent here: on Arch they are already in `base` (iproute2 for `ip`/`ss`,
+# util-linux for `lscpu`/`lsblk`/`taskset`), so listing them would be noise.
+# `bcc` needs `python-bcc` — the tools in /usr/share/bcc/tools are Python and
+# Arch ships the bindings as a separate package (its pkgbase is still `bcc`).
 #
 # Left out on purpose:
 #   nicstat — AUR only and last touched in 2015. `ip -s link` and `sar -n DEV`
 #             answer the same question, and this repo does not ship unmaintained
 #             packages just because another distro's list has them.
-#   tiptop  — Bluefin lists it; Arch has no package and no live AUR entry.
+#   tiptop  — AUR only (2.3.1-2, maintained, but the PKGBUILD has not moved since
+#             2022). It is a TUI for hardware performance counters, which is
+#             `perf stat -a` plus `turbostat` from the linux-tools group — not
+#             worth an AUR build for a 2014-era tool.
 #
 # `perf` comes from Arch's `linux-tools`, so it is built against the `linux`
 # kernel. On linux-zen / linux-cachyos* it still profiles userspace, but
@@ -250,6 +261,7 @@ DEV_PERF=(
   perf
   sysprof
   bcc
+  python-bcc
   bpftrace
   sysstat
   trace-cmd
