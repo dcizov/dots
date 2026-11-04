@@ -7,7 +7,7 @@
 #
 # Restores:
 #   - dconf settings: /org/gnome/desktop/, /org/gnome/shell/, /org/gnome/shell/extensions/
-#   - Enabled extensions: reads enabled-extensions.txt and enables each
+#   - Enabled extensions: reads enabled-extensions.txt and enables each via gext
 #
 # ArchWiki references:
 #   - https://wiki.archlinux.org/title/Dconf (dconf backup/restore)
@@ -22,8 +22,13 @@ if ! command -v dconf >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v gnome-extensions >/dev/null 2>&1; then
-  echo "missing required command: gnome-extensions (package: gnome-shell-extensions)" >&2
+# gext is installed by pipx to ~/.local/bin; add to PATH if present
+if [[ -d "$HOME/.local/bin" ]]; then
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+if ! command -v gext >/dev/null 2>&1; then
+  echo "missing required command: gext (install with: ucli install-gnome-extensions-cli)" >&2
   exit 1
 fi
 
@@ -51,12 +56,12 @@ load_if_present /org/gnome/desktop/ desktop.dconf
 load_if_present /org/gnome/shell/ shell.dconf
 load_if_present /org/gnome/shell/extensions/ extensions.dconf
 
-# --- Re-enable extensions ---
+# --- Re-enable extensions via gext (consistent with install-gnome-extension-set.sh) ---
 if [[ -s "$input_dir/enabled-extensions.txt" ]]; then
-  echo "Re-enabling GNOME extensions..."
+  echo "Re-enabling GNOME extensions via gext..."
   while IFS= read -r uuid; do
     [[ -z "$uuid" ]] && continue
-    gnome-extensions enable "$uuid" 2>/dev/null || \
+    gext enable "$uuid" 2>/dev/null || \
       echo "  warning: could not enable $uuid (may not be installed yet)" >&2
   done < "$input_dir/enabled-extensions.txt"
 else

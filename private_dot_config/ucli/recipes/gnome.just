@@ -1,12 +1,8 @@
 # GNOME menu. Use `ucli --choose` to pick a GNOME recipe interactively.
 [group('GNOME')]
 gnome:
-    # apply managed GNOME dconf settings profile
-    @~/.local/share/ucli/scripts/install/apply-gnome-settings.sh
-
-# Apply managed GNOME dconf settings profile.
-_apply-settings:
-    @~/.local/share/ucli/scripts/install/apply-gnome-settings.sh
+    # apply managed GNOME dconf settings profile + re-enable extensions
+    @~/.local/share/ucli/scripts/install/restore-gnome-settings.sh
 
 # Analyze GNOME package/extension state.
 _analyze:
@@ -28,8 +24,4 @@ _restore-extensions dir:
 _restore-desktop dir:
     @~/.local/share/ucli/scripts/gnome/gnome-settings.sh restore-desktop "{{dir}}"
 
-# Install user-managed GNOME extensions via gnome-extensions-cli (gext).
-# Installs personal extensions (BetterTrayIcons, user-accent-colors,
-# just-perfection, copyous, gnome-ui-tune, logomenu, etc.)
-_user-extensions:
-    @~/.local/share/ucli/scripts/install/install-gnome-user-extensions.sh
+

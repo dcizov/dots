@@ -13,8 +13,3 @@ desktop="$(detect_desktop 2>/dev/null || echo none)"
 "$script_dir/install-packages.sh" desktop
 # Fonts and themes are needed by backed-up settings (Ghostty, Adwaita, Papirus)
 "$script_dir/install-packages.sh" fonts
-
-if [[ "$desktop" == "gnome" ]]; then
-  "$script_dir/install-gnome-extension-set.sh" system || true
-  "$script_dir/install-gnome-extension-set.sh" overrides || true
-fi

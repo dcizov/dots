@@ -12,8 +12,3 @@ source "$real_home/.config/ucli/scripts/lib/detect.sh"
 "$script_dir/install-packages.sh" base
 "$script_dir/install-shell.sh"
 "$script_dir/install-flatpaks.sh" base
-
-if [[ "$(detect_desktop 2>/dev/null || echo none)" == "gnome" ]]; then
-  "$script_dir/install-gnome-extension-set.sh" system || true
-  "$script_dir/install-gnome-extension-set.sh" overrides || true
-fi
