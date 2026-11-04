@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Review installed desktop packages and remove bloat.
+# Review installed desktop packages and remove bloat one by one.
 #
 # Usage: sudo debloat-desktop.sh [gnome|hyprland|kde]
 #
-# Shows package groups for the selected DE and lets you deselect packages
-# you don't want. Removes them with pacman -Rs (recursive, with deps).
+# Philosophy: install the full DE group first (e.g. `pacman -S gnome`),
+# then debloat individual packages you don't need. See:
+#   https://www.reddit.com/r/gnome/comments/typwrj/arch_users_please_install_the_entire_gnome_before/
 #
-# Intended for after setup-desktop.sh when you realize some of the
-# installed packages are unnecessary for your setup.
+# Shows every installed package from the DE group (plus override packages)
+# and lets you pick which to remove with pacman -Rs.
 #
 # Interactive selector order: gum -> fzf -> plain select.
 set -euo pipefail
@@ -35,128 +36,115 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
 
-# Package groups per DE, each with a description and whether it's installed.
-declare -A groups=()
-declare -A pkgs=()
+# --- Required packages that should NEVER be offered for removal ---
+# These are the core pieces GNOME (or the DE) needs to function.
+declare -A REQUIRED=(
+  [gnome-shell]=1 [gdm]=1 [nautilus]=1 [gnome-control-center]=1
+  [gnome-session]=1 [gnome-keyring]=1 [xdg-desktop-portal-gnome]=1
+)
+
+# --- Build candidate package list -----------------------------------------
+
+candidates=()
 
 case "$desktop" in
   gnome)
-    groups[core]="GNOME shell + core apps (required)"
-    pkgs[core]="gnome-shell gdm nautilus gnome-control-center gnome-session gnome-keyring"
-    groups[tweaks]="Appearance customization"
-    pkgs[tweaks]="gnome-tweaks"
-    groups[vms]="Virtual machine manager"
-    pkgs[vms]="gnome-boxes"
-    groups[gdm-config]="GDM theme and configuration"
-    pkgs[gdm-config]="gdm-settings"
-    groups[nautilus-ext]="Nautilus file manager extensions"
-    pkgs[nautilus-ext]="nautilus-admin-gtk4 nautilus-my-computer nautilus-open-any-terminal"
+    # All packages installed from the gnome group (59 packages on Arch).
+    # pacman -Qg gnome outputs lines like "gnome baobab" — take the 2nd field.
+    if pacman -Qg gnome >/dev/null 2>&1; then
+      while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        pkg="${line#* }"
+        candidates+=("$pkg")
+      done < <(pacman -Qg gnome 2>/dev/null)
+    fi
+    # Add override packages (gnome-boxes, gdm-settings, nautilus-*, etc.)
+    for pkg in "${GNOME_APP_OVERRIDES[@]:-}"; do
+      if pacman -Q "$pkg" >/dev/null 2>&1; then
+        candidates+=("$pkg")
+      fi
+    done
     ;;
   hyprland)
-    groups[core]="Hyprland compositor + session essentials (required)"
-    pkgs[core]="hyprland uwsm xdg-desktop-portal-hyprland sddm"
-    groups[terminal]="Terminal emulator (kitty — replace with ghostty if you prefer)"
-    pkgs[terminal]="kitty"
-    groups[file-manager]="File manager (dolphin)"
-    pkgs[file-manager]="dolphin"
-    groups[launcher]="App launcher (wofi)"
-    pkgs[launcher]="wofi"
-    groups[screenshot]="Screenshot tools (grim, slurp)"
-    pkgs[screenshot]="grim slurp"
-    groups[notifications]="Notification daemon (dunst)"
-    pkgs[notifications]="dunst"
+    for pkg in "${DESKTOP_HYPRLAND_BASE[@]:-}" "${DESKTOP_HYPRLAND_ADDITIONS[@]:-}"; do
+      if pacman -Q "$pkg" >/dev/null 2>&1; then
+        candidates+=("$pkg")
+      fi
+    done
     ;;
-  kde)
-    groups[core]="KDE Plasma desktop (required)"
-    pkgs[core]="plasma plasma-wayland-session sddm"
-    groups[apps]="Core KDE apps (kwi, dolphin, kate)"
-    pkgs[apps]="kwi dolphin kate"
+  kde|plasma)
+    for pkg in "${DESKTOP_KDE_BASE[@]:-}" "${DESKTOP_KDE_ADDITIONS[@]:-}"; do
+      if pacman -Q "$pkg" >/dev/null 2>&1; then
+        candidates+=("$pkg")
+      fi
+    done
     ;;
 esac
 
-# Check which groups have any installed packages.
-installed_groups=()
-for name in "${!groups[@]}"; do
-  pkg_list="${pkgs[$name]}"
-  installed=0
-  for p in $pkg_list; do
-    if pacman -Q "$p" >/dev/null 2>&1; then
-      installed=1
-      break
-    fi
-  done
-  if (( installed )); then
-    installed_groups+=("$name")
-  fi
+# Remove required packages and duplicates, preserve order.
+declare -A seen=()
+final_candidates=()
+for pkg in "${candidates[@]}"; do
+  [[ -n "${REQUIRED[$pkg]:-}" ]] && continue
+  [[ -n "${seen[$pkg]:-}" ]] && continue
+  seen[$pkg]=1
+  final_candidates+=("$pkg")
 done
 
-if (( ${#installed_groups[@]} == 0 )); then
-  echo "No $desktop packages found installed. Nothing to debloat."
+if (( ${#final_candidates[@]} == 0 )); then
+  echo "No debloatable $desktop packages found installed."
   exit 0
 fi
 
-echo "Installed $desktop package groups:"
+echo "Installed $desktop packages eligible for removal:"
+echo "(required packages like gnome-shell, gdm, nautilus are excluded)"
 echo
 
-# Build selector items: "group — description"
-items=()
-item_to_group=()
-for name in "${installed_groups[@]}"; do
-  items+=("$name — ${groups[$name]}")
-  item_to_group+=("$name")
-done
+# --- Multi-select ----------------------------------------------------------
 
-# Choose selector backend.
-choose_one() {
-  local prompt="$1"; shift
-  if command -v gum >/dev/null 2>&1; then
-    printf '%s\n' "$@" | gum choose --header "$desktop debloat"
-  elif command -v fzf >/dev/null 2>&1; then
-    printf '%s\n' "$@" | fzf --prompt "$prompt " --header "$desktop debloat"
-  else
-    local i=0
-    for item in "$@"; do
-      printf '  %d) %s\n' "$((++i))" "$item"
-    done
-    read -rp "Select a group number: " sel
-    printf '%s\n' "${items[$((sel - 1))]}"
+chosen=()
+if command -v gum >/dev/null 2>&1; then
+  # gum choose defaults to multi-select (space to toggle, enter to confirm)
+  tmpfile="$(mktemp)"
+  if ! printf '%s\n' "${final_candidates[@]}" | gum choose --header "$desktop debloat — select packages to remove" > "$tmpfile"; then
+    echo "Cancelled."
+    rm -f "$tmpfile"
+    exit 0
   fi
-}
-
-while true; do
+  mapfile -t chosen < "$tmpfile"
+  rm -f "$tmpfile"
+elif command -v fzf >/dev/null 2>&1; then
+  tmpfile="$(mktemp)"
+  if ! printf '%s\n' "${final_candidates[@]}" | fzf --multi --header "Select $desktop packages to remove" > "$tmpfile"; then
+    echo "Cancelled."
+    rm -f "$tmpfile"
+    exit 0
+  fi
+  mapfile -t chosen < "$tmpfile"
+  rm -f "$tmpfile"
+else
+  i=0
+  for pkg in "${final_candidates[@]}"; do
+    printf '  %d) %s\n' "$((++i))" "$pkg"
+  done
   echo
-  chosen="$(choose_one 'Select a group to review (or press Enter/Ctrl-C to finish):' "${items[@]:-}")" || break
-  [ -n "$chosen" ] || break
-
-  # Extract group name from "name — description"
-  group_name="${chosen%% — *}"
-
-  echo
-  echo "Group: $group_name — ${groups[$group_name]}"
-  echo "Packages: ${pkgs[$group_name]}"
-  echo
-
-  read -rp "Remove these packages? [y/N] " ans
-  if [[ "$ans" == y || "$ans" == Y || "$ans" == yes ]]; then
-    # shellcheck disable=SC2086
-    pacman -Rs --noconfirm ${pkgs[$group_name]} 2>/dev/null || true
-    echo "Removed $group_name packages."
-    # Remove from items so we don't offer it again
-    new_items=(); new_groups=()
-    for i in "${!items[@]}"; do
-      if [[ "${items[$i]}" != "$chosen" ]]; then
-        new_items+=("${items[$i]}")
-        new_groups+=("${item_to_group[$i]}")
-      fi
-    done
-    items=("${new_items[@]}")
-    item_to_group=("${new_groups[@]}")
-    if (( ${#items[@]} == 0 )); then
-      echo "No more groups to review."
-      break
+  read -rp "Select package numbers (space-separated): " sels
+  for s in $sels; do
+    if (( s >= 1 && s <= ${#final_candidates[@]} )); then
+      chosen+=("${final_candidates[$((s - 1))]}")
     fi
-  fi
-done
+  done
+fi
+
+if (( ${#chosen[@]} == 0 )); then
+  echo "No packages selected."
+  exit 0
+fi
+
+echo
+echo "Removing: ${chosen[*]}"
+echo
+pacman -Rs --noconfirm "${chosen[@]}"
 
 echo
 echo "Debloat complete for $desktop."
