@@ -25,11 +25,14 @@
 #      (the `gnome` menu, `devbox-shell` and `full-profile` verbs were all named
 #      in docs long after they stopped existing); the prose allowlist below is
 #      the same idea as shellcheck's disable comments, and it must stay short.
-#   6. Exit codes: a script must not end on a bare conditional. `(( 0 )) && …`
+#   6. Exit codes and hidden prompts: a script must not end on a bare
+#      conditional `(( 0 )) && …`
 #      in the middle of a script is exempt from `set -e`, but as the LAST line
 #      its false test becomes the script's exit status — which is how
 #      `install-flatpaks.sh base` failed `ucli setup-system` silently after the
-#      packages were already installed.
+#      packages were already installed. Nor may an interactive command have its
+#      stderr sent to /dev/null: chsh's password prompt lives on stderr, so
+#      `chsh -s … 2>/dev/null` was a silent hang at the end of the shell step.
 #   7. shellcheck (if installed), severity=warning: the repo is clean at that
 #      level, and a warning is exactly the class of thing that turns into a bug
 #      later (unused state, word splitting, masked exit codes). Note the version
@@ -251,6 +254,32 @@ for f in "${bash_files[@]:-}"; do
   esac
 done
 [[ $lastfail -eq 0 ]] && note "exit codes" "no script ends with a bare conditional"
+
+# Interactive commands read from the terminal and prompt on stderr: silencing
+# stderr turns them into a hang with nothing on screen.
+promptfail=0
+for f in "${bash_files[@]:-}"; do
+  [[ -n "$f" ]] || continue
+  # Not this file: its own patterns and comments name the tools on purpose.
+  [[ "$(basename "$f")" == "check.sh" || "$(basename "$f")" == "executable_check.sh" ]] && continue
+  while IFS= read -r line; do
+    # grep -n prefixes "N:", so drop it before looking for a comment
+    body="${line#*:}"
+    case "$body" in
+      \#*) continue ;;
+    esac
+    if [[ "$body" == *"2>/dev/null"* ]]; then
+      fail_msg x "interactive command with hidden stderr (${f#"$root"/}): ${body#"${body%%[![:space:]]*}"}"
+      promptfail=1
+    fi
+  # `getent passwd … 2>/dev/null` and `gpg --verify … 2>/dev/null` are not
+  # prompts, and gpg is not in the list for that reason.
+  done < <({
+    grep -nE '(^|[^[:alnum:]_])(chsh|passwd|ssh-keygen|ssh-add)([^[:alnum:]_]|$)' "$f" 2>/dev/null |
+      grep -vE 'getent[[:space:]]+passwd'
+  } || true)
+done
+[[ $promptfail -eq 0 ]] && note "prompts" "no interactive command hides its stderr"
 
 # ---------------------------------------------------------------------------
 # 7. shellcheck (optional)

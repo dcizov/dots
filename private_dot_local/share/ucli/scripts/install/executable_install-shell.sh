@@ -2,6 +2,8 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$script_dir/../lib/common.sh"
 
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
 real_user="${SUDO_USER:-$USER}"
@@ -73,8 +75,17 @@ if command -v chsh >/dev/null 2>&1; then
   zsh_path="$(command -v zsh)"
   if [[ -n "$current_shell" && "$current_shell" != "$zsh_path" ]]; then
     echo "Setting zsh as default shell for $real_user ..."
-    chsh -s "$zsh_path" "$real_user" 2>/dev/null || \
-      echo "warning: chsh failed; run 'chsh -s $(command -v zsh)' manually" >&2
+    # As root: chsh asks a NON-root user for *their* password, and the
+    # "Password:" prompt on stderr used to be sent to /dev/null here — so the
+    # install sat waiting for a password nobody could see. Through sudo the only
+    # prompt left is sudo's own, which is visible and typed once.
+    if ! as_root chsh -s "$zsh_path" "$real_user"; then
+      echo "warning: chsh failed; run: sudo chsh -s $zsh_path $real_user" >&2
+    fi
+    now_shell="$(getent passwd "$real_user" | cut -d: -f7 2>/dev/null || true)"
+    if [[ "$now_shell" != "$zsh_path" ]]; then
+      echo "warning: login shell is still $now_shell; change it with: sudo chsh -s $zsh_path $real_user" >&2
+    fi
   fi
 fi
 
