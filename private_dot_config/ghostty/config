@@ -8,7 +8,6 @@
 # Appearance
 theme = Lambda
 font-family = JetBrainsMono Nerd Font
-font-size = 14
 background = #1c1c1f
 
 # Window padding (valid Ghostty fields)
