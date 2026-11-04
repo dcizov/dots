@@ -293,23 +293,6 @@ user_pref("apz.gtk.kinetic_scroll.pixel_delta_mode_multiplier", 25);
 user_pref("apz.gtk.pangesture.pixel_delta_mode_multiplier", 25);
 user_pref("apz.fling_friction", 0.004);
 
-// --- Firefox GNOME theme (kept — userChrome.css / userContent.css import it) ---
-user_pref("gnomeTheme.hideSingleTab", true);
-user_pref("gnomeTheme.normalWidthTabs", false);
-user_pref("gnomeTheme.swapTabClose", false);
-user_pref("gnomeTheme.bookmarksToolbarUnderTabs", false);
-user_pref("gnomeTheme.tabsAsHeaderbar", false);
-user_pref("gnomeTheme.tabAlignLeft", false);
-user_pref("gnomeTheme.activeTabContrast", true);
-user_pref("gnomeTheme.closeOnlySelectedTabs", false);
-user_pref("gnomeTheme.symbolicTabIcons", false);
-user_pref("gnomeTheme.allTabsButton", false);
-user_pref("gnomeTheme.allTabsButtonOnOverflow", true);
-user_pref("gnomeTheme.hideWebrtcIndicator", false);
-user_pref("gnomeTheme.oledBlack", false);
-user_pref("gnomeTheme.noThemedIcons", false);
-user_pref("gnomeTheme.bookmarksOnFullscreen", false);
-
 /****************************************************************************
  * END: BETTERFOX                                                           *
 ****************************************************************************/
