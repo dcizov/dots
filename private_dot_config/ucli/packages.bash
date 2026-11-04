@@ -111,36 +111,53 @@ FONTS_THEMES=(
 )
 
 # -----------------------------
-# Opt-in CLI / dev / gaming
+# ucli runtime — not optional
 # -----------------------------
-
-CLI=(
-  atuin
-  fd
-  bat
-  tealdeer
-  eza
-  zoxide
-  duf
-  ripgrep
-  fzf
-  gum          # menu backend for ucli (ujust uses it too)
-  starship
-  glow
-  direnv
-  mise
-  tree
-  python-pipx  # needed to install gnome-extensions-cli (gext)
+# Installed by `base`, so `ucli setup-system` always leaves ucli usable:
+# without gum the menus silently degrade to a numbered list, and without pipx
+# `ucli install-gnome-extensions-cli` (gext) cannot run.
+UCLI_RUNTIME=(
+  gum          # menu backend for ucli (the ujust TUI)
+  python-pipx  # installs gnome-extensions-cli (gext)
 )
 
+# -----------------------------
+# Opt-in CLI / dev / gaming
+# -----------------------------
+# Two tiers, split on purpose rather than by convenience:
+#   CLI      cosmetics — prompt, colours, aliases, history, fuzzy find, paging.
+#            Nothing here is needed to build or run code; a shell just feels
+#            worse without it.
+#   DEV_CLI  plumbing — parse, search, navigate, edit, run. Needed the moment
+#            you touch a repository, so it rides with `ucli devmode`.
+
+# Shell cosmetics.
+CLI=(
+  atuin
+  bat
+  eza
+  fzf
+  glow
+  starship
+  tealdeer
+  zoxide
+)
+
+# Engineering plumbing.
 DEV_CLI=(
+  direnv
+  duf
+  fd
   jq
-  yq
   lazygit
+  mise
   neovim
-  vim
-  tmux
+  ripgrep
   shfmt
+  tmux
+  tree
+  vim
+  yq
 )
 
 DEV=(

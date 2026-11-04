@@ -94,7 +94,7 @@ done
 echo
 echo "removing ucli-installed pacman packages ..."
 pkgs_to_remove=()
-for p in "${CLI[@]:-}" "${DEV_CLI[@]:-}" "${DEV[@]:-}" "${GAMING[@]:-}"; do
+for p in "${UCLI_RUNTIME[@]:-}" "${CLI[@]:-}" "${DEV_CLI[@]:-}" "${DEV[@]:-}" "${GAMING[@]:-}"; do
   if pacman -Q "$p" >/dev/null 2>&1; then
     pkgs_to_remove+=("$p")
   fi
@@ -114,7 +114,7 @@ if command -v paru >/dev/null 2>&1; then
   echo
   echo "checking for ucli AUR packages ..."
   aur_pkgs_to_remove=()
-  for p in "${CLI[@]:-}" "${DEV_CLI[@]:-}" "${DEV[@]:-}" "${GAMING[@]:-}"; do
+  for p in "${UCLI_RUNTIME[@]:-}" "${CLI[@]:-}" "${DEV_CLI[@]:-}" "${DEV[@]:-}" "${GAMING[@]:-}"; do
     if paru -Q "$p" >/dev/null 2>&1; then
       aur_pkgs_to_remove+=("$p")
     fi

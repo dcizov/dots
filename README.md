@@ -185,11 +185,24 @@ ucli inventory            package/app/settings inventory
 
 ```bash
 ucli setup-system         first-machine profile (packages + basic setup)
-ucli cli                  shell CLI experience
-ucli devmode              developer wizard — toolchain, apps, dev box (re-runnable)
+ucli cli                  shell cosmetics (prompt, aliases, history, fuzzy find)
+ucli devmode              developer wizard — plumbing, apps, dev box (re-runnable)
 ucli gaming               gaming profile
 ucli apps                 personal apps and overrides
 ```
+
+Four package tiers live in `private_dot_config/ucli/packages.bash`:
+
+| Tier | What it is | Installed by |
+|---|---|---|
+| `UCLI_RUNTIME` | what ucli itself needs: `gum` (menus, wizard) and `python-pipx` (gext) | `base` → `ucli setup-system`, `ucli setup-desktop` |
+| `CLI` | shell cosmetics: `starship bat eza zoxide atuin tealdeer glow fzf` — nothing here builds code, the shell just feels worse without it | `ucli cli` |
+| `DEV_CLI` | engineering plumbing: `jq yq ripgrep fd tree duf direnv mise lazygit neovim vim tmux shfmt` — needed the moment you touch a repo | `ucli devmode` |
+| `DEV` | the heavy stack: `base-devel podman distrobox docker* podman-desktop vscodium-bin` | `ucli devmode` (`--force` bypasses the role check) |
+
+`dev` mode selects `dev-cli` first, so the heavy stack always arrives with its
+plumbing. `ucli full-profile` (a.k.a. `install-packages.sh full`) is
+`base + cli + dev + gaming`.
 
 `ucli devmode` is a wizard, modelled on `ujust devmode`: one `gum choose
 --no-limit` screen with sections and preselection, a summary + confirm, a
@@ -261,8 +274,9 @@ ucli _devbox-versions           # direct
 ```
 
 The menus use `gum` when it is installed (the TUI ujust uses), then `fzf`, then
-a plain numbered list — `UCLI_MENU=gum|fzf|select` forces one. `ucli cli` installs
-gum.
+a plain numbered list — `UCLI_MENU=gum|fzf|select` forces one. `gum` is part of
+the `UCLI_RUNTIME` tier, so `ucli setup-system` and `sudo ucli setup-desktop`
+bring it in; `fzf` comes with `ucli cli`.
 
 `distrobox assemble create` on its own only creates a bare container — no Node,
 no PHP, nothing provisioned. Always go through `ucli devbox-reconcile`

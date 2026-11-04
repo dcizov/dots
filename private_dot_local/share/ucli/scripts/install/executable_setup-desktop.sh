@@ -332,6 +332,13 @@ apply_replacements() {
 
 apply_replacements "$desktop"
 
+# ucli's own runtime first: gum (menus) and python-pipx (gext). `base` installs
+# these too, but the fresh-install flow is setup-desktop -> devmode -> apps, so
+# they have to land here as well or the gext step below fails.
+if [[ -x "$script_dir/install-packages.sh" ]]; then
+  "$script_dir/install-packages.sh" ucli-runtime || true
+fi
+
 # Fonts and themes needed by backed-up settings (Ghostty, Adwaita, Papirus)
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" fonts

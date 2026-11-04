@@ -76,7 +76,7 @@ is_id()     { ! is_header "$1"; }
 
 label_for() {
   case "$1" in
-    dev-cli)  printf '  Dev CLI (mise, direnv, lazygit, neovim, tmux)' ;;
+    dev-cli)  printf '  Dev CLI (jq, ripgrep, fd, neovim, tmux, mise, …)' ;;
     dev-pkgs) printf '  Dev packages (podman, docker, distrobox, vscodium)' ;;
     flatpaks) printf '  Dev flatpaks (podman desktop, …)' ;;
     vscodium) printf '  VSCodium extensions' ;;

@@ -8,7 +8,8 @@ usage: install-packages.sh [--dry-run] [--yes] [--distro=ID] [--cpu=VENDOR] [--g
 Modes:
   base            bootstrap + cpu + gpu + zsh + system-tools + fonts + desktop
   bootstrap       packages needed for chezmoi/ucli bootstrap
-  cli             opt-in shell CLI experience
+  ucli-runtime    ucli's own helpers (gum menus, pipx) — part of base
+  cli             opt-in shell cosmetics (starship, eza, bat, zoxide, …)
   zsh             zsh plugin packages
   system-tools    system/admin helpers
   cpu             CPU microcode
@@ -17,7 +18,7 @@ Modes:
   desktop         desktop environment packages
   apps            personal apps and desktop overrides, excluding shell overrides
   shell-overrides explicit shell override packages
-  dev-cli         opt-in developer CLI tools
+  dev-cli         opt-in engineering plumbing (jq, ripgrep, tmux, neovim, …)
   dev             opt-in dev-cli + developer packages
   gaming          opt-in gaming packages
   snapshot        Btrfs/Snapper/Limine packages
@@ -188,6 +189,7 @@ select_packages() {
     overrides) select_packages apps ;;
     full-profile) select_packages full ;;
     bootstrap) add_array BOOTSTRAP ;;
+    ucli-runtime|runtime) add_array UCLI_RUNTIME ;;
     cli) add_array CLI ;;
     zsh) add_array ZSH ;;
     system-tools)
@@ -239,6 +241,7 @@ select_packages() {
       add_array SNAPSHOT_LIMINE
       ;;
     base|first-install)
+      select_packages ucli-runtime
       select_packages bootstrap
       select_packages cpu
       select_packages gpu
