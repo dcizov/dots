@@ -5,7 +5,7 @@
 #   sudo ucli fix cache --keep 1       keep only the installed version
 #   sudo ucli fix cache --dry-run      show the sizes, change nothing
 #
-# What it does NOT touch: the build cache (~/.cache/paru, ~/.cache/yay), Docker
+# What it does NOT touch: the AUR build caches (~/.cache/paru, ~/.cache/shelly), Docker
 # and podman volumes, and anything under /var/lib — `ucli clean-system` owns the
 # container side, and named volumes there hold databases.
 #

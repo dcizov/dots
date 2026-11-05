@@ -11,7 +11,7 @@
 #   error: failed to init transaction (unable to lock database)
 #
 # Deleting it while a pacman *is* running corrupts the database, so this checks
-# first: an open handle on the file (fuser), or a running pacman/paru/yay process,
+# first: an open handle on the file (fuser), or a running pacman/AUR-helper process,
 # means "not stale — wait" and exit 1.
 set -euo pipefail
 
@@ -50,7 +50,7 @@ if command -v fuser >/dev/null 2>&1; then
   if fuser "$lock" >/dev/null 2>&1; then in_use="fuser"; fi
 fi
 if [[ -z "$in_use" ]]; then
-  for proc in pacman paru yay; do
+  for proc in pacman paru shelly shelly-ui; do
     if pgrep -x "$proc" >/dev/null 2>&1; then in_use="$proc"; break; fi
   done
 fi

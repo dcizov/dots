@@ -7,6 +7,11 @@
 #   ucli update --level prompt      asks before every step
 #   ucli update-timer on            a systemd timer runs it with --scheduled
 #
+# The AUR is paru or shelly, never yay: this repo installs only those two
+# (AUR_HELPER in packages.bash, empty = shelly if installed, else paru) and
+# nothing else on the machine calls yay, so driving a third helper here would be
+# an untested path. `--scheduled` (the timer) never touches the AUR at all.
+#
 # Flags:
 #   --level full|minimal|prompt   how much to say (default: full)
 #   --no-snapshot                 no restore point before the upgrade (also
@@ -60,6 +65,13 @@ esac
 
 failed=0
 
+# "Nobody is watching" is what turns confirmations off — a missing terminal, or
+# UCLI_YES=1 from a script. Interactive runs keep pacman's own prompts (replace /
+# conflict questions) and the AUR helper's PKGBUILD review: those are the only two
+# places where an upgrade asks you something worth reading.
+auto=0
+if ! ui_tty || [[ "${UCLI_YES:-0}" == 1 ]]; then auto=1; fi
+
 # run_step <label> <command...>
 run_step() {
   local label="$1"; shift
@@ -86,6 +98,62 @@ run_step() {
   fi
   rm -f "$log"
   return 0
+}
+
+# --- the AUR helper ---------------------------------------------------------
+# Both files are plain assignments (install-aur-helper.sh sources them the same
+# way); the subshell keeps their arrays out of the updater's own namespace.
+configured_helper() {
+  local cfg
+  (
+    AUR_HELPER="${AUR_HELPER:-}"
+    for cfg in "$HOME/.config/ucli/packages.bash" "$HOME/.config/ucli/packages.local.bash"; do
+      [[ -r "$cfg" ]] || continue
+      # shellcheck source=/dev/null
+      . "$cfg"
+    done
+    printf '%s' "${AUR_HELPER:-}"
+  )
+}
+
+# The configured helper wins when it is actually installed, otherwise the first
+# one that is. Empty output means nothing here can rebuild AUR packages.
+aur_helper() {
+  local want
+  want="$(configured_helper)"
+  if [[ -n "$want" ]] && ui_have "$want"; then printf '%s' "$want"; return 0; fi
+  if ui_have shelly; then printf 'shelly'; elif ui_have paru; then printf 'paru'; fi
+}
+
+# aur_upgrade <helper> <auto:0|1>
+# auto=1 means nobody is at the keyboard, so the confirmation is skipped — and
+# with it the PKGBUILD diff, which is the only reason to watch an AUR build.
+# shelly reads stdin and declines on its own when it cannot ask, so it needs the
+# flag as much as paru does.
+aur_upgrade() {
+  local helper="$1" auto="$2"
+  case "$helper" in
+    paru) if (( auto )); then paru -Sua --noconfirm; else paru -Sua; fi ;;
+    shelly) if (( auto )); then shelly upgrade aur --no-confirm; else shelly upgrade aur; fi ;;
+    *) printf 'unknown AUR helper: %s\n' "$helper" >&2; return 2 ;;
+  esac
+}
+
+# mise keeps its runtimes in $HOME, so the timer (running as root) has to borrow
+# the user's identity — exactly like the per-user Flatpaks. mise itself is a repo
+# package, so root's PATH resolves it; only HOME has to be handed over.
+mise_upgrade() {
+  if (( EUID == 0 )) && [[ -n "${UCLI_TIMER_USER:-}" ]]; then
+    local home
+    home="$(getent passwd "$UCLI_TIMER_USER" | cut -d: -f6)"
+    if [[ -z "$home" ]]; then
+      printf 'warning: no home for %s; mise not updated\n' "$UCLI_TIMER_USER" >&2
+      return 0
+    fi
+    runuser -u "$UCLI_TIMER_USER" -- env HOME="$home" mise upgrade
+  else
+    mise upgrade
+  fi
 }
 
 # Restore point first: an upgrade is the one routine thing that can leave a
@@ -117,14 +185,26 @@ if (( ! scheduled )) && ui_have pacman; then
   fi
 fi
 
-run_step "pacman: system upgrade" sudo pacman -Syu --noconfirm
+if (( auto )); then
+  run_step "pacman: system upgrade" sudo pacman -Syu --noconfirm
+else
+  run_step "pacman: system upgrade" sudo pacman -Syu
+fi
 
 if (( scheduled )); then
   ui_rule "AUR: skipped (scheduled run — rebuilds need a human)"
-elif ui_have paru; then
-  run_step "paru: AUR upgrades" paru -Sua --noconfirm
-elif ui_have yay; then
-  run_step "yay: AUR upgrades" yay -Sua --noconfirm
+else
+  helper="$(aur_helper)"
+  if [[ -z "$helper" ]]; then
+    # Never let this be silent: on a box where the helper is missing the AUR half
+    # of the system would otherwise drift with no hint in the output.
+    ui_rule "AUR: skipped (no paru or shelly installed — nothing to rebuild with)"
+  else
+    if (( auto )); then
+      printf 'AUR: unattended — the PKGBUILD review prompt is skipped.\n'
+    fi
+    run_step "$helper: AUR upgrades" aur_upgrade "$helper" "$auto"
+  fi
 fi
 
 # Flatpaks: a system-wide update covers /var/lib/flatpak; the per-user ones live in
@@ -138,7 +218,7 @@ flatpak_update() {
   fi
 }
 ui_have flatpak && run_step "flatpak: updates" flatpak_update
-ui_have mise && run_step "mise: runtimes" mise upgrade
+ui_have mise && run_step "mise: runtimes" mise_upgrade
 
 if (( scheduled )); then
   ui_rule "dev box: skipped (scheduled run)"

@@ -5,7 +5,7 @@
 Ported from Bluefin's `ujust`, adapted to pacman/AUR + distrobox:
 
 ```bash
-ucli update            # pacman -Syu, AUR (paru/yay), flatpak, mise, then the box
+ucli update            # pacman -Syu, AUR (paru or shelly), flatpak, mise, the box
 ucli update --level minimal   # one ✓/✗ line per step, log tail on failure
 ucli update --level prompt    # ask before every step
 ucli update-timer      # status of the daily unattended upgrade (see below)
@@ -71,7 +71,7 @@ sudo ucli fix native        # reinstall every repo package in place (--list firs
 
 Every one accepts `--dry-run`, and `ucli fix` with no argument prints the table.
 Two deliberate choices: `fix lock` checks for an open handle (`fuser`) or a
-running pacman/paru/yay and refuses instead of corrupting the database; `fix
+running pacman/paru/shelly and refuses instead of corrupting the database; `fix
 native` filters `pacman -Qnq` against the sync databases first (a package dropped
 from the repos would otherwise fail the whole transaction) and wants `reinstall`
 typed before it starts, because it re-downloads a few thousand packages.
@@ -108,6 +108,40 @@ NetworkManager DNS plugin that can do it (`dns-systemd-resolved`); the property 
 feature-detected, and when NM cannot do it the script says so rather than writing
 a setting that does nothing.
 
+### Upgrades (`ucli update`)
+
+One script, three callers (the recipe, `--level`, and the timer). The order is
+fixed, because the failure domains are:
+
+1. a named Snapper restore point (`--no-snapshot` / `UCLI_NO_SNAPSHOT=1` skips it);
+2. a warning listing foreign (`pacman -Qm`) packages — the Arch equivalent of
+   Bluefin refusing to update a *layered* image;
+3. `pacman -Syu` for the repos;
+4. the AUR, **interactive runs only**;
+5. Flatpaks, system-wide and per-user;
+6. `mise upgrade`, as your user;
+7. the dev box reconcile, interactive runs only;
+8. a reboot hint when `/usr/lib/modules/$(uname -r)` is gone (the cheap, reliable
+   "kernel changed" signal).
+
+There is deliberately **no `set -e`**: a failed step is recorded, its last 15 log
+lines are printed, and the remaining steps still run — a broken Flatpak remote must
+not leave pacman half-applied. Exit status 1 means "something failed", with the
+output saying which.
+
+The AUR helper is resolved the same way the installer resolves it: `AUR_HELPER`
+from `packages.bash` (or `packages.local.bash`) when it is set **and** installed,
+otherwise shelly if installed, otherwise paru. `paru -Sua` and `shelly upgrade aur`
+are the two upgrade paths; **yay is not wired anywhere** — this repo installs only
+paru or shelly, so a yay branch would be dead code that looks supported. No helper
+at all is reported as a skipped step rather than passing silently.
+
+`--noconfirm` / `--no-confirm` is passed **only when nobody is at the keyboard**
+(`UCLI_YES=1`, or no TTY — which includes the timer), for `pacman` and for the
+helper alike. Interactively you keep pacman's replace/conflict questions (it still
+writes `.pacnew` rather than overwriting config) and the helper's confirmation
+prompt, i.e. the PKGBUILD diff before it builds.
+
 ### Scheduled upgrades (`ucli update-timer`)
 
 ```bash
@@ -117,11 +151,16 @@ sudo ucli update-timer on --time 04:30
 sudo ucli update-timer off
 ```
 
-The timer runs `update.sh --scheduled`: repo packages, Flatpaks (system-wide and
-yours), mise, and a restore point first. **It does not run the AUR or the dev
-box** — an AUR build stops at a prompt, and a half-built package mid-upgrade is
-exactly what `ucli update`'s foreign-package warning is about. The unit files live
-in `/etc/systemd/system` and are written by the script; "is it on" is
+The timer runs `update.sh --scheduled`: a restore point, repo packages, Flatpaks
+(system-wide **and** yours), and mise — the last two as *you*, through
+`runuser -u $UCLI_TIMER_USER`, because their files live in `$HOME` and a root-run
+`flatpak update`/`mise upgrade` would reach the wrong installation entirely.
+
+**It does not run the AUR or the dev box.** paru and shelly build as the invoking
+user and stop at a confirmation prompt that *is* the PKGBUILD review; automating
+that means answering "yes" to code you never saw. A half-built package mid-upgrade
+is also exactly what `ucli update`'s foreign-package warning is about. The unit
+files live in `/etc/systemd/system` and are written by the script; "is it on" is
 `systemctl is-enabled ucli-update.timer`, not a file in `$HOME`.
 
 ### Mirrors

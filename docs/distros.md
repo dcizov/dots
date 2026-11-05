@@ -49,7 +49,9 @@ What the scripts do about it:
   therefore installs from the CachyOS repo there and from the AUR on Arch.
 - AUR *calls* still differ by helper: `paru -S …` vs `shelly install aur …`.
   That is why every script asks `install-aur-helper.sh --print-only` instead of
-  hardcoding a helper.
+  hardcoding a helper. `ucli update` resolves the same way and upgrades with
+  `paru -Sua` or `shelly upgrade aur`. There is **no yay path**: yay is never
+  installed here, so supporting it would advertise something untested.
 
 ## What is installer-owned on CachyOS
 
