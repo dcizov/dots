@@ -195,10 +195,11 @@ cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
 
 The same idea as `~/.config/zsh/local.zsh`: never chezmoi-managed, never
 required, and read only if it exists. The Firefox equivalents are files —
-`~/.config/ucli/firefox/personal-extensions.txt` and `personal-dev-extensions.txt`
-— because the repo's `extensions.txt` ships empty: which add-ons you run is not a
-default anyone should inherit. `ucli doctor` reports whether the overlay is in
-play.
+`~/.config/ucli/firefox/personal-extensions.txt` and `personal-dev-extensions.txt`.
+The repo's own `extensions.txt` holds exactly one add-on, uBlock Origin: a content
+blocker is a default anyone can inherit, a password manager or a dark-mode reader
+is not. Everything else goes in the personal file. `ucli doctor` reports whether
+the overlay is in play.
 
 ### Reruns and gates
 

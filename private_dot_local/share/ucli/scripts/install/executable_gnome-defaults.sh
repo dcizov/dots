@@ -83,9 +83,12 @@ if ! command -v gsettings >/dev/null 2>&1; then
   exit 1
 fi
 
-# One line per setting: schema|key|value. The value is GVariant text exactly as
-# `gsettings set` takes it — 'strings' quoted, lists in brackets, doubles bare.
-# Commented sections are documentation; blank lines and # lines are ignored.
+# One line per setting: schema|key|value, and an optional fourth field
+# `|/path/that/must/exist` — used for values that point at a file we install, so a
+# machine without that package gets a skip instead of a dconf key aimed at nothing.
+# The value is GVariant text exactly as `gsettings set` takes it — 'strings'
+# quoted, lists in brackets, doubles bare. Commented sections are documentation;
+# blank lines and # lines are ignored.
 #
 # Everything below is taken from Bluefin's zz0-bluefin-modifications.gschema.override
 # (the file itself lives in projectbluefin/common), minus what is Bluefin's own
@@ -110,6 +113,14 @@ org.gnome.desktop.interface|enable-hot-corners|false
 org.gnome.desktop.interface|clock-show-weekday|true
 # GNOME 47+; skipped automatically on older shells.
 org.gnome.desktop.interface|accent-color|'slate'
+# Legacy GTK3 applications. libadwaita apps are already GNOME 48-looking; everything
+# older (GIMP, Inkscape, Thunar, xdg-desktop-portal file dialogs inside them) is not,
+# and adw-gtk3 is the libadwaita theme ported to GTK3 — the one thing that makes the
+# two halves of the desktop agree. FONTS_THEMES installs the package (Extra
+# `adw-gtk-theme`, which ships /usr/share/themes/adw-gtk3 and -dark); this is the
+# switch. The dark variant is deliberate: a light GTK3 app next to a dark one is the
+# mismatch the theme exists to remove.
+org.gnome.desktop.interface|gtk-theme|'adw-gtk3-dark'|/usr/share/themes/adw-gtk3-dark
 org.gnome.desktop.sound|allow-volume-above-100-percent|false
 org.gnome.desktop.sound|theme-name|'freedesktop'
 org.gnome.desktop.peripherals.keyboard|numlock-state|true
@@ -167,11 +178,30 @@ status_lines=()
 # One `gsettings list-schemas` for the whole table, and one `list-keys` per schema
 # (they are cheap, but forty keys times two forks is not).
 schemas_list="$(as_user gsettings list-schemas 2>/dev/null || true)"
+# Prefix for the 4th table field (`~/...` is relative to the user whose
+# dconf this is). A variable, so `~/` is never a quoted literal.
+home_prefix='~'
+
 declare -A keys_of=()
 
 # Values are compared as gsettings prints them ("true", "'slate'", "['a', 'b']").
 apply_one() {
-  local schema="$1" key="$2" wanted="$3"
+  local schema="$1" key="$2" wanted="$3" require="${4:-}"
+
+  # A value that points at something we install is only worth setting when that
+  # something is there: `gtk-theme` aimed at a theme that is not installed leaves
+  # GTK3 apps on a fallback with a console warning, which is worse than untouched.
+  if [[ -n "$require" ]]; then
+    # `~/` in the table is relative to the user whose dconf this is, not to root.
+    if [[ "$require" == "$home_prefix"/* ]]; then
+      require="$real_home/${require#"$home_prefix"/}"
+    fi
+    if [[ ! -e "$require" ]]; then
+      skipped_count=$((skipped_count + 1))
+      status_lines+=("  skip    $schema $key — needs $require")
+      return 0
+    fi
+  fi
 
   if ! grep -qx "$schema" <<<"$schemas_list"; then
     skipped_count=$((skipped_count + 1))
@@ -237,8 +267,11 @@ while IFS= read -r line; do
   schema="${line%%|*}"
   rest="${line#*|}"
   key="${rest%%|*}"
-  value="${rest#*|}"
-  apply_one "$schema" "$key" "$value"
+  rest="${rest#*|}"
+  value="${rest%%|*}"
+  require=""
+  [[ "$rest" == *"|"* ]] && require="${rest#*|}"
+  apply_one "$schema" "$key" "$value" "$require"
 done <<<"$SETTINGS"
 
 if (( status_only )); then

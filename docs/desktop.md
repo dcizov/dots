@@ -64,10 +64,40 @@ Nautilus extensions):
 |---|---|
 | `:minimize,maximize,close`, center new windows, `Super`-Tab apps / `Alt`-Tab windows, `Super-D` desktop | window buttons, Alt-Tab behaviour |
 | hot corners off, weekday clock, accent `slate`, numlock on, folders-first file choosers | the shell itself; `accent-color` is GNOME 47+ and is skipped on older shells |
+| legacy apps: `gtk-theme = adw-gtk3-dark` (`adw-gtk-theme`, Extra 6.5) | every GTK3 app — GIMP, Inkscape, Thunar, the file dialogs inside them — instead of stock Adwaita |
 | `favorite-apps`: firefox, ghostty, nautilus, settings, text editor | the dock on first login |
 | dash-to-dock: fixed bar, 80 % dark background, dots indicators, no overview-on-startup | the dock |
 | blur-my-shell: dash-to-dock + popup panels | the dock and menus |
 | `nautilus-open-any-terminal`: `terminal=ghostty`, no keybinding, host binary (`flatpak=none`) | Nautilus right-click → Open in Terminal |
+
+### Legacy applications
+
+libadwaita apps are styled by their own toolkit and need nothing. GTK3 apps — GIMP,
+Inkscape, Thunar, most of the file dialogs — are not, so on a stock GNOME they look
+a decade older than everything around them. `adw-gtk-theme` is
+[lassekongo83/adw-gtk3](https://github.com/lassekongo83/adw-gtk3): libadwaita's
+look ported to GTK3. The package ships `/usr/share/themes/adw-gtk3` and
+`adw-gtk3-dark` — the package name and the theme names differ, which is why
+searching the repos for `adw-gtk3` finds nothing.
+
+It arrives with `FONTS_THEMES` (i.e. the `base` tier, before any desktop), and
+`gnome-defaults` sets `org.gnome.desktop.interface gtk-theme` to **`adw-gtk3-dark`**
+— the legacy half matches the dark libadwaita apps. That key carries a
+`|/usr/share/themes/adw-gtk3-dark` requirement in the table, so a machine without
+the package gets a `skip … needs …` line instead of a running order for a theme
+that is not there.
+
+Two things to know:
+
+* GNOME Settings → Appearance → *Style* (light/dark) sets `color-scheme`, which
+  styles libadwaita apps. The GTK3 theme is the separate legacy switch (also in
+  `gnome-tweaks` → *Appearance → Legacy Applications*). This repo sets the legacy
+  one to dark and leaves `color-scheme` alone; `ucli gnome-defaults --force` puts
+  it back if a Settings toggle overwrote it.
+* Flatpak GTK3 apps cannot see `/usr/share/themes`. Either `flatpak install
+  org.gtk.Gtk3theme.adw-gtk3-dark` or install the theme into
+  `~/.local/share/themes` and `flatpak override --filesystem=xdg-data/themes`
+  (what upstream's README suggests).
 
 Why not the override file itself: it lives in a directory pacman owns and
 `glib-compile-schemas` rewrites for the whole system — the distro's job, not

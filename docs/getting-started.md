@@ -226,7 +226,8 @@ cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
 | `PERSONAL_GNOME_EXTENSIONS` (`"PK:UUID"`) | `ucli setup-extensions` |
 
 Firefox works the same way but with files: `~/.config/ucli/firefox/extensions.txt`
-ships empty, and `personal-extensions.txt` (copy the `.example`) is yours. Those
+ships one entry (uBlock Origin), and `personal-extensions.txt` (copy the `.example`)
+is yours. Those
 lists become Firefox **policies** (`/etc/firefox/policies/policies.json`), which is
 how extensions get installed *and* enabled without a first launch — no profile
 needed, nothing to click in `about:addons`, and `about:policies` shows what was

@@ -1,16 +1,21 @@
-# Firefox extensions installed by `ucli apps` — the opinionated ones only.
+# Firefox extensions installed by `ucli apps` — the one opinionated add-on.
 #
 # Format: one AMO addon ID per line (addons.mozilla.org ID, e.g. uBlock0@raymondhill.net).
 # Lines starting with '#' are ignored.
 #
-# Which add-ons someone runs is personal, so this file ships empty on purpose:
-# the repo does not decide your browser. Put yours in
+# Exactly one extension is a repo decision: a content blocker. Everything else —
+# password manager, dark-mode reader, userscripts, a React devtools build — is a
+# choice about how *you* browse, so it lives in
 #
 #     ~/.config/ucli/firefox/personal-extensions.txt
 #
-# (copy personal-extensions.txt.example), which `ucli apps` installs too.
-# `~/.config/ucli/firefox/dev-extensions.txt` is the same idea for `ucli devmode`.
+# (copy personal-extensions.txt.example; not chezmoi-managed, so it survives
+# `chezmoi apply` and never goes upstream). `ucli apps` installs both lists.
+# `dev-extensions.txt` is the same idea for `ucli devmode`.
 #
 # To find an extension's ID, open its addons.mozilla.org page and look for the
 # ID in the URL or view-source.
 
+# uBlock Origin — the blocker Betterfox's user.js assumes (it disables nothing
+# itself; it just stops fighting one). AMO slug: ublock-origin
+uBlock0@raymondhill.net

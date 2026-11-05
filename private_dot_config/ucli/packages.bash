@@ -176,10 +176,17 @@ SNAPSHOT_LIMINE=(
 # third-party app icons. A full third-party set (Papirus, MoreWaita, …) is a
 # taste — it lives in PERSONAL_PKGS and needs its own dconf value, since the
 # shipped GNOME profile now points at Adwaita.
+#
+# adw-gtk-theme is the Arch package name for lassekongo83/adw-gtk3 — libadwaita's
+# look ported to GTK3. The package ships /usr/share/themes/adw-gtk3 and
+# /usr/share/themes/adw-gtk3-dark, i.e. the theme names and the package name
+# differ, which is why `grep adw-gtk3` in the repos finds nothing. libadwaita apps
+# are styled by their own toolkit; every GTK3 app on the machine (GIMP, Inkscape,
+# Thunar, …) is styled by this, and gnome-defaults.sh switches it to -dark.
 FONTS_THEMES=(
   ttf-jetbrains-mono
   ttf-jetbrains-mono-nerd
-  adw-gtk-theme
+  adw-gtk-theme            # theme adw-gtk3 + adw-gtk3-dark (Extra 6.5)
   adwaita-icon-theme-legacy
 )
 

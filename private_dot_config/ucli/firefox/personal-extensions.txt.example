@@ -3,16 +3,22 @@
 #   cp ~/.config/ucli/firefox/personal-extensions.txt.example \
 #      ~/.config/ucli/firefox/personal-extensions.txt
 #
-# `ucli apps` installs this list after the repo's extensions.txt. The file is
-# not chezmoi-managed, so it survives `chezmoi apply` and never goes upstream.
+# `ucli apps` installs this list on top of the repo's extensions.txt (which holds
+# exactly one add-on, uBlock Origin). The file is not chezmoi-managed, so it
+# survives `chezmoi apply` and never goes upstream.
 #
 # Format: one AMO addon ID per line. Lines starting with '#' are ignored.
+#
+# The three below are the obvious candidates — they were in the repo's list once
+# and are not any more, because "which password manager / dark-mode reader /
+# userscript runner" is not something a repo can answer for you. Uncomment the
+# ones you want, or delete the lines.
 
 # Password manager (Firefox's built-in manager is disabled in Betterfox)
-bitwarden-browser-extension@bitwarden.com
+#bitwarden-browser-extension@bitwarden.com
 
 # Dark theme for websites
-darkreader@darkreader.org
+#darkreader@darkreader.org
 
 # Userscript manager (for adguard scripts and custom userscripts)
-violentmonkey@violentmonkey.net
+#violentmonkey@violentmonkey.net

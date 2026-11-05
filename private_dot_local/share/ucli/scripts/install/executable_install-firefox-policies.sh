@@ -107,8 +107,11 @@ for list in "${lists[@]}"; do
 done
 
 if ((${#ids[@]} == 0)); then
-  echo "no Firefox extensions configured (${fx_dir}/extensions.txt is empty and"
-  echo "there is no personal-extensions.txt). Nothing to write."
+  # The repo ships one extension (uBlock Origin) in extensions.txt, so reaching
+  # this point means both lists are empty: the line was deleted, or this is a
+  # machine where only the personal file exists and is blank.
+  echo "no Firefox extensions configured (${fx_dir}/extensions.txt has no entries"
+  echo "and there is no personal-extensions.txt). Nothing to write."
   exit 0
 fi
 echo "Firefox extensions: ${#ids[@]} configured"
