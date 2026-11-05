@@ -262,7 +262,7 @@ Three things are skipped when their input has not changed, so a re-run is instan
 
 | Gate | Keyed on | Force with |
 |---|---|---|
-| `gnome-extensions-system`, `-personal` | hash of `packages.bash` (+ overlay for `personal`) | `ucli setup-extensions --force` |
+| `gnome-extensions-managed`, `-personal` | hash of `packages.bash` (+ overlay for `personal`) | `ucli setup-extensions --force` |
 | `firefox-betterfox` | hash of `~/.config/ucli/firefox/user.js` | `ucli setup-desktop --force` (or `ucli apps --force`) |
 | `vscodium-extensions` | hash of `extensions.txt` | `ucli vscodium-extensions --force` |
 

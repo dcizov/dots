@@ -205,7 +205,7 @@ select_essentials() {
       # The repo-packaged extensions (appindicator, caffeine) belong here:
       # setup-desktop.sh installs the DE itself and never calls `desktop` mode,
       # so anything listed only there never lands. user-theme is not here — it
-      # comes from extensions.gnome.org in GNOME_SYSTEM_EXTENSIONS, because the
+      # comes from extensions.gnome.org in GNOME_MANAGED_EXTENSIONS, because the
       # Arch package that ships it drags in fourteen classic extensions for it.
       add_array GNOME_SYSTEM_EXTENSION_PACKAGES
       ;;

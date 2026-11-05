@@ -318,14 +318,28 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
   extension-manager                          # the GUI for everything below:
                                              # browse/install/tune extensions
                                              # (0.6.5, Extra — not the Flatpak)
-  libgda6                                    # Copyous: database backend
-  gsound                                     # Copyous: clipboard sound feedback
+  # libgda6 + gsound are Copyous' backends, and Copyous is not in the managed set
+  # any more (it is a "sometimes" extension: see packages.local.bash.example).
+  # They ride along with it in the overlay's PERSONAL_PKGS instead of being
+  # installed on every machine for an extension that may never be enabled.
 )
 
-# The layout set: what makes GNOME behave like the desktop this repo configures
-# for. Bluefin's equivalent list is dash-to-dock, appindicator, gsconnect,
-# blur-my-shell and search-light; the four at the end are "make it calm" tweaks
-# that belong to the same opinion, not to one person.
+# The managed set: what makes GNOME behave like the desktop this repo configures
+# for, and what `ucli setup-extensions` installs on every machine. Bluefin's
+# equivalent list is dash-to-dock, appindicator, gsconnect, blur-my-shell and
+# search-light; the three at the end are "make it calm" tweaks that belong to the
+# same opinion, not to one person.
+#
+# Names here describe WHERE an extension lands, not how much it is wanted:
+#   GNOME_SYSTEM_EXTENSION_PACKAGES  pacman -> /usr/share/gnome-shell/extensions,
+#                                    i.e. Extension Manager's "System Extensions"
+#   GNOME_MANAGED_EXTENSIONS (this)   gext  -> ~/.local/share/gnome-shell/
+#                                    extensions, i.e. the user list
+#   PERSONAL_GNOME_EXTENSIONS         gext, from packages.local.bash, also the
+#                                    user list, but yours instead of the repo's
+# Only pacman can put an extension in the "system" section: gext installs per user
+# by design, and hand-copying EGO zips into /usr/share as root would trade updates
+# for a label.
 #
 # Two deliberate differences from Bluefin's list:
 #   * search-light is gone. EGO's newest *active* release declares shell 48/49,
@@ -338,17 +352,21 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 # NOT in this array: it is on neither extensions.gnome.org nor in the repos, so
 # there is no PK to install from. install-gnome-extension-set.sh builds it from its
 # pinned upstream commit (install-gradia-capture.sh) and enables it with the rest.
-GNOME_SYSTEM_EXTENSIONS=(
+#
+# What is deliberately NOT here, and why: copyous and gnome-ui-tune are "sometimes"
+# extensions — installed on the machines that want them, from the overlay. The
+# eight that stay are the ones installed on every GNOME setup: dash-to-dock,
+# blur-my-shell, gsconnect, just-perfection, logo-menu, BetterTrayIcons,
+# user-theme, plus appindicator and caffeine as system packages.
+GNOME_MANAGED_EXTENSIONS=(
   "19:user-theme@gnome-shell-extensions.gcampax.github.com"  # shell themes from ~/.themes
                                                              # (firefox-gnome-theme styles the
                                                              # shell through this one)
   "307:dash-to-dock@micxgx.gmail.com"                        # Ubuntu-like dock
   "3193:blur-my-shell@aunetx"                                # blur behind shell UI
   "1319:gsconnect@andyholmes.github.io"                      # phone integration
-  "8834:copyous@boerdereinar.dev"                            # clipboard history
   "3843:just-perfection-desktop@just-perfection"             # hide what GNOME shows by default
   "4451:logomenu@aryan_k"                                    # app-menu button
-  "4158:gnome-ui-tune@itstime.tech"                          # overview tweaks
   "9975:BetterTrayIcons@nexaknight.com"                      # consistent tray icon sizes
 )
 

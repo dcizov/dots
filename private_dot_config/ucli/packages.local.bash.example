@@ -21,6 +21,8 @@
 # --- packages ----------------------------------------------------------------
 PERSONAL_PKGS=(
   bitwarden            # password manager (and its browser extension below)
+  libgda6              # Copyous (extension below): database backend
+  gsound               # Copyous: clipboard sound feedback
   fragments            # torrent client
   neovim               # the editor I use; `vim` is in DEV_CLI as the fallback
   papirus-icon-theme   # third-party icon set; the shipped profile points at Adwaita,
@@ -48,10 +50,17 @@ PERSONAL_FLATPAKS=(
 )
 
 # --- GNOME extensions (extensions.gnome.org) ---------------------------------
-# Not the layout set — that is GNOME_SYSTEM_EXTENSIONS in packages.bash, which
-# already ships dash-to-dock, blur-my-shell, gsconnect, search-light, copyous,
-# just-perfection, logo-menu, gnome-ui-tune and BetterTrayIcons. Everything here
-# is a genuine personal pick.
+# The repo's set is GNOME_MANAGED_EXTENSIONS in packages.bash: dash-to-dock,
+# blur-my-shell, gsconnect, just-perfection, logo-menu, BetterTrayIcons,
+# user-theme (+ Gradia Capture, built from source). Those are installed on every
+# machine. Everything here is either a genuine personal pick or a "sometimes"
+# extension — the ones worth having on some machines and not on others.
+#
+# Both lists install per user (~/.local/share/gnome-shell/extensions); a
+# "PK:UUID" pair is all an entry needs, PK being the extensions.gnome.org id.
 PERSONAL_GNOME_EXTENSIONS=(
   "10070:user-accent-colors@fabito02"              # accent colour per app
+  "8834:copyous@boerdereinar.dev"                  # clipboard history (needs
+                                                   # libgda6 + gsound from PERSONAL_PKGS)
+  "4158:gnome-ui-tune@itstime.tech"                # overview tweaks: sometimes, not always
 )

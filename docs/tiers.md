@@ -207,7 +207,7 @@ Steps that are slow or hit the network are gated by a content hash
 
 | Step | Token | Re-runs when |
 |---|---|---|
-| GNOME extension sets (`system`, `personal`) | hash of `packages.bash` (+ `packages.local.bash` for `personal`) | the extension lists change |
+| GNOME extension sets (`managed`, `personal`) | hash of `packages.bash` (+ `packages.local.bash` for `personal`) | the extension lists change |
 | Gradia Capture (`gnome-gradia-capture`) | the pinned upstream commit | the pinned commit changes (a shell bump) |
 | Betterfox `user.js` | hash of `~/.config/ucli/firefox/user.js` | you edit `user.js` |
 | VSCodium extensions | hash of `extensions.txt` | the list changes |

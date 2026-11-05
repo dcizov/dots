@@ -50,7 +50,7 @@ GNOME is curated in `packages.bash`. Package group contents from
 | | Where | Installed by |
 |---|---|---|
 | repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator`, plus **Extension Manager** (`extension-manager`, Extra 0.6.5) and Copyous' `libgda6`/`gsound` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
-| extensions.gnome.org | `GNOME_SYSTEM_EXTENSIONS`, the opinionated layout set | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
+| extensions.gnome.org | `GNOME_MANAGED_EXTENSIONS`, the repo's set, plus `PERSONAL_GNOME_EXTENSIONS` from the overlay | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
 
 **Extension Manager** is part of that package set on purpose. Before it, this was
 in `GNOME_APP_OVERRIDES`, i.e. `ucli apps`: you could have extensions installed and
@@ -63,8 +63,17 @@ remove it because the extension packages are among its candidates).
 Extension Manager calls these two rows two different things, and the difference is
 only the directory: pacman's go to `/usr/share/gnome-shell/extensions` (**System
 Extensions**), gext's to `~/.local/share/gnome-shell/extensions` (the user list).
-That is why exactly two entries show up as system extensions here and nine as
+That is why exactly two entries show up as system extensions here and eight as
 user ones.
+
+"User" and "system" are therefore not a preference — they are *who installs it*.
+Only pacman can put an extension in `/usr/share`: gext installs per user by design,
+and hand-copying EGO zips into `/usr/share` as root would buy the label at the cost
+of updates (gext cannot see or update them), root-owned files in `ucli uninstall`,
+and system-wide schema compilation. The preference that *does* exist is the one the
+arrays encode: installed on every machine (`GNOME_MANAGED_EXTENSIONS` +
+`GNOME_SYSTEM_EXTENSION_PACKAGES`) versus installed on the machines that ask for it
+(`PERSONAL_GNOME_EXTENSIONS` in the overlay).
 
 `gnome-shell-extensions` is deliberately **not** installed. It is one package
 carrying fourteen classic extensions (apps-menu, auto-move-windows, drive-menu,
@@ -77,7 +86,7 @@ the managed set below: installed **and** enabled, and the other thirteen never
 appear. Machines set up before that change still have the package; the set script
 says so and prints `sudo pacman -Rns gnome-shell-extensions`.
 
-The layout set is deliberately small — ten extensions, nine of them from
+The managed set is deliberately small — eight extensions, seven of them from
 extensions.gnome.org:
 
 | PK | UUID | Why |
@@ -86,10 +95,8 @@ extensions.gnome.org:
 | 307 | `dash-to-dock@micxgx.gmail.com` | Ubuntu-like dock |
 | 3193 | `blur-my-shell@aunetx` | blur behind shell UI |
 | 1319 | `gsconnect@andyholmes.github.io` | phone integration (KDE Connect protocol) |
-| 8834 | `copyous@boerdereinar.dev` | clipboard history (needs `libgda6` + `gsound`) |
 | 3843 | `just-perfection-desktop@just-perfection` | hide the shell furniture GNOME shows by default |
 | 4451 | `logomenu@aryan_k` | app-menu button in the panel |
-| 4158 | `gnome-ui-tune@itstime.tech` | overview tweaks |
 | 9975 | `BetterTrayIcons@nexaknight.com` | consistent tray icon sizes |
 | — | `gradia-integration@alexandervanhee.github.io` | annotations/OCR for the built-in screenshot tool. **Built from source** — no EGO listing, no Arch package |
 
@@ -154,9 +161,20 @@ pipx package — `ucli install-gnome-extensions-cli` — and `~/.local/bin` is o
 #### The personal set
 
 `PERSONAL_GNOME_EXTENSIONS` in `~/.config/ucli/packages.local.bash`, installed by
-the `personal` set (`ucli setup-extensions` runs both). The example ships one
-entry — `user-accent-colors` — because the rest of the taste set is opinionated
-and already lives in the table above.
+the `personal` set (`ucli setup-extensions` runs both). This is where "sometimes"
+extensions live — worth having on some machines and not on others:
+
+| PK | UUID | Why it is not in the repo's set |
+|---|---|---|
+| 10070 | `user-accent-colors@fabito02` | accent colour per app: taste |
+| 8834 | `copyous@boerdereinar.dev` | clipboard history; needs `libgda6` + `gsound` (the example lists them in `PERSONAL_PKGS`) |
+| 4158 | `gnome-ui-tune@itstime.tech` | overview tweaks: nice on a big screen, noise on a laptop |
+
+The overlay is copied by hand (`cp …/packages.local.bash.example …/packages.local.bash`)
+and never chezmoi-managed, so a fresh machine gets only the repo's eight plus the
+two system packages — `ucli setup-extensions` installs the overlay's entries only
+if you created that file. Deleting an entry never uninstalls it; the set only adds
+(and re-enables).
 
 #### How Bluefin does it, and why this repo does not copy that
 
@@ -191,7 +209,8 @@ The delta in one line: **shared** — appindicator, caffeine, dash-to-dock,
 blur-my-shell, gsconnect, logo-menu, gradia-integration. **Theirs only** —
 search-light (dead on 50/51, so dropped here) and bazaar-integration (their
 app-store companion; not wanted). **Here only** — user-theme (shell themes for
-firefox-gnome-theme), copyous, just-perfection, gnome-ui-tune, BetterTrayIcons.
+firefox-gnome-theme), just-perfection, BetterTrayIcons (copyous and gnome-ui-tune
+live in the overlay now, not in the repo's set).
 Both of theirs that are missing here come from the same cause: an image ships one
 fixed list it rebuilds per GNOME release, so a stale entry survives until someone
 touches the build. They pay a rebuild per release inside their pipeline (their

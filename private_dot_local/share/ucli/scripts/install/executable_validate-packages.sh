@@ -29,7 +29,7 @@ package_arrays=(
 )
 # Extension lists are "PK:UUID" pairs (see packages.bash for why). The personal
 # list is optional and lives in the overlay.
-extension_lists=("GNOME_SYSTEM_EXTENSIONS")
+extension_lists=("GNOME_MANAGED_EXTENSIONS")
 
 extension_pk_exists() {
   local pk="$1"

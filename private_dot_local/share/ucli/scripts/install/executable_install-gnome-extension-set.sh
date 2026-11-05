@@ -4,8 +4,12 @@ set -euo pipefail
 # Install/enable GNOME Shell extensions using gnome-extensions-cli (gext).
 #
 # Usage:
-#   install-gnome-extension-set.sh system    # the opinionated set (GNOME_SYSTEM_EXTENSIONS)
+#   install-gnome-extension-set.sh managed   # the repo's set (GNOME_MANAGED_EXTENSIONS)
 #   install-gnome-extension-set.sh personal  # your own (PERSONAL_GNOME_EXTENSIONS)
+#
+# "managed" and "personal" are both installed per user, into ~/.local/share/
+# gnome-shell/extensions; gnome-shell's own /usr/share directory — Extension
+# Manager's "System Extensions" — is pacman's business (GNOME_SYSTEM_EXTENSION_PACKAGES).
 #
 # Package-based extensions (gnome-shell-extensions, etc.) are installed via
 # pacman/paru by install-packages.sh. This script handles non-repo extensions
@@ -20,24 +24,30 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-usage: install-gnome-extension-set.sh [system|personal] [--force]
+usage: install-gnome-extension-set.sh [managed|personal] [--force]
 
-  system    the opinionated layout set (user-theme, dash-to-dock, blur-my-shell,
-            gsconnect, copyous, just-perfection, logo-menu, UI-tune, tray icons)
-            plus Gradia Capture, which is built from its own pinned upstream
-            commit because it is on neither EGO nor in the repos; the
-            repo-packaged ones (caffeine, appindicator) come from install-packages.sh
+  managed   the repo's set (user-theme, dash-to-dock, blur-my-shell, gsconnect,
+            just-perfection, logo-menu, tray icons) plus Gradia Capture, which is
+            built from its own pinned upstream commit because it is on neither EGO
+            nor in the repos; the repo-packaged ones (caffeine, appindicator) come
+            from install-packages.sh. "managed", not "system": gext writes to
+            ~/.local/share/gnome-shell/extensions, so these are *user* extensions —
+            the "System Extensions" section only ever holds pacman's.
   personal  your own, from PERSONAL_GNOME_EXTENSIONS in
             ~/.config/ucli/packages.local.bash
   --force   run even when the gate says this set is unchanged
+  system    accepted as a legacy alias for managed
 USAGE
 }
 
-mode="system"
+mode="managed"
 force=0
 for arg in "$@"; do
   case "$arg" in
-    system|personal) mode="$arg" ;;
+    managed|personal) mode="$arg" ;;
+    # Legacy name from when this script called the repo's set "system" — exactly
+    # the confusion the rename fixes: nothing here lands in /usr/share.
+    system) mode=managed ;;
     --force) force=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; usage; exit 2 ;;
@@ -72,7 +82,7 @@ source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 # must not require gext (or a network) to print its note.
 entries=()
 case "$mode" in
-  system) entries=("${GNOME_SYSTEM_EXTENSIONS[@]:-}") ;;
+  managed) entries=("${GNOME_MANAGED_EXTENSIONS[@]:-}") ;;
   personal)
     if [[ ! -r "$personal_file" ]]; then
       echo "no ~/.config/ucli/packages.local.bash; nothing personal to install."
@@ -260,21 +270,21 @@ enable_uuids() {
 # active in the GNOME Classic session, plus a dormant copy of user-theme. Nothing
 # breaks while it is there — but it is the bulk of the "System Extensions" list, so
 # say how to get rid of it instead of leaving it as a mystery.
-if [[ "$mode" == system ]] && command -v pacman >/dev/null 2>&1 \
+if [[ "$mode" == managed ]] && command -v pacman >/dev/null 2>&1 \
    && pacman -Q gnome-shell-extensions >/dev/null 2>&1; then
   echo "note: gnome-shell-extensions is installed (14 classic extensions, incl. a"
   echo "      dormant user-theme). user-theme now comes from extensions.gnome.org,"
   echo "      so the package is not needed: sudo pacman -Rns gnome-shell-extensions"
 fi
 
-# Gradia Capture is part of the system set but is not a gext entry: no
+# Gradia Capture is part of the managed set but is not a gext entry: no
 # extensions.gnome.org listing and no Arch package, so it is built from its pinned
 # upstream commit and installed with `gnome-extensions install`. Its UUID is added
 # to the same single write below; if the build fails the set is incomplete rather
 # than quietly one extension short.
 gradia_uuid="gradia-integration@alexandervanhee.github.io"
 gradia_ok=0
-if [[ "$mode" == system ]]; then
+if [[ "$mode" == managed ]]; then
   gradia_args=()
   ((force)) && gradia_args=(--force)
   if [[ -x "$script_dir/install-gradia-capture.sh" ]]; then
@@ -299,7 +309,7 @@ for entry in "${entries[@]}"; do
   fi
 done
 
-if [[ "$mode" == system ]]; then
+if [[ "$mode" == managed ]]; then
   if ((gradia_ok)); then
     uuids+=("$gradia_uuid")
   else
@@ -322,10 +332,18 @@ for uuid in "${uuids[@]}"; do
 done
 
 total=$(( ${#uuids[@]} + ${#failed[@]} ))
+# Count what is really there, not what we tried to install: an extension that was
+# "installed" but is absent from the shell's own list is still a miss.
+installed_count=0
+for uuid in "${uuids[@]}"; do
+  if grep -qF "$uuid" <<<"$installed_now"; then
+    installed_count=$((installed_count + 1))
+  fi
+done
 if (( ${#failed[@]} || ${#missing[@]} )); then
   {
     echo
-    echo "warning: GNOME extension set '$mode' is incomplete (${#uuids[@]} of $total installed)"
+    echo "warning: GNOME extension set '$mode' is incomplete ($installed_count of $total installed)"
     for line in "${failed[@]:-}" "${missing[@]:-}"; do
       if [[ -n "$line" ]]; then
         echo "  - $line"
