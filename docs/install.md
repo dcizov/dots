@@ -211,6 +211,7 @@ ucli system               OS, CPU, disk and firmware facts
 ucli setup-desktop        install DE + snapshot (Arch minimal only)
 ucli debloat-desktop      remove DE packages you don't need
 ucli gnome-defaults       curated GNOME defaults (dock, blur, clock, Nautilus)
+ucli flatpak-theme        adw-gtk3 runtime extensions so Flatpak GTK3 apps match
 ucli backup-gnome-settings  backup dconf settings + extensions
 ucli restore-gnome-settings # restore dconf settings + extensions
 ```
@@ -228,6 +229,7 @@ The Snapper/Limine script skips CachyOS.
 | Snapper/Limine setup (`setup-snapshots`, skips CachyOS) | ✅ |
 | Fresh install snapshot (`snapshot-fresh-install.sh`) | ✅ |
 | Curated GNOME defaults (`gnome-defaults`, `--status`/`--force`) | ✅ |
+| Flatpak GTK theme extensions (`flatpak-theme`, verified) | ✅ |
 | GNOME settings backup (`backup-gnome-settings`) | ✅ |
 | GNOME settings restore (`restore-gnome-settings`) | ✅ |
 | Dev packages (`devmode`, `--force` bypasses role check) | ✅ |

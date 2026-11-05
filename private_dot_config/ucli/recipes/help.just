@@ -34,6 +34,8 @@ usage:
     @printf '%s\n' ''
     @printf '%s\n' 'GNOME:'
     @printf '%s\n' '  ucli setup-extensions  # managed extension sets (idempotent)'
+    @printf '%s\n' '  ucli gnome-defaults    # curated defaults: dock, blur, clock, legacy theme'
+    @printf '%s\n' '  ucli flatpak-theme     # adw-gtk3 runtime extension for Flatpak apps'
     @printf '%s\n' '  ucli backup-gnome-settings'
     @printf '%s\n' '  ucli restore-gnome-settings'
     @printf '%s\n' ''

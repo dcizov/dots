@@ -12,6 +12,19 @@ gnome-defaults *ARGS:
     # Bluefin's curated GNOME defaults, per user (--status / --force / --dry-run)
     @~/.local/share/ucli/scripts/install/gnome-defaults.sh {{ARGS}}
 
+# Install the adw-gtk3 runtime extensions from Flathub, so Flatpak GTK3 apps use the
+# same theme as the host. Flatpak can add them by itself on the next `flatpak
+# install`/`update` (it reads the host's gtk-theme key); doing it here means they are
+# there before the first Flatpak app runs.
+#
+#   ucli flatpak-theme            this user's Flatpak installation (default)
+#   ucli flatpak-theme --system   system-wide (needs root; apps must be too)
+#   ucli flatpak-theme --dry-run  print the flatpak commands
+[group('GNOME')]
+flatpak-theme *ARGS:
+    # adw-gtk3 GTK theme extensions for Flatpak (--system / --dry-run)
+    @~/.local/share/ucli/scripts/install/install-flatpak-gtk-theme.sh {{ARGS}}
+
 # Install + enable the managed GNOME extension sets (idempotent, rerunnable).
 [group('GNOME')]
 setup-extensions *ARGS:

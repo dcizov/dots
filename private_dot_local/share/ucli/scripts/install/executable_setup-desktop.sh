@@ -460,6 +460,13 @@ if [[ "$desktop" == "gnome" ]]; then
       echo "warning: some GNOME defaults were not applied; re-run as $real_user: ucli gnome-defaults" >&2
     fi
   fi
+  # Flatpaks get the theme through a runtime extension, not through /usr/share —
+  # only when flatpak is already on the machine; `ucli apps` installs flatpak and
+  # runs the same step, which is the normal order for a first install.
+  if command -v flatpak >/dev/null 2>&1 && [[ -x "$script_dir/install-flatpak-gtk-theme.sh" ]]; then
+    "$script_dir/install-flatpak-gtk-theme.sh" \
+      || echo "warning: Flatpak GTK theme extension not installed; re-run: ucli flatpak-theme" >&2
+  fi
   if [[ "${extension_failed:-0}" == 1 ]]; then
     {
       echo
