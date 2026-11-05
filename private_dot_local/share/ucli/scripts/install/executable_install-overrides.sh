@@ -62,6 +62,7 @@ fi
 fx_dir="$(fx_config_dir "$real_home")"
 rc=0
 if [[ -x "$script_dir/install-firefox-policies.sh" ]]; then
+  echo "Firefox extensions from $(fx_short_root "$fx_dir" "$real_home") ..."
   sudo "$script_dir/install-firefox-policies.sh" || rc=$?
   if ((${rc:-0} != 0)); then
     echo "warning: Firefox extensions were not configured (exit $rc);" >&2
