@@ -33,6 +33,8 @@ ucli setup-system gnome     # gnome | kde | hyprland
 #    + chezmoi apply (now that those programs exist: ~/.zshrc, starship,
 #      ~/.config/ghostty, ~/.config/ucli/firefox) 
 #    + GNOME extensions (if gnome) + a "<DE> Setup" snapshot
+#    + quiet boot: plymouth, and KERNEL_CMDLINE_EXTRA appended to limine
+#      (standalone: ucli setup-boot [--dry-run] [--no-plymouth])
 
 # 4. optional: drop DE packages you never use.
 #    Takes a Snapper snapshot first (--no-snapshot skips it).
@@ -84,7 +86,7 @@ What each layer actually puts on disk:
 | desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), the repo-packaged GNOME extensions + the layout set, `chezmoi apply`, the Firefox profile (Betterfox `user.js` + GNOME theme), then a snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
 | cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
-| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay + the Firefox extension lists + the personal GNOME extension set. The Firefox *profile* (Betterfox, GNOME theme) belongs to the browser: the desktop step installs it, and `ucli apps` calls the same script so it still works when Firefox is installed from here |
+| apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay + the Firefox extension lists (written as `/etc/firefox/policies/policies.json`) + the personal GNOME extension set. The Firefox *profile* (Betterfox, GNOME theme) belongs to the browser: the desktop step installs it, and `ucli apps` calls the same script so it still works when Firefox is installed from here |
 | dev | `ucli devmode` | `DEV_CLI` plumbing + `DEV` stack + dev box |
 
 `ucli cli` on top of a plain zsh: oh-my-zsh + plugins + starship is the standard

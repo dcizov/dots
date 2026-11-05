@@ -24,8 +24,9 @@ for arg in "$@"; do
       cat <<'EOF'
 usage: install-profile.sh [--no-snapshot] [--yes] [--force] [gnome|kde|hyprland]
 
-The machine step: base packages, then the desktop step (DE, firefox + terminal,
-shell tier, dotfiles, GNOME extensions, Firefox profile, snapshot).
+The machine step: base packages, the desktop step (DE, firefox + terminal, shell
+tier, dotfiles, GNOME extensions, Firefox profile, snapshot), then quiet boot
+(plymouth + kernel parameters appended to limine).
 
   --no-snapshot   skip every Snapper snapshot of this run (UCLI_NO_SNAPSHOT=1 too)
   --yes           do not ask when there is no snapper config
@@ -106,6 +107,22 @@ if [[ -x "$script_dir/setup-desktop.sh" ]]; then
     sudo "$script_dir/setup-desktop.sh" ${desktop_args[@]+"${desktop_args[@]}"}
 else
   echo "warning: setup-desktop.sh missing; install the desktop yourself" >&2
+fi
+
+# Quiet boot last: it wants the DE's packages (plymouth comes from pacman) and the
+# initramfs in its final shape. It appends to whatever the installer wrote — on
+# CachyOS that is already wired, so it only adds the plymouth splash.
+#
+# Advisory on purpose: this is a splash screen, and the one machine that cannot use
+# it is the one with a bootloader this step refuses (GRUB, systemd-boot). That must
+# not turn a finished setup into a failed one, so it warns, names the retry, and
+# the run continues.
+if [[ -x "$script_dir/../system/setup-boot.sh" ]]; then
+  ui_rule "boot splash (limine + plymouth)"
+  if ! sudo "$script_dir/../system/setup-boot.sh" --yes; then
+    ui_note "boot splash not configured — the message above says why"
+    printf '  %s\n' "retry later: sudo ucli setup-boot   (or --no-plymouth for parameters only)" >&2
+  fi
 fi
 
 ui_rule "setup-system done"

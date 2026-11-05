@@ -54,11 +54,19 @@ fi
 # Extension lists stay in apps on purpose: which add-ons you want (and which dev
 # add-ons, via ucli devmode) is personal, the config above is not. The repo file
 # holds the opinionated ones; personal-extensions.txt is yours and optional.
+#
+# Both lists end up as Firefox *policies* (/etc/firefox/policies/policies.json),
+# not as XPI files inside a profile: the policy is what makes them installed and
+# enabled without a first launch, and it is the mechanism Mozilla documents for
+# unattended installs. See the script's header for why the alternatives lost.
 fx_dir="$(fx_config_dir "$real_home")"
-"$script_dir/install-firefox-extensions.sh" "$fx_dir/extensions.txt" || true
-if [[ -r "$fx_dir/personal-extensions.txt" ]]; then
-  echo "Firefox personal extensions ($(fx_short_root "$fx_dir" "$real_home")/personal-extensions.txt) ..."
-  "$script_dir/install-firefox-extensions.sh" "$fx_dir/personal-extensions.txt" || true
+rc=0
+if [[ -x "$script_dir/install-firefox-policies.sh" ]]; then
+  sudo "$script_dir/install-firefox-policies.sh" || rc=$?
+  if ((${rc:-0} != 0)); then
+    echo "warning: Firefox extensions were not configured (exit $rc);" >&2
+    echo "         re-run: sudo ucli firefox-policies" >&2
+  fi
 fi
 
 if [[ "$desktop" == "gnome" ]]; then

@@ -4,13 +4,19 @@ set -euo pipefail
 # Distro-aware AUR helper selection and installation.
 #
 # Priority order:
-#   1. shelly (if already installed) — preferred for day-to-day use
-#   2. paru   (if already installed) — fallback
-#   3. install paru (default on Arch) — first-run bootstrap
+#   1. AUR_HELPER from ~/.config/ucli/packages.bash (or the overlay) — if you
+#      said which one you want, that is the answer, even if the other is installed
+#   2. shelly (if already installed) — preferred for day-to-day use
+#   3. paru   (if already installed) — fallback
+#   4. install AUR_HELPER, or the distro default (paru on Arch, shelly on CachyOS)
 #
-# The chosen helper name is printed to stdout and stored in
-# $HOME/.local/share/ucli/aur-helper so subsequent runs reuse the same
-# selection without re-prompting. Userspace only — no /etc writes.
+# Nothing is written any more. This used to drop the chosen name into
+# ~/.local/share/ucli/aur-helper and read it back on the next run; that file was a
+# cache of something `command -v` can answer in a millisecond, and a state file for
+# a single word is worse than no file. `AUR_HELPER` is the actual preference
+# (unset/empty = "pick for me"), and it lives where every other "what this machine
+# gets" value lives, so it is the same file you already edit for packages.
+# Userspace only — no /etc writes.
 #
 # STDOUT CONTRACT: exactly one line, the helper name. Every installer's own
 # output goes to stderr, and the answer is verified with `command -v` after the
@@ -45,16 +51,29 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/ui.sh"
 
-STATE_FILE="${HOME:-$(getent passwd "${USER:-root}" | cut -d: -f6)}/.local/share/ucli/aur-helper"
-
-get_stored_helper() {
-  [ -r "$STATE_FILE" ] && cat "$STATE_FILE" || printf ''
+# The preference lives in the config of the user who will run the helper, which
+# is not necessarily the user running this script: from setup-desktop or
+# arch-snapper-limine that is root with SUDO_USER set.
+config_home() {
+  if [[ "${EUID:-$(id -u)}" -eq 0 && -n "${SUDO_USER:-}" ]]; then
+    getent passwd "$SUDO_USER" | cut -d: -f6
+  else
+    printf '%s\n' "${HOME:-$(getent passwd "${USER:-root}" | cut -d: -f6)}"
+  fi
 }
 
-store_helper() {
-  local helper="$1"
-  mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || true
-  printf '%s\n' "$helper" > "$STATE_FILE" 2>/dev/null || true
+# AUR_HELPER="paru" in packages.bash, or anything else in the overlay. Both files
+# are plain assignments, which is why they can be sourced here.
+load_preference() {
+  local home cfg
+  home="$(config_home)"
+  AUR_HELPER="${AUR_HELPER:-}"
+  for cfg in "$home/.config/ucli/packages.bash" "$home/.config/ucli/packages.local.bash"; do
+    [[ -r "$cfg" ]] || continue
+    # shellcheck source=/dev/null
+    . "$cfg"
+  done
+  AUR_HELPER="${AUR_HELPER:-}"
 }
 
 detect_distro_raw() {
@@ -78,15 +97,21 @@ run_as_real_user() {
 }
 
 # The helper that is really on PATH now — never the string the installer
-# claimed. Stores it and prints the single line callers rely on.
+# claimed. An explicit AUR_HELPER wins; otherwise shelly, then paru.
 pick_installed() {
+  local want="${AUR_HELPER:-}"
+  if [[ -n "$want" ]]; then
+    if command -v "$want" >/dev/null 2>&1; then
+      printf '%s\n' "$want"
+      return 0
+    fi
+    return 1
+  fi
   if command -v shelly >/dev/null 2>&1; then
-    store_helper shelly
     printf 'shelly\n'
     return 0
   fi
   if command -v paru >/dev/null 2>&1; then
-    store_helper paru
     printf 'paru\n'
     return 0
   fi
@@ -102,33 +127,43 @@ install_shelly() {
 }
 
 main() {
+  load_preference
   local distro; distro="$(detect_distro_raw | tr '[:upper:]' '[:lower:]')"
-  local stored; stored="$(get_stored_helper)"
 
-  # --print-only: just report the preferred helper, don't install
+  # --print-only: just report the helper that would be used, don't install. A
+  # configured name this script cannot drive is an error here too — printing it
+  # would make the callers (install-packages, setup-desktop, arch-snapper-limine)
+  # build a command that is guaranteed to fail.
   if (( print_only )); then
-    if command -v shelly >/dev/null 2>&1; then
-      printf 'shelly\n'
-    elif command -v paru >/dev/null 2>&1; then
-      printf 'paru\n'
-    elif [[ -n "$stored" ]]; then
-      printf '%s\n' "$stored"
-    else
-      case "$distro" in
-        cachyos) printf 'shelly\n' ;;
-        *) printf 'paru\n' ;;
-      esac
+    case "${AUR_HELPER:-}" in
+      ""|paru|shelly) ;;
+      *) echo "AUR_HELPER=$AUR_HELPER is not a helper this script knows (paru|shelly)" >&2; return 2 ;;
+    esac
+    if pick_installed; then
+      return 0
     fi
+    case "${AUR_HELPER:-}" in
+      paru|shelly) printf '%s\n' "$AUR_HELPER" ;;
+      "") case "$distro" in cachyos) printf 'shelly\n' ;; *) printf 'paru\n' ;; esac ;;
+    esac
     return 0
   fi
 
-  # Already there: shelly wins over paru, both win over installing anything.
+  # Already there: an explicit preference or shelly beats paru, and both beat
+  # installing anything.
   pick_installed && return 0
 
-  # Nothing installed. CachyOS defaults to shelly, everything else to paru; a
+  # Nothing usable installed. AUR_HELPER wins, then CachyOS' shelly, then paru; a
   # human gets asked unless --yes.
-  local want=shelly
-  [[ "$distro" == cachyos ]] || want=paru
+  local want="${AUR_HELPER:-}"
+  if [[ -z "$want" ]]; then
+    want=shelly
+    [[ "$distro" == cachyos ]] || want=paru
+  fi
+  case "$want" in
+    paru|shelly) ;;
+    *) echo "AUR_HELPER=$want is not a helper this script knows (paru|shelly)" >&2; exit 2 ;;
+  esac
 
   if (( ! yes_flag )); then
     echo "No AUR helper installed." >&2

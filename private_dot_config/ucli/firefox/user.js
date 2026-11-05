@@ -104,13 +104,15 @@ user_pref("editor.truncate_user_pastes", false);
  * (1 = profile, 4 = application). Extensions dropped anywhere else are ignored. ***/
 user_pref("extensions.enabledScopes", 5);
 /* 2661: extensions dropped into a directory by an outside program are
- * installed but DISABLED by default. Bit flags: 1 = profile, 2 = user,
- * 4 = application, 8 = system (default = 15, i.e. every scope).
- * 14 = 2+4+8: profile-scope drops (what ucli places in
- * <profile>/extensions/*.xpi) are imported and enabled on startup, while
- * add-ons dropped into the other scopes stay disabled until the user
- * explicitly enables them. ***/
-user_pref("extensions.autoDisableScopes", 14); // [DEFAULT: 15]
+ * installed but DISABLED by default (bit flags: 1 = profile, 2 = user,
+ * 4 = application, 8 = system; default 15 = every scope).
+ *
+ * Betterfox lowers this to 14 so that files dropped into a profile are imported
+ * enabled. This repo does not need that and does not want it: extensions are
+ * installed through Firefox's own policies (/etc/firefox/policies/policies.json,
+ * written by `ucli firefox-policies`), which installs *and* enables them without
+ * touching a profile. Keeping the default is the safe direction — an add-on that
+ * some other program drops into a scope must not silently come up enabled. ***/
 
 /** HEADERS / REFERERS ***/
 user_pref("network.http.referer.XOriginTrimmingPolicy", 2);

@@ -226,7 +226,12 @@ cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
 | `PERSONAL_GNOME_EXTENSIONS` (`"PK:UUID"`) | `ucli setup-extensions` |
 
 Firefox works the same way but with files: `~/.config/ucli/firefox/extensions.txt`
-ships empty, and `personal-extensions.txt` (copy the `.example`) is yours.
+ships empty, and `personal-extensions.txt` (copy the `.example`) is yours. Those
+lists become Firefox **policies** (`/etc/firefox/policies/policies.json`), which is
+how extensions get installed *and* enabled without a first launch — no profile
+needed, nothing to click in `about:addons`, and `about:policies` shows what was
+applied. Deleting a line and re-running `ucli firefox-policies` stops managing that
+extension; it stays installed, so remove it in `about:addons` if you want it gone.
 
 Then re-run the step that owns the array (or nothing at all — `ucli setup-system`
 and `ucli apps` are both cheap no-ops for what is already installed). Check it
@@ -277,7 +282,7 @@ failed run retries next time.
 | `~/.config/ucli/` | justfile, recipes, `packages.bash`, `scripts/lib`, `firefox/` sources |
 | `~/.local/bin/ucli` | the wrapper everything routes through |
 | `~/.local/share/ucli/scripts/` | the install/system/check scripts themselves |
-| `~/.local/share/ucli/aur-helper` | which AUR helper this machine uses |
+| `/etc/firefox/policies/policies.json` | Firefox extensions as policy (`ucli firefox-policies`) |
 | `~/.local/state/ucli/` | gates, motd mode, devmode marker |
 | `/etc/ucli/installation-snapshot` | the snapshot id of snapshot #1 |
 | `~/.oh-my-zsh/` | oh-my-zsh + the plugin clones (not chezmoi-managed) |

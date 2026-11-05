@@ -5,6 +5,41 @@ setup-snapshots *ARGS:
     # --no-snapshot: configure only, take no snapshot
     @sudo ~/.local/share/ucli/scripts/system/arch-snapper-limine.sh {{ARGS}}
 
+# Quiet boot: plymouth + this machine's kernel parameters, appended to limine.
+#
+#   ucli setup-boot               install/configure plymouth and add what is missing
+#   ucli setup-boot --dry-run     show every change, write nothing
+#   ucli setup-boot --no-plymouth kernel parameters only (no splash)
+#   ucli setup-boot --force       rebuild the initramfs even when nothing changed
+#
+# Parameters come from KERNEL_CMDLINE_EXTRA in packages.bash (quiet splash
+# loglevel=3 nowatchdog zswap.enabled=0 — the CachyOS defaults) and are *appended*
+# to whatever the bootloader already has: /etc/default/limine when
+# limine-mkinitcpio-hook is in charge, the cmdline: lines inside limine.conf on an
+# archinstall limine, /etc/kernel/cmdline for a Unified Kernel Image. Nothing is
+# replaced or removed, and the plymouth hook is put where ArchWiki wants it (after
+# systemd, before sd-encrypt/encrypt). GRUB and systemd-boot are refused on
+# purpose: this repo sets up limine.
+[group('System')]
+setup-boot *ARGS:
+    # plymouth + kernel parameters appended to limine (quiet boot)
+    @sudo ~/.local/share/ucli/scripts/system/setup-boot.sh {{ARGS}}
+
+# Write Firefox's policy file from ~/.config/ucli/firefox/extensions.txt (+ your
+# personal-extensions.txt, + dev-extensions.txt with --dev), so the extensions are
+# installed and enabled on the next start without a profile and without clicking.
+#
+#   ucli firefox-policies            apply the lists
+#   ucli firefox-policies --dev      include the dev list
+#   ucli firefox-policies --dry-run  print the policy, write nothing
+#
+# `ucli apps` and `ucli devmode` call this themselves; the recipe is for repairs.
+# Check the result in about:policies.
+[group('System')]
+firefox-policies *ARGS:
+    # extensions.txt + personal-extensions.txt -> /etc/firefox/policies/policies.json
+    @sudo ~/.local/share/ucli/scripts/install/install-firefox-policies.sh {{ARGS}}
+
 # Rank the fastest pacman mirrors and write them to /etc/pacman.d — the Arch
 # equivalent of `ujust`-style mirror tuning, ported from CachyOS'
 # cachyos-rate-mirrors.

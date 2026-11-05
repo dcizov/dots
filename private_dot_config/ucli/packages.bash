@@ -26,6 +26,38 @@
 # or adjust packages afterward.
 # ------------------------------------------------------------------
 
+# ------------------------------------------------------------------
+# Machine settings — not packages, but the same kind of decision, and this
+# is the file you already edit for "what this machine gets". Empty/unset
+# means "work it out", so a fresh install needs no edits here.
+# ------------------------------------------------------------------
+
+# Which AUR helper to use. Empty = shelly if installed, else paru if installed,
+# else paru on Arch / shelly on CachyOS (asking once when interactive). Set it to
+# "paru" or "shelly" to make that choice explicit — it then wins even when the
+# other helper is installed. Override it per machine in
+# ~/.config/ucli/packages.local.bash; nothing is cached in a state file, so this
+# is the only place the answer lives.
+AUR_HELPER="${AUR_HELPER:-}"
+
+# Extra kernel parameters, appended by `ucli setup-boot` to whatever the
+# bootloader already has (limine's /etc/default/limine or its limine.conf). These
+# are the CachyOS defaults — quiet boot, no watchdog chatter, no zswap — plus
+# `splash` for plymouth. Existing parameters are preserved; this only adds what
+# is missing, so it is safe to re-run.
+KERNEL_CMDLINE_EXTRA=(
+  quiet
+  splash
+  loglevel=3
+  nowatchdog
+  zswap.enabled=0
+)
+
+# Plymouth theme for that splash. Empty = leave plymouth's own default (Arch
+# ships bgrt, which keeps the OEM logo, and falls back to a spinner when the
+# firmware has none). `plymouth-set-default-theme -l` lists what is installed.
+PLYMOUTH_THEME="${PLYMOUTH_THEME:-}"
+
 # -----------------------------
 # Base setup
 # -----------------------------

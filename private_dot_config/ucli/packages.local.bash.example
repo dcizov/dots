@@ -14,9 +14,23 @@
 #   PERSONAL_GNOME_EXTENSIONS "PK:UUID" pairs for extensions.gnome.org,
 #                             installed by the `personal` extension set
 #
+# Machine settings from packages.bash can be overridden here too, because this
+# file is sourced after it:
+#
+#   AUR_HELPER="paru"         "paru" or "shelly" (empty = shelly if installed,
+#                             else paru, else the distro default)
+#   PLYMOUTH_THEME="spinner"  leave empty for plymouth's own default (bgrt)
+#
 # Every installer checks whether this file exists; delete an array (or the whole
 # file) and the step simply installs the repo's opinionated set again.
 # ==============================================================================
+
+# --- machine settings --------------------------------------------------------
+# Uncomment to pin them for this machine:
+#
+# AUR_HELPER="paru"
+# KERNEL_CMDLINE_EXTRA=( quiet splash loglevel=3 nowatchdog zswap.enabled=0 )
+# PLYMOUTH_THEME=""
 
 # --- packages ----------------------------------------------------------------
 PERSONAL_PKGS=(

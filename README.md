@@ -26,6 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/dcizov/dots/main/install.sh | bash 
 ucli setup-snapshots                             # snapper + limine, snapshot #1
 ucli setup-system gnome                          # base + DE + terminal + browser
                                                  # + shell tier + dotfiles + snapshot
+                                                 # + quiet boot (plymouth + limine)
 ucli cli                                         # shell cosmetics
 ucli apps                                        # apps, flatpaks, Firefox config
 ucli devmode                                     # optional: dev tools + dev box

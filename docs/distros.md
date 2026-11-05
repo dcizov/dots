@@ -39,8 +39,11 @@ What the scripts do about it:
   from the repository when it is there (CachyOS), and only build from the AUR
   when it is not (Arch). A repo package is signed, updated with the system, and
   needs no `makepkg`.
-- `install-aur-helper.sh` prefers shelly, then paru, then installs one. On CachyOS
-  that is normally a no-op: shelly is already there.
+- `install-aur-helper.sh` uses `AUR_HELPER` from `packages.bash` when it is set,
+  otherwise shelly if it is installed, then paru, and installs the distro default
+  (paru on Arch, shelly on CachyOS) when neither is there. The choice is not cached
+  anywhere: it is either in that file or it is `command -v`. On CachyOS the default
+  is normally a no-op, because shelly is already installed.
 - `install-packages.sh` resolves every name through `pacman -Si` and only falls
   back to the AUR (RPC check) for what the repos do not have. `MANUAL_AUR` (shelly)
   therefore installs from the CachyOS repo there and from the AUR on Arch.
@@ -57,6 +60,7 @@ What the scripts do about it:
 | CPU microcode | `CPU_INTEL` / `CPU_AMD` | skipped (`cachyos-settings`/installer) |
 | GPU drivers | `GPU_AMD` / `GPU_INTEL` / `GPU_NVIDIA` | skipped; `chwd` handles hardware detection |
 | Bootloader support | `BOOT_SUPPORT` | skipped |
+| Quiet boot (`ucli setup-boot`) | installs plymouth, adds the plymouth hook, appends `KERNEL_CMDLINE_EXTRA` to limine | same, but `/etc/default/limine` already has `quiet zswap.enabled=0 nowatchdog` from the installer, so only `splash` and the plymouth hook are new |
 | Snapper + Limine | `arch-snapper-limine.sh` writes the config, hooks and `/etc/default/limine` | script explains it is already wired and exits; `--force` overrides |
 
 `ucli setup-snapshots --no-snapshot` on CachyOS prints what is already wired and
