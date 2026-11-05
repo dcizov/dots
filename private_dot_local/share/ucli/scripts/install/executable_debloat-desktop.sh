@@ -11,8 +11,8 @@
 # and lets you pick which to remove with pacman -Rs.
 #
 # This is the "and what else?" pass. The packages this repo removes on its own —
-# epiphany, gnome-console, gnome-software, gnome-tour, gnome-user-docs, malcontent,
-# yelp on GNOME — are DESKTOP_REMOVE_<DE> in packages.bash and are gone before this
+# epiphany, gnome-console, gnome-tour, gnome-user-docs, malcontent, yelp on GNOME —
+# are DESKTOP_REMOVE_<DE> in packages.bash and are gone before this
 # screen is reachable, so they only show up here on a machine that never ran
 # setup-desktop.
 #

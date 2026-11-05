@@ -590,13 +590,16 @@ MANUAL_AUR=(
 # hand-picked subset is how a session ends up missing a settings daemon three
 # months later. What this repo does not want from that group is the one list below.
 #
-# There is no "replacement" mechanism any more, and none is needed: the three
-# packages that stand in for removed ones are ordinary entries in the arrays that
-# already install them —
+# There is no "replacement" mechanism any more, and none is needed: what stands
+# in for a removed package is an ordinary entry in an array that installs it
+# anyway —
 #
 #   gnome-console   → ghostty   DESKTOP_TERMINAL_GNOME (desktop step, `ucli apps`)
-#   gnome-software  → shelly    MANUAL_AUR (desktop step on GNOME, `ucli apps`)
 #   htop-ish        → btop      SYSTEM_QOL_TOOLS (the `base` tier)
+#
+# shelly (`MANUAL_AUR`) is the other direction: an *addition* on GNOME, the GUI
+# store with the Flathub backend, and the AUR helper on CachyOS. It is installed
+# next to gnome-software, not in place of it.
 #
 # It used to be `DESKTOP_REPLACE_<DE>=("orig=replacement")` pairs, which had to
 # guess how to install the right-hand side (a dot meant "flatpak", otherwise AUR
@@ -615,11 +618,9 @@ MANUAL_AUR=(
 # ArchWiki: install only what you need from DE groups
 # https://wiki.archlinux.org/title/GNOME
 #
-# The seven below are what a GNOME group install carries and this repo does not:
+# The six below are what a GNOME group install carries and this repo does not:
 #   epiphany          GNOME Web — Firefox is the browser here (DESKTOP_BROWSER)
 #   gnome-console     kgx — ghostty is the terminal here
-#   gnome-software    the store — shelly replaces it (and gnome-software's
-#                     PackageKit backend is the wrong model on Arch anyway)
 #   gnome-tour        first-run tour, one screen, seen once
 #   gnome-user-docs   offline help; only yelp can read it, so it goes with yelp
 #   malcontent        app-permission control. libmalcontent (the library
@@ -630,12 +631,19 @@ MANUAL_AUR=(
 DESKTOP_REMOVE_GNOME=(
   epiphany
   gnome-console
-  gnome-software
   gnome-tour
   gnome-user-docs
   malcontent
   yelp
 )
+
+# Two group members stay, and both were nearly dropped:
+#   gnome-software        the stock store. shelly is installed next to it
+#                         (`MANUAL_AUR`), so the user picks; fwupd (firmware
+#                         updates) and Flatpak support are its optdepends plugins,
+#                         so they exist exactly as long as it does
+#   gnome-system-monitor  the stock monitor. mission-center was the alternative
+#                         for it and is not used, so the default stays in place
 
 # Nothing to drop from the other two: their groups are what this repo wants.
 DESKTOP_REMOVE_HYPRLAND=()

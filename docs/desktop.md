@@ -11,20 +11,28 @@ does not want from that group is one list per desktop, `DESKTOP_REMOVE_<DE>` in
 |---|---|---|
 | GNOME | `epiphany` | GNOME Web — Firefox is the browser here (`DESKTOP_BROWSER`) |
 | GNOME | `gnome-console` | ghostty is the terminal here (`DESKTOP_TERMINAL_GNOME`) |
-| GNOME | `gnome-software` | shelly is the store (`MANUAL_AUR`, installed with the desktop on GNOME) |
 | GNOME | `gnome-tour` | one first-run screen, seen once |
 | GNOME | `gnome-user-docs` | offline help; only `yelp` can read it |
-| GNOME | `malcontent` | app-permission UI. The library (`libmalcontent`) stays — it is a hard dependency of `gnome-control-center`; only this optional package goes |
+| GNOME | `malcontent` | app-permission UI. The library (`libmalcontent`) stays — it is a hard dependency of `gnome-control-center` *and* of `gnome-software`; only this optional package goes, and with it gnome-software's parental-control plugin (an optdepend) |
 | GNOME | `yelp` | help viewer; nothing else opens it, and Help buttons just do nothing |
 | Hyprland, KDE | — | their groups are what this repo wants |
 
-Everything else the group carries stays: `gnome-system-monitor`, `gnome-disk-utility`,
-`baobab`, `gnome-maps`, `gnome-weather`, `nautilus`, `gnome-text-editor`, … —
-and `gnome-tweaks`, which is not a group member at all (`DESKTOP_GNOME_BASE`).
+Everything else the group carries stays: `gnome-disk-utility`, `baobab`,
+`gnome-maps`, `gnome-weather`, `nautilus`, `gnome-text-editor`, … — and
+`gnome-tweaks`, which is not a group member at all (`DESKTOP_GNOME_BASE`).
 
-**There is no replacement matrix.** The three packages that stand in for removed
-ones are ordinary entries in the arrays that install them anyway: `ghostty` in
-`DESKTOP_TERMINAL_GNOME`, `shelly` in `MANUAL_AUR`, `btop` in `SYSTEM_QOL_TOOLS`.
+Two members are kept on purpose, having once been on the list:
+
+- **`gnome-software`** — the stock store. `shelly` (`MANUAL_AUR`) is installed
+  *next to* it, not in place of it, so either one works. Its fwupd (firmware
+  updates) and Flatpak support are optdepends plugins, so they exist exactly as
+  long as it does.
+- **`gnome-system-monitor`** — the stock monitor. Mission Center was the
+  alternative for it and is not used, so the default stays in place.
+
+**There is no replacement matrix.** What stands in for a removed package is an
+ordinary entry in an array that installs it anyway: `ghostty` in
+`DESKTOP_TERMINAL_GNOME`, `btop` in `SYSTEM_QOL_TOOLS`.
 The old `DESKTOP_REPLACE_<DE>=("orig=replacement")` pairs had to guess how to
 install the right-hand side (a dot meant "Flatpak", otherwise AUR helper or
 pacman) — a second install path for packages the arrays already carry.

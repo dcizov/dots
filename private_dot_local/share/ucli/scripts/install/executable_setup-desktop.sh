@@ -13,7 +13,7 @@
 # `install-packages.sh desktop`, `--choose` and this step cannot drift apart.
 #
 # What the desktop group carries but this repo does not want (epiphany,
-# gnome-console, gnome-software, gnome-tour, gnome-user-docs, malcontent, yelp on
+# gnome-console, gnome-tour, gnome-user-docs, malcontent, yelp on
 # GNOME) is DESKTOP_REMOVE_<DE>: skipped at install with `--ignore`, and removed
 # afterwards when they are already there — the archinstall case — with a snapshot
 # taken first.
