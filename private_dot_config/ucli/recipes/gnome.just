@@ -1,3 +1,17 @@
+# Apply the curated GNOME defaults (`gnome-defaults.sh`): the values Bluefin ships
+# in its gschema override — dock as a fixed bar with dots, popup blur, Super/Alt-Tab
+# split, weekday in the clock, no hot corners, folders-first file choosers, and the
+# Nautilus "Open in terminal" wired to ghostty — written as *user* settings.
+#
+#   ucli gnome-defaults            apply what is still at its schema default
+#   ucli gnome-defaults --status   what is set, what is yours, what is missing
+#   ucli gnome-defaults --force    also overwrite values you set yourself
+#   ucli gnome-defaults --dry-run  print the gsettings calls, write nothing
+[group('GNOME')]
+gnome-defaults *ARGS:
+    # Bluefin's curated GNOME defaults, per user (--status / --force / --dry-run)
+    @~/.local/share/ucli/scripts/install/gnome-defaults.sh {{ARGS}}
+
 # Install + enable the managed GNOME extension sets (idempotent, rerunnable).
 [group('GNOME')]
 setup-extensions *ARGS:
@@ -37,14 +51,23 @@ setup-extensions *ARGS:
         printf '✗ the %s GNOME extension set is incomplete (see above)\n' "$which" >&2
         failed+=("$which")
     }
-    # system: the opinionated layout set (dash-to-dock, blur-my-shell, gsconnect,
-    # search-light, copyous) + the repo-packaged ones (caffeine, appindicator)
-    run_set system
+    # managed: the repo's set (packages.bash GNOME_MANAGED_EXTENSIONS) plus the
+    # Gradia Capture build; `system` is still accepted as a legacy alias by the
+    # script, but this is the name that means what it does
+    run_set managed
     # personal: PERSONAL_GNOME_EXTENSIONS from packages.local.bash, if that exists
     run_set personal
+    # Their settings, immediately: enabling dash-to-dock and blur-my-shell without
+    # the defaults leaves an unstyled bar with square indicators, which is not what
+    # the set is for. `gnome-defaults` skips keys whose schema is missing, so it is
+    # safe to run even when a set above failed — and it must not hide that failure,
+    # which is why it runs before the check and only warns.
+    if [[ -x "$script_dir/gnome-defaults.sh" ]]; then
+        "$script_dir/gnome-defaults.sh" || printf 'warning: some GNOME defaults were not applied; re-run: ucli gnome-defaults\n' >&2
+    fi
     if (( ${#failed[@]} )); then
         printf 'error: GNOME extensions incomplete: %s\n' "${failed[*]}" >&2
         printf '  retry: ucli setup-extensions --force\n' >&2
         exit 1
     fi
-    printf 'ok: extensions installed and enabled, Extension Manager available (log out/in if the shell has not reloaded)\n'
+    printf 'ok: extensions installed and enabled with their settings, Extension Manager available (log out/in if the shell has not reloaded)\n'

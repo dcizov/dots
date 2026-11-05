@@ -37,13 +37,64 @@ https://aur.archlinux.org/packages/shelly
 ## GNOME
 
 ```bash
-ucli setup-extensions     extension packages + the managed sets, installed and enabled
+ucli setup-extensions         extension packages + the managed sets, installed and enabled
+ucli gnome-defaults           the curated settings: dock, blur, clock, hot corners, Nautilus
+ucli gnome-defaults --status  what is set, what is yours, what is missing
 ucli backup-gnome-settings    dconf + extension list -> ~/.local/share/ucli/settings/gnome
 ucli restore-gnome-settings   put them back
 ```
 
 GNOME is curated in `packages.bash`. Package group contents from
 [archlinux.org/groups/x86_64/gnome/](https://archlinux.org/groups/x86_64/gnome/).
+
+### Curated defaults, out of the box
+
+Bluefin's "curated GNOME, out of the box" is one file: `zz0-bluefin-modifications.gschema.override`
+in `/usr/share/glib-2.0/schemas`. It sets `org.gnome.shell enabled-extensions` as
+a *schema default* (so every new user starts with the extensions on) and in the
+same file tunes them and the shell — dock as a fixed bar with dots, popup blur,
+`Super`-vs-`Alt`-Tab split, weekday in the clock, no hot corners, Adwaita fonts,
+their accent. Locks live separately in `/etc/dconf/db/distro.d/locks/`.
+
+`gnome-defaults.sh` applies the same kind of values, minus Bluefin's identity
+(their fonts, wallpaper, stores) and plus this repo's choices (`ghostty`, the
+Nautilus extensions):
+
+| What | Where it shows |
+|---|---|
+| `:minimize,maximize,close`, center new windows, `Super`-Tab apps / `Alt`-Tab windows, `Super-D` desktop | window buttons, Alt-Tab behaviour |
+| hot corners off, weekday clock, accent `slate`, numlock on, folders-first file choosers | the shell itself; `accent-color` is GNOME 47+ and is skipped on older shells |
+| `favorite-apps`: firefox, ghostty, nautilus, settings, text editor | the dock on first login |
+| dash-to-dock: fixed bar, 80 % dark background, dots indicators, no overview-on-startup | the dock |
+| blur-my-shell: dash-to-dock + popup panels | the dock and menus |
+| `nautilus-open-any-terminal`: `terminal=ghostty`, no keybinding, host binary (`flatpak=none`) | Nautilus right-click → Open in Terminal |
+
+Why not the override file itself: it lives in a directory pacman owns and
+`glib-compile-schemas` rewrites for the whole system — the distro's job, not
+chezmoi's. Applied as *user* settings the result on a single-user machine is the
+same, and it stays inspectable (`dconf dump /org/gnome/`) and reversible.
+
+It is a default, not a lock — the rule is:
+
+| Current value | What happens |
+|---|---|
+| equals the repo's value | nothing |
+| equals the compiled schema default (i.e. you never touched it) | set it |
+| anything else — you chose it | **kept**, reported as `keep … (yours)`; `ucli gnome-defaults --force` overwrites |
+
+The schema default is read with `GSETTINGS_BACKEND=memory gsettings get`, i.e.
+with a backend that has no user values, so no dconf-path guessing and no Python.
+Keys whose schema is not installed are skipped and counted — dash-to-dock and
+blur-my-shell only appear once the extension is there, `accent-color` only on
+47+, `nautilus-open-any-terminal`'s schema only once that AUR package is in.
+
+When it runs: after the extension sets in `ucli setup-system gnome` and in
+`ucli setup-extensions`, and in `ucli apps` right after `GNOME_APP_OVERRIDES`
+because that is the array the Nautilus extensions live in. `ucli apps --force`
+passes nothing extra here on purpose: it must not reset settings you set by hand.
+It ends with `nautilus -q` when Nautilus is open, because the file manager reads
+its Python extensions at startup — that is the whole reason "I installed the
+extension and the menu entry never appeared" happens.
 
 ### Two extension sets, two sources
 

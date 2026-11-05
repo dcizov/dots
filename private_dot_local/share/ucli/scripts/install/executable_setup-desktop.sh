@@ -443,13 +443,22 @@ if [[ "$desktop" == "gnome" ]]; then
   # System extensions first, then user/personal overrides. Neither failure may
   # take the desktop down with it, but neither may be silent either: `|| true` on
   # these two lines is how a machine ended up with no extensions and no error.
-  if ! "$script_dir/install-gnome-extension-set.sh" system; then
+  if ! "$script_dir/install-gnome-extension-set.sh" managed; then
     extension_failed=1
   fi
   # personal set: only when ~/.config/ucli/packages.local.bash defines one; the
   # script exits 0 with a note when it does not.
   if ! "$script_dir/install-gnome-extension-set.sh" personal; then
     extension_failed=1
+  fi
+  # The curated settings, after the extensions they refer to: dash-to-dock's and
+  # blur-my-shell's schemas only exist once those are installed, and
+  # gnome-defaults skips what it cannot find. Cosmetic, so not fatal — but never
+  # silent either.
+  if [[ -x "$script_dir/gnome-defaults.sh" ]]; then
+    if ! runuser -u "$real_user" -- env HOME="$real_home" "$script_dir/gnome-defaults.sh"; then
+      echo "warning: some GNOME defaults were not applied; re-run as $real_user: ucli gnome-defaults" >&2
+    fi
   fi
   if [[ "${extension_failed:-0}" == 1 ]]; then
     {

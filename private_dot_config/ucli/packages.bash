@@ -469,14 +469,25 @@ DESKTOP_TERMINAL_KDE=(
 
 GNOME_APP_OVERRIDES=(
   gnome-boxes            # VM manager
-  nautilus-admin-gtk4    # Nautilus: open as admin
-  nautilus-my-computer   # Nautilus: "My Computer" entry
-  nautilus-open-any-terminal  # Nautilus: "Open in terminal"
+  # The three Nautilus extensions are Python extensions: without the
+  # nautilus-python loader they install fine and then do nothing at all, which is
+  # exactly what "I installed it and nothing changed" looks like. The two AUR
+  # packages depend on it, but depending on a dependency of a dependency is how a
+  # later PKGBUILD change silently empties the context menu, so it is explicit.
+  nautilus-python        # extensions-4 python loader (Extra 4.2.0)
+  nautilus-admin-gtk4    # "Open/Edit as Administrator" (pkexec)
+  nautilus-my-computer   # "Computer" view: drives, volumes, usage
+  nautilus-open-any-terminal  # "Open in Terminal"; terminal wired by gnome-defaults
 )
 # extension-manager used to live here, as one of `ucli apps`' GNOME extras. It is
 # not an app extra: it is how you look at, enable and tune the extensions the
 # desktop step installs, so it belongs to GNOME_SYSTEM_EXTENSION_PACKAGES and
 # arrives with the desktop (and with `ucli setup-extensions`).
+#
+# Everything here installs *working* things: the settings these packages need
+# (nautilus-open-any-terminal's `terminal`) are applied by `gnome-defaults.sh`,
+# which `ucli apps` runs right after this array and `setup-desktop` runs for the
+# desktop step, so no package in this list arrives half-configured.
 
 # ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings

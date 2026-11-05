@@ -72,4 +72,13 @@ fi
 
 if [[ "$desktop" == "gnome" ]]; then
   "$script_dir/install-gnome-extension-set.sh" personal ${force_args[@]+"${force_args[@]}"} || true
+  # GNOME_APP_OVERRIDES is what this step installs (the Nautilus extensions live
+  # there), so this is where their settings belong: without them
+  # nautilus-open-any-terminal has no terminal to open and the context entries may
+  # as well not exist. It is a no-op for everything already set.
+  # Deliberately no --force here: `ucli apps --force` must not reset GNOME
+  # settings you changed by hand. `ucli gnome-defaults --force` is the explicit way
+  # to do that.
+  "$script_dir/gnome-defaults.sh" \
+    || echo "warning: some GNOME defaults were not applied; re-run: ucli gnome-defaults" >&2
 fi
