@@ -313,6 +313,8 @@ DESKTOP_GNOME_ADDITIONS=()
 GNOME_SYSTEM_EXTENSION_PACKAGES=(
   gnome-shell-extension-caffeine             # keep the screen awake
   gnome-shell-extension-appindicator         # tray icons (615 on EGO)
+  zip                                        # 'gnome-extensions pack' needs it:
+                                             # Gradia Capture is built from source
   extension-manager                          # the GUI for everything below:
                                              # browse/install/tune extensions
                                              # (0.6.5, Extra — not the Flatpak)
@@ -324,6 +326,18 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 # for. Bluefin's equivalent list is dash-to-dock, appindicator, gsconnect,
 # blur-my-shell and search-light; the four at the end are "make it calm" tweaks
 # that belong to the same opinion, not to one person.
+#
+# Two deliberate differences from Bluefin's list:
+#   * search-light is gone. EGO's newest *active* release declares shell 48/49,
+#     the 50 build was rejected, nothing covers 51, and GNOME disables what it
+#     cannot load — it showed up in Extension Manager as a red error. Bluefin still
+#     bakes it; here a dead entry in a managed set is worse than no entry.
+#   * gradia-integration is added (see below), so the screenshot tool can annotate.
+#
+# Gradia Capture (gradia-integration@alexandervanhee.github.io) is in the set but
+# NOT in this array: it is on neither extensions.gnome.org nor in the repos, so
+# there is no PK to install from. install-gnome-extension-set.sh builds it from its
+# pinned upstream commit (install-gradia-capture.sh) and enables it with the rest.
 GNOME_SYSTEM_EXTENSIONS=(
   "19:user-theme@gnome-shell-extensions.gcampax.github.com"  # shell themes from ~/.themes
                                                              # (firefox-gnome-theme styles the
@@ -331,7 +345,6 @@ GNOME_SYSTEM_EXTENSIONS=(
   "307:dash-to-dock@micxgx.gmail.com"                        # Ubuntu-like dock
   "3193:blur-my-shell@aunetx"                                # blur behind shell UI
   "1319:gsconnect@andyholmes.github.io"                      # phone integration
-  "5489:search-light@icedman.github.com"                     # Spotlight-style Super+Space
   "8834:copyous@boerdereinar.dev"                            # clipboard history
   "3843:just-perfection-desktop@just-perfection"             # hide what GNOME shows by default
   "4451:logomenu@aryan_k"                                    # app-menu button

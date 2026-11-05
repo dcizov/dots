@@ -23,8 +23,10 @@ usage() {
 usage: install-gnome-extension-set.sh [system|personal] [--force]
 
   system    the opinionated layout set (user-theme, dash-to-dock, blur-my-shell,
-            gsconnect, search-light, copyous); the repo-packaged ones (caffeine,
-            appindicator) are installed by install-packages.sh
+            gsconnect, copyous, just-perfection, logo-menu, UI-tune, tray icons)
+            plus Gradia Capture, which is built from its own pinned upstream
+            commit because it is on neither EGO nor in the repos; the
+            repo-packaged ones (caffeine, appindicator) come from install-packages.sh
   personal  your own, from PERSONAL_GNOME_EXTENSIONS in
             ~/.config/ucli/packages.local.bash
   --force   run even when the gate says this set is unchanged
@@ -45,6 +47,7 @@ done
 
 # When run via sudo (from setup-desktop.sh), $HOME is root's home;
 # use the invoking user's home instead.
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 real_user="${SUDO_USER:-$USER}"
 real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
@@ -138,6 +141,16 @@ fi
 # later run, with no extensions installed.
 gext_installed_list() { run_gext list 2>/dev/null || true; }
 
+# Everything installed, one UUID per line: gext's list plus the shell's own view,
+# which also sees system extensions and anything installed outside gext (Gradia
+# Capture is built from source and installed with `gnome-extensions install`).
+installed_extensions() {
+  {
+    gext_installed_list
+    as_user gnome-extensions list 2>/dev/null || true
+  } | grep -v '^[[:space:]]*$' || true
+}
+
 # True when the managed set is not fully installed *and enabled* right now.
 state_incomplete() {
   local installed="$1" enabled="$2" entry uuid
@@ -153,7 +166,7 @@ state_incomplete() {
 }
 
 if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
-  if state_incomplete "$(gext_installed_list)" "$(enabled_extensions || true)"; then
+  if state_incomplete "$(installed_extensions)" "$(enabled_extensions || true)"; then
     echo "GNOME extension set '$mode' is recorded as done but is not installed/enabled; re-applying."
   else
     echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
@@ -254,6 +267,25 @@ if [[ "$mode" == system ]] && command -v pacman >/dev/null 2>&1 \
   echo "      so the package is not needed: sudo pacman -Rns gnome-shell-extensions"
 fi
 
+# Gradia Capture is part of the system set but is not a gext entry: no
+# extensions.gnome.org listing and no Arch package, so it is built from its pinned
+# upstream commit and installed with `gnome-extensions install`. Its UUID is added
+# to the same single write below; if the build fails the set is incomplete rather
+# than quietly one extension short.
+gradia_uuid="gradia-integration@alexandervanhee.github.io"
+gradia_ok=0
+if [[ "$mode" == system ]]; then
+  gradia_args=()
+  ((force)) && gradia_args=(--force)
+  if [[ -x "$script_dir/install-gradia-capture.sh" ]]; then
+    if "$script_dir/install-gradia-capture.sh" ${gradia_args[@]+"${gradia_args[@]}"}; then
+      gradia_ok=1
+    fi
+  else
+    echo "warning: install-gradia-capture.sh not found; run 'ucli chezmoi-apply'" >&2
+  fi
+fi
+
 echo "GNOME extension set '$mode' ..."
 uuids=()
 failed=()
@@ -267,13 +299,21 @@ for entry in "${entries[@]}"; do
   fi
 done
 
+if [[ "$mode" == system ]]; then
+  if ((gradia_ok)); then
+    uuids+=("$gradia_uuid")
+  else
+    failed+=("$gradia_uuid (build failed)")
+  fi
+fi
+
 # Enable only what is really there: pushing the uuid of a failed download into
 # enabled-extensions makes GNOME list an extension it cannot load.
 enable_uuids "${uuids[@]}"
 
 # Verify the end state. The gate is committed only when everything is installed
 # AND enabled, so a failed run is retried instead of being remembered as done.
-installed_now="$(gext_installed_list)"
+installed_now="$(installed_extensions)"
 enabled_now="$(enabled_extensions || true)"
 missing=()
 for uuid in "${uuids[@]}"; do

@@ -77,8 +77,8 @@ the managed set below: installed **and** enabled, and the other thirteen never
 appear. Machines set up before that change still have the package; the set script
 says so and prints `sudo pacman -Rns gnome-shell-extensions`.
 
-The layout set is deliberately small — ten extensions, the same ones Bluefin
-ships a variation of:
+The layout set is deliberately small — ten extensions, nine of them from
+extensions.gnome.org:
 
 | PK | UUID | Why |
 |---|---|---|
@@ -86,18 +86,50 @@ ships a variation of:
 | 307 | `dash-to-dock@micxgx.gmail.com` | Ubuntu-like dock |
 | 3193 | `blur-my-shell@aunetx` | blur behind shell UI |
 | 1319 | `gsconnect@andyholmes.github.io` | phone integration (KDE Connect protocol) |
-| 5489 | `search-light@icedman.github.com` | Spotlight-style launcher on Super+Space |
 | 8834 | `copyous@boerdereinar.dev` | clipboard history (needs `libgda6` + `gsound`) |
 | 3843 | `just-perfection-desktop@just-perfection` | hide the shell furniture GNOME shows by default |
 | 4451 | `logomenu@aryan_k` | app-menu button in the panel |
 | 4158 | `gnome-ui-tune@itstime.tech` | overview tweaks |
 | 9975 | `BetterTrayIcons@nexaknight.com` | consistent tray icon sizes |
+| — | `gradia-integration@alexandervanhee.github.io` | annotations/OCR for the built-in screenshot tool. **Built from source** — no EGO listing, no Arch package |
+
+#### Gradia Capture, the one entry with no PK
+
+`gradia-integration@alexandervanhee.github.io` (Alexander Vanhee, the Gradia app
+author; metadata declares shell 49/50/51) exists only as source in
+[AlexanderVanhee/gradia-capture](https://github.com/AlexanderVanhee/gradia-capture).
+Extensions.gnome.org has no such UUID (checked 2026-11-05 via the EGO query API),
+Arch's `gradia` package ships the *app* only, and there is no separate AUR-less
+package — so `gext install` has nothing to fetch.
+
+Bluefin solves that by building the extension into the image with the project's
+own `build.sh`; `install-gradia-capture.sh` does the same thing per user at setup
+time: fetch the **pinned commit** (`git fetch --depth 1 <sha>`, not a branch —
+this runs `gnome-extensions pack` and installs what comes out), run `build.sh`,
+`gnome-extensions install --force` the resulting zip into
+`~/.local/share/gnome-shell/extensions/`, and leave enabling to the one
+`enabled-extensions` write. Dependencies: `zip` (in
+`GNOME_SYSTEM_EXTENSION_PACKAGES`), `git`, and the `gnome-extensions` CLI from
+`gnome-shell`. Gated on the commit (`gnome-gradia-capture`), and it re-checks the
+extension directory, so a wiped `~/.local` rebuilds instead of skipping. A build
+failure makes the set report incomplete — it is part of the set, not a footnote.
+
+The annotated screenshot lands in the clipboard / Gradia app; OCR needs Gradia
+itself (`gradia` in Extra, or the Flathub app `be.alexandervanhee.gradia`).
+
+**Search Light is gone** (`5489`). EGO's newest *active* release declares shell
+48/49, the 50 build was rejected, nothing covers 51 — GNOME refuses to load it and
+Extension Manager shows a red error next to a toggle that will not stay on. Bluefin
+still bakes it in; a dead entry in a managed set is worse than no entry.
 
 Each entry is `"PK:UUID"` on one line: PK is what `gext install` takes, UUID is
 what GNOME enables. They used to be two parallel arrays, and they drifted badly —
 the list installed Search Light while enabling GSConnect, whose PK is 1319 (the
 list claimed that was AppIndicator support, actually 615). One line per extension
-cannot drift.
+cannot drift. Gradia Capture is the exception that needs a second mechanism rather
+than a second list: `install-gnome-extension-set.sh` adds its UUID to the same
+single `enabled-extensions` write, so a broken build shows up as an incomplete set
+instead of an extension that is enabled but absent.
 
 #### "Recorded as done" is not "done"
 
@@ -142,24 +174,31 @@ extensions.gnome.org yourself. Their inventory (current `main`: the directories 
 `system_files/shared/usr/share/gnome-shell/extensions`, built by
 `build_files/shared/build-gnome-extensions.sh`):
 
-| Bluefin extension | How it gets there |
-|---|---|
-| `appindicatorsupport@rgcjonas.gmail.com` | unpacked into the image, schemas compiled at build |
-| `blur-my-shell@aunetx` | `make` + unpack the extension zip in the build |
-| `dash-to-dock@micxgx.gmail.com` | same (`make` + `glib-compile-schemas`) |
-| `caffeine@patapon.info` | `gnome-extensions pack` (gettext catalogues) + unpack |
-| `gsconnect@andyholmes.github.io` | `meson setup` + `meson install` |
-| `logomenu@aryan_k` | unpacked, plus its `distroshelf-helper`/`missioncenter-helper` binaries into `/usr/bin` |
-| `search-light@icedman.github.com` | unpacked, schemas compiled |
-| `gradia-integration@alexandervanhee.github.io` | built by the extension's own `build.sh` |
-| `bazaar-integration@kolunmi.github.io` | unpacked |
-| — user list — | **nothing**: no gext, no per-user installs, so the section stays empty |
+| Bluefin extension | How it gets there | Here |
+|---|---|---|
+| `appindicatorsupport@rgcjonas.gmail.com` | unpacked into the image, schemas compiled at build | same, but from pacman (`gnome-shell-extension-appindicator`) |
+| `blur-my-shell@aunetx` | `make` + unpack the extension zip in the build | same, gext (PK 3193) |
+| `dash-to-dock@micxgx.gmail.com` | same (`make` + `glib-compile-schemas`) | same, gext (PK 307) |
+| `caffeine@patapon.info` | `gnome-extensions pack` (gettext catalogues) + unpack | same, but from pacman |
+| `gsconnect@andyholmes.github.io` | `meson setup` + `meson install` | same, gext (PK 1319) |
+| `logomenu@aryan_k` | unpacked, plus its `distroshelf-helper`/`missioncenter-helper` binaries into `/usr/bin` | same, gext (PK 4451) — its helper binaries then have to exist some other way, see below |
+| `search-light@icedman.github.com` | unpacked, schemas compiled | **dropped** — dead on shell 50/51 |
+| `gradia-integration@alexandervanhee.github.io` | built by the extension's own `build.sh` | **same**, built per user from the same pinned commit |
+| `bazaar-integration@kolunmi.github.io` | unpacked | **not wanted** — it is the Bazaar app-store companion; no Bazaar here |
+| — user list — | **nothing**: no gext, no per-user installs, so the section stays empty | nine gext extensions + Gradia Capture |
 
-Same nine-ish extensions as this repo's set, opposite packaging choice: they pay a
-rebuild per GNOME release inside their image pipeline (their issue tracker shows
-what happens when that lags — "GNOME System Extensions are old, unsupported for
-GNOME 50") and get a fixed list; we fetch the current EGO release per user, at the
-cost of a network call on the first run and a `gext` dependency.
+The delta in one line: **shared** — appindicator, caffeine, dash-to-dock,
+blur-my-shell, gsconnect, logo-menu, gradia-integration. **Theirs only** —
+search-light (dead on 50/51, so dropped here) and bazaar-integration (their
+app-store companion; not wanted). **Here only** — user-theme (shell themes for
+firefox-gnome-theme), copyous, just-perfection, gnome-ui-tune, BetterTrayIcons.
+Both of theirs that are missing here come from the same cause: an image ships one
+fixed list it rebuilds per GNOME release, so a stale entry survives until someone
+touches the build. They pay a rebuild per release inside their pipeline (their
+issue tracker shows what happens when that lags — "GNOME System Extensions are old,
+unsupported for GNOME 50"); we fetch the current EGO release per user, at the cost
+of a network call on the first run and a `gext` dependency — and gradia is the one
+place where that model needs a build step anyway.
 
 That is a *system-wide default*, and it has a documented failure mode inside
 Bluefin itself: the moment a user toggles anything in Extension Manager, a
