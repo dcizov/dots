@@ -16,9 +16,19 @@ set -euo pipefail
 # via gext (gnome-extensions-cli) and enables all extensions.
 #
 # Enabling is ONE write to org.gnome.shell enabled-extensions instead of N
-# `gext enable` calls (ipted from Bluefin, which sets the whole list in its
+# `gext enable` calls (adapted from Bluefin, which sets the whole list in its
 # gschema override). The existing list is preserved and merged, so extensions
 # the user enabled themselves are never dropped.
+#
+# Pruning: the UUIDs this repo installed are recorded in
+# ~/.local/state/ucli/gnome-extensions.installed, and every run subtracts the
+# wanted set (managed ∪ personal ∪ Gradia, so the two modes cannot prune each
+# other) from that manifest before installing anything. What is left over is an
+# extension you deleted from the arrays: it gets disabled and, when it lives in
+# ~/.local/share/gnome-shell/extensions, uninstalled. Extensions you installed
+# yourself are absent from the manifest and are never touched. That is the only
+# way to tell "removed from the list" apart from "the user wanted this" — a diff
+# of enabled-extensions cannot.
 #
 # Source: https://github.com/essembeh/gnome-extensions-cli
 
@@ -78,32 +88,6 @@ fi
 # shellcheck source=/dev/null
 source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
-# What this set installs, decided before anything else: an empty personal set
-# must not require gext (or a network) to print its note.
-entries=()
-case "$mode" in
-  managed) entries=("${GNOME_MANAGED_EXTENSIONS[@]:-}") ;;
-  personal)
-    if [[ ! -r "$personal_file" ]]; then
-      echo "no ~/.config/ucli/packages.local.bash; nothing personal to install."
-      echo "    copy packages.local.bash.example next to it to use this set."
-      exit 0
-    fi
-    entries=("${PERSONAL_GNOME_EXTENSIONS[@]:-}")
-    ;;
-esac
-mapfile -t entries < <(printf '%s\n' "${entries[@]:-}" | awk 'NF')
-if (( ${#entries[@]} == 0 )); then
-  echo "GNOME extension set '$mode' is empty; nothing to do."
-  exit 0
-fi
-
-if ! command -v gext >/dev/null 2>&1; then
-  echo "gext (gnome-extensions-cli) not found" >&2
-  echo "  run: ucli install-gnome-extensions-cli" >&2
-  exit 1
-fi
-
 # Run a command as the real user (not root) when invoked via sudo.
 # Extensions and dconf are per-user: as root they would land in root's
 # profile/database instead of the user's. HOME is forced too, because dconf
@@ -132,19 +116,115 @@ enabled_extensions() {
   printf '%s\n' "$raw" | grep -o "'[^']*'" | tr -d "'" || true
 }
 
-# Versioned gate. The token is a hash of packages.bash (plus packages.local.bash
-# for the personal set), which is where the extension lists live: as long as they
-# do not change, this mode has nothing new to install, and gext talks to
-# extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
-# you disable an extension by hand and want the managed set back.
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
-gate_name="gnome-extensions-$mode"
-gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
-# The personal set is defined in the overlay, so its hash is part of the token.
-if [[ -r "$personal_file" ]]; then
-  gate_version="${gate_version}-$(vs_hash "$personal_file")"
-fi
+# --- enabled-extensions, written once ---------------------------------------
+
+# Write exactly this list to org.gnome.shell enabled-extensions, once. Both
+# enable_uuids (merge in what the set wants) and disable_uuids (prune what it no
+# longer wants) end here, so one place knows the key, the literal format and the
+# gsettings fallback.
+write_enabled_list() {
+  local -a list=("$@")
+  local literal="[" i
+  for i in "${!list[@]}"; do
+    (( i )) && literal+=", "
+    literal+="'${list[$i]}'"
+  done
+  literal+="]"
+
+  if command -v dconf >/dev/null 2>&1 &&
+     as_user dconf write /org/gnome/shell/enabled-extensions "$literal" 2>/dev/null; then
+    echo "  enabled-extensions = $literal"
+    return 0
+  fi
+  if command -v gsettings >/dev/null 2>&1 &&
+     as_user gsettings set org.gnome.shell enabled-extensions "$literal" 2>/dev/null; then
+    echo "  enabled-extensions = $literal"
+    return 0
+  fi
+
+  echo "warning: single-write failed; falling back to per-extension gext enable" >&2
+  local u
+  for u in "${list[@]}"; do
+    [[ -n "$u" ]] || continue
+    run_gext enable "$u" >/dev/null 2>&1 || echo "warning: could not enable $u (may need shell restart)" >&2
+  done
+}
+
+# enable_uuids <uuid...> — merge into the current list and write it once.
+enable_uuids() {
+  (($#)) || return 0
+
+  local -a current=() merged=()
+  mapfile -t current < <(enabled_extensions)
+  ((${#current[@]})) && merged=("${current[@]}")
+
+  local uuid existing
+  for uuid in "$@"; do
+    [[ -n "$uuid" ]] || continue
+    for existing in "${merged[@]:-}"; do
+      [[ "$existing" == "$uuid" ]] && continue 2
+    done
+    merged+=("$uuid")
+  done
+
+  local current_joined="" merged_joined=""
+  ((${#current[@]})) && current_joined="$(printf '%s,' "${current[@]}")"
+  ((${#merged[@]})) && merged_joined="$(printf '%s,' "${merged[@]}")"
+
+  if [[ "$current_joined" == "$merged_joined" ]]; then
+    echo "enabled-extensions already up to date (${#merged[@]} entries)"
+    return 0
+  fi
+
+  write_enabled_list "${merged[@]}"
+}
+
+# disable_uuids <uuid...> — drop them from the current list and write it once.
+disable_uuids() {
+  (($#)) || return 0
+
+  local -a current=() keep=()
+  mapfile -t current < <(enabled_extensions)
+  ((${#current[@]})) || return 0
+
+  local existing uuid drop
+  for existing in "${current[@]}"; do
+    drop=0
+    for uuid in "$@"; do
+      [[ "$existing" == "$uuid" ]] && drop=1
+    done
+    (( drop )) || keep+=("$existing")
+  done
+  ((${#keep[@]} == ${#current[@]})) && return 0
+
+  write_enabled_list "${keep[@]}"
+}
+
+# Check if a GNOME extension UUID is already installed.
+is_extension_installed() {
+  local uuid="$1"
+  run_gext list 2>/dev/null | grep -qF "$uuid"
+}
+
+# Install an extension from extensions.gnome.org by primary key.
+# Skips if the extension UUID is already installed (idempotent re-runs).
+install_extension_by_pk() {
+  local pk="$1" uuid="$2"
+
+  if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
+    echo "extension pk=$pk ($uuid) already installed; skipping"
+    return 0
+  fi
+
+  echo "installing extension pk=$pk ..."
+  local out
+  if ! out="$(run_gext install "$pk" 2>&1)"; then
+    echo "warning: could not install extension pk=$pk ($uuid)" >&2
+    printf '%s\n' "$out" | tail -3 | sed 's/^/    /' >&2
+    return 1
+  fi
+}
+
 # `gext list` is local (no network), so asking it is cheap. It is also the only
 # way to tell "already done" from "recorded as done" — a gate committed after a
 # failed install used to make this script print "unchanged; skipping" on every
@@ -175,94 +255,165 @@ state_incomplete() {
   return 1
 }
 
+# Versioned gate. The token is a hash of packages.bash (plus packages.local.bash
+# for the personal set), which is where the extension lists live: as long as they
+# do not change, this mode has nothing new to install, and gext talks to
+# extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
+# you disable an extension by hand and want the managed set back.
+# shellcheck source=/dev/null
+source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
+gate_name="gnome-extensions-$mode"
+gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
+# The personal set is defined in the overlay, so its hash is part of the token.
+if [[ -r "$personal_file" ]]; then
+  gate_version="${gate_version}-$(vs_hash "$personal_file")"
+fi
+# What this set installs, decided before anything else: an empty personal set
+# must not require gext (or a network) to print its note.
+entries=()
+case "$mode" in
+  managed) entries=("${GNOME_MANAGED_EXTENSIONS[@]:-}") ;;
+  personal)
+    if [[ ! -r "$personal_file" ]]; then
+      echo "no ~/.config/ucli/packages.local.bash; nothing personal to install."
+      echo "    copy packages.local.bash.example next to it to use this set."
+      exit 0
+    fi
+    entries=("${PERSONAL_GNOME_EXTENSIONS[@]:-}")
+    ;;
+esac
+mapfile -t entries < <(printf '%s\n' "${entries[@]:-}" | awk 'NF')
+
+# --- prune: what left the arrays ---------------------------------------------
+# The arrays say what should be installed; the manifest says what this repo put
+# there. Without the manifest "removed from the array" could only be guessed, and
+# the guess would delete extensions you installed yourself. So: installed-by-us
+# minus wanted-now = remove. Both modes read the same manifest and the same
+# wanted-union, because `managed` and `personal` are two invocations of one
+# script and a per-mode view would let each prune the other's extensions.
+state_dir="${XDG_STATE_HOME:-$real_home/.local/state}/ucli"
+manifest_file="$state_dir/gnome-extensions.installed"
+gradia_uuid="gradia-integration@alexandervanhee.github.io"
+
+wanted_uuids() {
+  local entry
+  # `${arr[@]:-}` on an empty array still yields one empty element, so filter
+  # (plain `if`, not `cond && cmd`: a false trailing condition would make the
+  # pipeline return 1 and `set -e` would kill the script).
+  local -a managed=() personal=()
+  for entry in "${GNOME_MANAGED_EXTENSIONS[@]:-}"; do
+    if [[ -n "$entry" ]]; then managed+=("$entry"); fi
+  done
+  for entry in "${PERSONAL_GNOME_EXTENSIONS[@]:-}"; do
+    if [[ -n "$entry" ]]; then personal+=("$entry"); fi
+  done
+
+  {
+    for entry in "${managed[@]:-}"; do
+      if [[ -n "$entry" ]]; then printf '%s\n' "${entry#*:}"; fi
+    done
+    for entry in "${personal[@]:-}"; do
+      if [[ -n "$entry" ]]; then printf '%s\n' "${entry#*:}"; fi
+    done
+    # Gradia Capture has no PK line to delete, so it follows the managed set:
+    # present while that set has entries, gone when you retire the set.
+    if (( ${#managed[@]} )); then printf '%s\n' "$gradia_uuid"; fi
+  } | sort -u
+}
+
+# Record what this run owns. Called after the set is complete, and from the
+# "unchanged" fast path, and only ever for what is really installed.
+manifest_write() {
+  local installed="$1" uuid
+  local -a list=()
+  while IFS= read -r uuid; do
+    [[ -n "$uuid" ]] || continue
+    if grep -qF "$uuid" <<<"$installed"; then
+      list+=("$uuid")
+    fi
+  done < <(wanted_uuids)
+  ((${#list[@]})) || return 0
+  as_user mkdir -p "$state_dir"
+  printf '%s\n' "${list[@]}" | as_user tee "$manifest_file" >/dev/null
+}
+
+prune_dropped() {
+  [[ -s "$manifest_file" ]] || return 0
+
+  local -a recorded=() stale=()
+  mapfile -t recorded < "$manifest_file"
+  local wanted uuid
+  wanted="$(wanted_uuids)"
+  for uuid in "${recorded[@]}"; do
+    [[ -n "$uuid" ]] || continue
+    grep -qxF "$uuid" <<<"$wanted" || stale+=("$uuid")
+  done
+  ((${#stale[@]})) || return 0
+
+  echo "prune: no longer in the managed or personal set:"
+  printf '  - %s\n' "${stale[@]}"
+  disable_uuids "${stale[@]}"
+  for uuid in "${stale[@]}"; do
+    if [[ -d "$real_home/.local/share/gnome-shell/extensions/$uuid" ]]; then
+      if as_user gnome-extensions uninstall "$uuid" >/dev/null 2>&1; then
+        echo "  removed $uuid (user extension)"
+      else
+        echo "warning: could not uninstall $uuid; remove it in Extension Manager" >&2
+      fi
+    elif [[ -d "/usr/share/gnome-shell/extensions/$uuid" ]]; then
+      echo "  $uuid is a system extension: disabled, files left to pacman"
+    else
+      echo "  $uuid was already gone; dropped its enabled entry"
+    fi
+  done
+
+  # Forget what was just pruned, so it is not reported as "already gone" on every
+  # later run. What is still installed stays recorded; the install tail re-records
+  # the wanted set when it runs.
+  local -a keep=()
+  local other drop
+  for uuid in "${recorded[@]}"; do
+    if [[ -z "$uuid" ]]; then continue; fi
+    drop=0
+    for other in "${stale[@]}"; do
+      if [[ "$uuid" == "$other" ]]; then drop=1; fi
+    done
+    if (( ! drop )); then keep+=("$uuid"); fi
+  done
+  if (( ${#keep[@]} )); then
+    printf '%s\n' "${keep[@]}" | as_user tee "$manifest_file" >/dev/null
+  else
+    as_user rm -f "$manifest_file"
+  fi
+}
+prune_dropped
+
+# Checked after the prune on purpose: emptying the array is how you retire an
+# extension, and that must still clean up what the last run installed.
+if (( ${#entries[@]} == 0 )); then
+  echo "GNOME extension set '$mode' is empty; nothing to install."
+  exit 0
+fi
+
+if ! command -v gext >/dev/null 2>&1; then
+  echo "gext (gnome-extensions-cli) not found" >&2
+  echo "  run: ucli install-gnome-extensions-cli" >&2
+  exit 1
+fi
+
 if ((!force)) && ! vs_check "$gate_name" user "$gate_version"; then
   if state_incomplete "$(installed_extensions)" "$(enabled_extensions || true)"; then
     echo "GNOME extension set '$mode' is recorded as done but is not installed/enabled; re-applying."
   else
     echo "GNOME extension set '$mode' unchanged since the last run (${gate_version}); skipping."
     echo "    re-run with --force to apply it anyway: ucli setup-extensions --force"
+    # Nothing to install, but the manifest may predate this run (or this script):
+    # record the wanted set that is actually installed, so the next removal from
+    # the arrays has something to prune against.
+    manifest_write "$(installed_extensions)"
     exit 0
   fi
 fi
-
-# Check if a GNOME extension UUID is already installed.
-is_extension_installed() {
-  local uuid="$1"
-  run_gext list 2>/dev/null | grep -qF "$uuid"
-}
-
-# Install an extension from extensions.gnome.org by primary key.
-# Skips if the extension UUID is already installed (idempotent re-runs).
-install_extension_by_pk() {
-  local pk="$1" uuid="$2"
-
-  if [[ -n "$uuid" ]] && is_extension_installed "$uuid"; then
-    echo "extension pk=$pk ($uuid) already installed; skipping"
-    return 0
-  fi
-
-  echo "installing extension pk=$pk ..."
-  local out
-  if ! out="$(run_gext install "$pk" 2>&1)"; then
-    echo "warning: could not install extension pk=$pk ($uuid)" >&2
-    printf '%s\n' "$out" | tail -3 | sed 's/^/    /' >&2
-    return 1
-  fi
-}
-
-# --- enabled-extensions, written once ---------------------------------------
-
-# enable_uuids <uuid...> — merge into the current list and write it once.
-enable_uuids() {
-  (($#)) || return 0
-
-  local -a current=() merged=()
-  mapfile -t current < <(enabled_extensions)
-  ((${#current[@]})) && merged=("${current[@]}")
-
-  local uuid existing
-  for uuid in "$@"; do
-    [[ -n "$uuid" ]] || continue
-    for existing in "${merged[@]:-}"; do
-      [[ "$existing" == "$uuid" ]] && continue 2
-    done
-    merged+=("$uuid")
-  done
-
-  local current_joined="" merged_joined=""
-  ((${#current[@]})) && current_joined="$(printf '%s,' "${current[@]}")"
-  ((${#merged[@]})) && merged_joined="$(printf '%s,' "${merged[@]}")"
-
-  if [[ "$current_joined" == "$merged_joined" ]]; then
-    echo "enabled-extensions already up to date (${#merged[@]} entries)"
-    return 0
-  fi
-
-  local literal="[" i
-  for i in "${!merged[@]}"; do
-    (( i )) && literal+=", "
-    literal+="'${merged[$i]}'"
-  done
-  literal+="]"
-
-  if command -v dconf >/dev/null 2>&1 &&
-     as_user dconf write /org/gnome/shell/enabled-extensions "$literal" 2>/dev/null; then
-    echo "  enabled-extensions = $literal"
-    return 0
-  fi
-  if command -v gsettings >/dev/null 2>&1 &&
-     as_user gsettings set org.gnome.shell enabled-extensions "$literal" 2>/dev/null; then
-    echo "  enabled-extensions = $literal"
-    return 0
-  fi
-
-  echo "warning: single-write enable failed; falling back to per-extension gext enable" >&2
-  local u
-  for u in "$@"; do
-    [[ -n "$u" ]] || continue
-    run_gext enable "$u" >/dev/null 2>&1 || echo "warning: could not enable $u (may need shell restart)" >&2
-  done
-}
 
 # Machines set up before user-theme moved to extensions.gnome.org still carry
 # gnome-shell-extensions: fourteen classic extensions (apps-menu, window-list,
@@ -282,7 +433,6 @@ fi
 # upstream commit and installed with `gnome-extensions install`. Its UUID is added
 # to the same single write below; if the build fails the set is incomplete rather
 # than quietly one extension short.
-gradia_uuid="gradia-integration@alexandervanhee.github.io"
 gradia_ok=0
 if [[ "$mode" == managed ]]; then
   gradia_args=()
@@ -356,6 +506,7 @@ if (( ${#failed[@]} || ${#missing[@]} )); then
   exit 1
 fi
 
+manifest_write "$installed_now"
 vs_commit "$gate_name" user "$gate_version"
 echo "done: ${#uuids[@]} extension(s) installed and enabled."
 echo "      log out and back in (or restart GNOME Shell) to load them."

@@ -191,7 +191,7 @@ cp ~/.config/ucli/packages.local.bash.example ~/.config/ucli/packages.local.bash
 | `PERSONAL_PKGS` | `ucli apps` | pacman/AUR packages (password manager, torrent client, `neovim`, …) |
 | `PERSONAL_DEV` | `ucli devmode` | extra dev packages on top of `DEV_CLI` + `DEV` |
 | `PERSONAL_FLATPAKS` | `ucli apps` | flatpak IDs (Spotify, Obsidian, Bottles, wallpaper tools, …) |
-| `PERSONAL_GNOME_EXTENSIONS` | `ucli setup-extensions` (`personal` set) | `"PK:UUID"` pairs from extensions.gnome.org |
+| `PERSONAL_GNOME_EXTENSIONS` | `ucli setup-extensions` (`personal` set) | `"PK:UUID"` pairs from extensions.gnome.org — deleting one removes it (see the prune note below) |
 
 The same idea as `~/.config/zsh/local.zsh`: never chezmoi-managed, never
 required, and read only if it exists. The Firefox equivalents are files —
@@ -211,6 +211,16 @@ Steps that are slow or hit the network are gated by a content hash
 | Gradia Capture (`gnome-gradia-capture`) | the pinned upstream commit | the pinned commit changes (a shell bump) |
 | Betterfox `user.js` | hash of `~/.config/ucli/firefox/user.js` | you edit `user.js` |
 | VSCodium extensions | hash of `extensions.txt` | the list changes |
+
+The GNOME extension sets also keep a **manifest**
+(`~/.local/state/ucli/gnome-extensions.installed`): the UUIDs `ucli` installed.
+Every run subtracts the wanted set from it before installing anything, so an
+extension you delete from `GNOME_MANAGED_EXTENSIONS` or
+`PERSONAL_GNOME_EXTENSIONS` is disabled and uninstalled instead of lingering
+enabled forever — and an extension you installed yourself is never touched, since
+it is not in the manifest. That is *state*, not a gate: it runs even when the hash
+is unchanged, and deleting the file gives up ownership rather than breaking
+anything. `docs/desktop.md` has the full procedure for removing or moving one.
 
 `--force` redoes the work anyway (`ucli setup-extensions --force`,
 `ucli setup-desktop --force` / `ucli apps --force`, `ucli vscodium-extensions --force`). A gate is only

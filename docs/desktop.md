@@ -49,7 +49,8 @@ GNOME is curated in `packages.bash`. Package group contents from
 
 | | Where | Installed by |
 |---|---|---|
-| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator`, plus **Extension Manager** (`extension-manager`, Extra 0.6.5) and Copyous' `libgda6`/`gsound` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
+| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
+| the tooling around them | `GNOME_EXTENSION_TOOLING`: **Extension Manager** (`extension-manager`, Extra 0.6.5), `zip` (source builds), **`gradia`** (the app Gradia Capture annotates into and OCRs with) | same two places — the desktop step and `gnome-extensions` mode |
 | extensions.gnome.org | `GNOME_MANAGED_EXTENSIONS`, the repo's set, plus `PERSONAL_GNOME_EXTENSIONS` from the overlay | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
 
 **Extension Manager** is part of that package set on purpose. Before it, this was
@@ -73,7 +74,9 @@ of updates (gext cannot see or update them), root-owned files in `ucli uninstall
 and system-wide schema compilation. The preference that *does* exist is the one the
 arrays encode: installed on every machine (`GNOME_MANAGED_EXTENSIONS` +
 `GNOME_SYSTEM_EXTENSION_PACKAGES`) versus installed on the machines that ask for it
-(`PERSONAL_GNOME_EXTENSIONS` in the overlay).
+(`PERSONAL_GNOME_EXTENSIONS` in the overlay). `GNOME_EXTENSION_TOOLING` is neither
+an extension nor a preference: it is what the extension step needs to work —
+the GUI, `zip`, and the Gradia app.
 
 `gnome-shell-extensions` is deliberately **not** installed. It is one package
 carrying fourteen classic extensions (apps-menu, auto-move-windows, drive-menu,
@@ -98,7 +101,7 @@ extensions.gnome.org:
 | 3843 | `just-perfection-desktop@just-perfection` | hide the shell furniture GNOME shows by default |
 | 4451 | `logomenu@aryan_k` | app-menu button in the panel |
 | 9975 | `BetterTrayIcons@nexaknight.com` | consistent tray icon sizes |
-| — | `gradia-integration@alexandervanhee.github.io` | annotations/OCR for the built-in screenshot tool. **Built from source** — no EGO listing, no Arch package |
+| — | `gradia-integration@alexandervanhee.github.io` | annotations/OCR for the built-in screenshot tool. **Built from source** — no EGO listing, no Arch *extension* package (the *app* it drives is `gradia` in Extra, installed as tooling) |
 
 #### Gradia Capture, the one entry with no PK
 
@@ -106,8 +109,10 @@ extensions.gnome.org:
 author; metadata declares shell 49/50/51) exists only as source in
 [AlexanderVanhee/gradia-capture](https://github.com/AlexanderVanhee/gradia-capture).
 Extensions.gnome.org has no such UUID (checked 2026-11-05 via the EGO query API),
-Arch's `gradia` package ships the *app* only, and there is no separate AUR-less
-package — so `gext install` has nothing to fetch.
+Arch's `gradia` package ships the *app* only — the pair to the extension, not a
+container for it — so `gext install` has nothing to fetch. The app is installed
+as tooling (`GNOME_EXTENSION_TOOLING`); an extension without its app annotates
+into the clipboard and has no OCR.
 
 Bluefin solves that by building the extension into the image with the project's
 own `build.sh`; `install-gradia-capture.sh` does the same thing per user at setup
@@ -116,13 +121,15 @@ this runs `gnome-extensions pack` and installs what comes out), run `build.sh`,
 `gnome-extensions install --force` the resulting zip into
 `~/.local/share/gnome-shell/extensions/`, and leave enabling to the one
 `enabled-extensions` write. Dependencies: `zip` (in
-`GNOME_SYSTEM_EXTENSION_PACKAGES`), `git`, and the `gnome-extensions` CLI from
+`GNOME_EXTENSION_TOOLING`), `git`, and the `gnome-extensions` CLI from
 `gnome-shell`. Gated on the commit (`gnome-gradia-capture`), and it re-checks the
 extension directory, so a wiped `~/.local` rebuilds instead of skipping. A build
 failure makes the set report incomplete — it is part of the set, not a footnote.
 
 The annotated screenshot lands in the clipboard / Gradia app; OCR needs Gradia
-itself (`gradia` in Extra, or the Flathub app `be.alexandervanhee.gradia`).
+itself, which is why `gradia` is installed with the desktop step. Prefer the
+Flathub build (`be.alexandervanhee.gradia`)? `ucli` will not fight you for it, but
+it is the same program — there is no extension-only setup worth having.
 
 **Search Light is gone** (`5489`). EGO's newest *active* release declares shell
 48/49, the 50 build was rejected, nothing covers 51 — GNOME refuses to load it and
@@ -173,8 +180,56 @@ extensions live — worth having on some machines and not on others:
 The overlay is copied by hand (`cp …/packages.local.bash.example …/packages.local.bash`)
 and never chezmoi-managed, so a fresh machine gets only the repo's eight plus the
 two system packages — `ucli setup-extensions` installs the overlay's entries only
-if you created that file. Deleting an entry never uninstalls it; the set only adds
-(and re-enables).
+if you created that file. Deleting an entry *does* uninstall it now: see below.
+
+#### Removing or moving an extension
+
+One rule: **edit the arrays, then re-run the step.** The set owns what it put
+there, so it also removes it:
+
+| You want | Do |
+|---|---|
+| remove an extension | delete its `"PK:UUID"` line from `GNOME_MANAGED_EXTENSIONS`, or from the overlay's `PERSONAL_GNOME_EXTENSIONS` |
+| move it between the repo set and your overlay | delete the line from one array, add the identical `"PK:UUID"` line to the other — one edit, then one run |
+| keep it, but not under `ucli`'s control | delete the line, run `ucli setup-extensions`, then install it yourself from Extension Manager |
+
+then `ucli setup-extensions` (add `--force` if nothing else in the set changed and
+you want everything re-applied; the prune does not need it, it runs before the
+gate).
+
+How it decides what to remove: the script records the UUIDs it installed in
+`~/.local/state/ucli/gnome-extensions.installed`, one per line. Every run — both
+modes, before the gate and before anything is installed — subtracts the wanted
+set from that manifest and handles each dropped UUID:
+
+1. remove it from `org.gnome.shell enabled-extensions` (the same single write that
+   enabling uses, so you never get a half-written list), then
+2. `gnome-extensions uninstall` it, if it lives in
+   `~/.local/share/gnome-shell/extensions`;
+3. if it only exists in `/usr/share/gnome-shell/extensions`, **disable it** and say
+   so — those files are pacman's (`pacman -Q` shows the package), and a script
+   silently removing packages is worse than leaving a disabled extension;
+4. if the directory is already gone, still drop the stale enabled entry.
+
+The wanted set is the *union* of `GNOME_MANAGED_EXTENSIONS`,
+`PERSONAL_GNOME_EXTENSIONS` and Gradia Capture — so `ucli setup-extensions`
+running `managed` and then `personal` never removes the other mode's extensions,
+and moving an entry between the two arrays is a no-op for the prune. Gradia has
+no PK line to delete; it follows the managed array, so it leaves with it.
+
+**Extensions you installed yourself are never touched.** They were never in the
+manifest, so the subtraction cannot reach them. That is the entire reason for the
+manifest: `enabled-extensions` alone cannot distinguish "dropped from the array"
+from "the user wanted this", and guessing from a diff is how a setup script
+deletes someone's work. `rm ~/.local/state/ucli/gnome-extensions.installed` gives
+up ownership — the next run records what it installs and prunes nothing.
+
+Two consequences worth knowing: the manifest is only written when the set is
+*complete* (a half-installed set does not claim ownership of what failed, and
+only UUIDs that are really installed are recorded), and emptying the array
+retires the whole set instead of erroring — `GNOME_MANAGED_EXTENSIONS=()` plus
+one run removes all eight and Gradia Capture, leaving your own extensions and
+the overlay's alone.
 
 #### How Bluefin does it, and why this repo does not copy that
 
@@ -230,7 +285,8 @@ So this repo keeps the split: **packages** where Arch packages the extension
 (`GNOME_SYSTEM_EXTENSION_PACKAGES`, installed with the desktop), and **one merged
 dconf write** to the user's own `org.gnome.shell enabled-extensions` for the rest
 (`enable_uuids` in `install-gnome-extension-set.sh` — it appends to whatever is
-there, never replaces). gschema overrides and `distro.d` remain the right tool if
+there, never replaces; the only thing that ever *removes* an entry from that list
+is the prune, and only for extensions the manifest says this repo installed). gschema overrides and `distro.d` remain the right tool if
 you ever turn this into a multi-user image; on a single-user post-install they
 only add a second place where the truth can drift.
 

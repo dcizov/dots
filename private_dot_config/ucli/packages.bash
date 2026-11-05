@@ -313,15 +313,28 @@ DESKTOP_GNOME_ADDITIONS=()
 GNOME_SYSTEM_EXTENSION_PACKAGES=(
   gnome-shell-extension-caffeine             # keep the screen awake
   gnome-shell-extension-appindicator         # tray icons (615 on EGO)
-  zip                                        # 'gnome-extensions pack' needs it:
-                                             # Gradia Capture is built from source
-  extension-manager                          # the GUI for everything below:
-                                             # browse/install/tune extensions
-                                             # (0.6.5, Extra — not the Flatpak)
   # libgda6 + gsound are Copyous' backends, and Copyous is not in the managed set
   # any more (it is a "sometimes" extension: see packages.local.bash.example).
   # They ride along with it in the overlay's PERSONAL_PKGS instead of being
   # installed on every machine for an extension that may never be enabled.
+)
+
+# Everything the extension step needs that is not itself an extension. Kept apart
+# from the array above because "System Extensions" in Extension Manager means one
+# precise thing — a package that drops an extension into /usr/share/gnome-shell/
+# extensions — and a GUI, a zip binary and a screenshot app are none of those.
+GNOME_EXTENSION_TOOLING=(
+  extension-manager                          # the GUI for everything here:
+                                             # browse/install/tune extensions
+                                             # (0.6.5, Extra — not the Flatpak)
+  zip                                        # 'gnome-extensions pack' needs it:
+                                             # Gradia Capture is built from source
+  gradia                                     # the *app* Gradia Capture annotates
+                                             # into and OCRs with (Extra 1.13.0).
+                                             # The extension is the pair to this
+                                             # program, not a replacement for it;
+                                             # Flathub be.alexandervanhee.gradia is
+                                             # the same app if you prefer Flatpak.
 )
 
 # The managed set: what makes GNOME behave like the desktop this repo configures
@@ -333,6 +346,9 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 # Names here describe WHERE an extension lands, not how much it is wanted:
 #   GNOME_SYSTEM_EXTENSION_PACKAGES  pacman -> /usr/share/gnome-shell/extensions,
 #                                    i.e. Extension Manager's "System Extensions"
+#   GNOME_EXTENSION_TOOLING          not extensions at all: Extension Manager,
+#                                    zip, and the Gradia app the capture
+#                                    extension drives
 #   GNOME_MANAGED_EXTENSIONS (this)   gext  -> ~/.local/share/gnome-shell/
 #                                    extensions, i.e. the user list
 #   PERSONAL_GNOME_EXTENSIONS         gext, from packages.local.bash, also the

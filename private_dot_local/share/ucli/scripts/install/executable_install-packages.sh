@@ -170,6 +170,7 @@ select_desktop() {
         add_array DESKTOP_GNOME_BASE
       fi
       add_array GNOME_SYSTEM_EXTENSION_PACKAGES
+      add_array GNOME_EXTENSION_TOOLING
       add_service_array SERVICES_GNOME
       ;;
     hyprland)
@@ -208,6 +209,11 @@ select_essentials() {
       # comes from extensions.gnome.org in GNOME_MANAGED_EXTENSIONS, because the
       # Arch package that ships it drags in fourteen classic extensions for it.
       add_array GNOME_SYSTEM_EXTENSION_PACKAGES
+      # extension-manager (the GUI), zip (source builds), gradia (the app the
+      # capture extension drives). Gradia is the one app here: the extension
+      # annotates inside it and OCRs with it, so a machine without it has half
+      # of the feature.
+      add_array GNOME_EXTENSION_TOOLING
       ;;
     hyprland)  add_array DESKTOP_TERMINAL_HYPRLAND ;;
     kde|plasma) add_array DESKTOP_TERMINAL_KDE ;;
@@ -254,6 +260,7 @@ select_packages() {
       # On a non-GNOME machine there is nothing to manage, so say so quietly.
       if [[ "$desktop" == gnome ]]; then
         add_array GNOME_SYSTEM_EXTENSION_PACKAGES
+        add_array GNOME_EXTENSION_TOOLING
       else
         echo "gnome-extensions: no GNOME desktop detected; nothing to install" >&2
       fi
