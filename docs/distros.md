@@ -60,6 +60,7 @@ What the scripts do about it:
 | CPU microcode | `CPU_INTEL` / `CPU_AMD` | skipped (`cachyos-settings`/installer) |
 | GPU drivers | `GPU_AMD` / `GPU_INTEL` / `GPU_NVIDIA` | skipped; `chwd` handles hardware detection |
 | Bootloader support | `BOOT_SUPPORT` | skipped |
+| pacman output (`ucli setup-pacman`) | uncomments `Color` and `ILoveCandy` in `[options]` | same script; a no-op where the installer already uncommented them, and it says so |
 | Quiet boot (`ucli setup-boot`) | installs plymouth, adds the plymouth hook, appends `KERNEL_CMDLINE_EXTRA` to limine | same, but `/etc/default/limine` already has `quiet zswap.enabled=0 nowatchdog` from the installer, so only `splash` and the plymouth hook are new |
 | Snapper + Limine | `arch-snapper-limine.sh` writes the config, hooks and `/etc/default/limine` | script explains it is already wired and exits; `--force` overrides |
 

@@ -31,9 +31,11 @@ ordinary entry in an array that installs it anyway: `ghostty` in
 `DESKTOP_TERMINAL_GNOME`, `shelly` in `MANUAL_AUR`, `btop` in `SYSTEM_QOL_TOOLS`.
 
 Dropping `gnome-software` takes its optdepend plugins with it — the fwupd update
-UI, the Flatpak backend and parental control. That is not a functional loss here:
-`shelly` installs repo packages and browses Flathub, and `fwupdmgr` (fwupd is part
-of the `base` tier) still applies firmware updates.
+UI, the Flatpak backend and parental control. None of that is a functional loss
+here: `shelly` installs repo packages and browses Flathub, and firmware updates
+have their own window — **`gnome-firmware`**, in `DESKTOP_GNOME_BASE`, so it
+arrives with the desktop (fwupd, the backend, comes from the `base` tier; and
+`fwupdmgr` stays the CLI).
 
 The old `DESKTOP_REPLACE_<DE>=("orig=replacement")` pairs had to guess how to
 install the right-hand side (a dot meant "Flatpak", otherwise AUR helper or

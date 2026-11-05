@@ -320,9 +320,14 @@ GAMING=(
 # you actually need (see `pacman -Qe | grep gnome` for what's installed).
 # Core essentials you almost certainly want: gnome-shell gdm nautilus
 # gnome-control-center gnome-session gnome-keyring xdg-desktop-portal-gnome
+# gnome-firmware is the firmware-update GUI. It is not a member of the gnome group,
+# and it is what replaces the surface that leaves with gnome-software: fwupd (the
+# `base` tier requires it) is the backend, this is the window onto it, and
+# `fwupdmgr` stays the CLI. 800 KB, Extra, deps fwupd + gtk4 + libadwaita.
 DESKTOP_GNOME_BASE=(
   gnome
   gnome-tweaks
+  gnome-firmware
 )
 
 # GNOME has no ADDITIONS tier: the gnome group is complete, and the optional

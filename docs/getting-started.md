@@ -118,13 +118,15 @@ This is the one big compound step. `install-profile.sh` runs these in order:
 | 1 | preflight | warns (and asks, on a TTY) when there is no snapper config |
 | 2 | restore point | `before setup-system` — the same snapshot script as every other step |
 | 3 | `base` | `BOOTSTRAP` (git, chezmoi, just, zsh, openssh, curl, nano, less, rsync, wget), CPU microcode, GPU drivers, system tools (+ `fwupd`), multimedia codecs, hardware-detected extras (`fprintd`, `libinput-tools`), fonts, `UCLI_RUNTIME` (gum + python-pipx) — no flatpaks yet |
-| 4 | the desktop | the DE package set from `packages.bash` — `DESKTOP_<DE>_BASE` + `DESKTOP_<DE>_ADDITIONS`, minus `DESKTOP_REMOVE_<DE>` (snapshot, then removed) — then that desktop's display manager enabled (`gdm`, `sddm`) |
-| 5 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE, and the Microsoft core fonts (AUR `ttf-ms-fonts`; a failed SourceForge download is a warning, not an abort — `ucli ms-fonts` retries) |
-| 6 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
-| 7 | dotfiles | `chezmoi apply` as you — now that the programs exist, `~/.zshrc`, `~/.config/zsh`, `starship.toml`, `~/.config/ghostty`, `~/.config/ucli/firefox` deploy |
-| 8 | GNOME extensions | `gext` via pipx, then the `system` set (dash-to-dock, blur-my-shell, gsconnect, search-light, copyous) and the `personal` set if you defined one (GNOME only) |
-| 9 | Firefox profile | creates the profile headlessly, copies the Betterfox `user.js` into it, and on GNOME installs firefox-gnome-theme |
-| 10 | snapshot | `<DE> Setup` |
+| 4 | pacman.conf | `Color` and `ILoveCandy` uncommented in `[options]` (timestamped backup, result validated with `pacman-conf`; advisory — a failure names `ucli setup-pacman` and the run continues) |
+| 5 | the desktop | the DE package set from `packages.bash` — `DESKTOP_<DE>_BASE` + `DESKTOP_<DE>_ADDITIONS`, minus `DESKTOP_REMOVE_<DE>` (snapshot, then removed) — then that desktop's display manager enabled (`gdm`, `sddm`) |
+| 6 | terminal + browser | Firefox everywhere, plus **ghostty** on GNOME/Hyprland or **kwi** on KDE, and the Microsoft core fonts (AUR `ttf-ms-fonts`; a failed SourceForge download is a warning, not an abort — `ucli ms-fonts` retries) |
+| 7 | shell tier | zsh, oh-my-zsh, the plugin clones from `plugins.txt`, starship, `chsh -s zsh` |
+| 8 | dotfiles | `chezmoi apply` as you — now that the programs exist, `~/.zshrc`, `~/.config/zsh`, `starship.toml`, `~/.config/ghostty`, `~/.config/ucli/firefox` deploy |
+| 9 | GNOME extensions | `gext` via pipx, then the `system` set (dash-to-dock, blur-my-shell, gsconnect, search-light, copyous) and the `personal` set if you defined one (GNOME only) |
+| 10 | Firefox profile | creates the profile headlessly, copies the Betterfox `user.js` into it, and on GNOME installs firefox-gnome-theme |
+| 11 | snapshot | `<DE> Setup` |
+| 12 | quiet boot | plymouth + the plymouth hook, and `KERNEL_CMDLINE_EXTRA` appended to limine (advisory: a bootloader it does not handle is reported, not forced) |
 
 On CachyOS, microcode, GPU and bootloader support are skipped — `chwd` and the
 installer own them.

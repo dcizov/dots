@@ -24,9 +24,10 @@ for arg in "$@"; do
       cat <<'EOF'
 usage: install-profile.sh [--no-snapshot] [--yes] [--force] [gnome|kde|hyprland]
 
-The machine step: base packages, the desktop step (DE, firefox + terminal, shell
-tier, dotfiles, GNOME extensions, Firefox profile, snapshot), then quiet boot
-(plymouth + kernel parameters appended to limine).
+The machine step: base packages, pacman.conf (Color + ILoveCandy), the desktop
+step (DE, firefox + terminal, shell tier, dotfiles, GNOME extensions, Firefox
+profile, snapshot), then quiet boot (plymouth + kernel parameters appended to
+limine).
 
   --no-snapshot   skip every Snapper snapshot of this run (UCLI_NO_SNAPSHOT=1 too)
   --yes           do not ask when there is no snapper config
@@ -88,6 +89,18 @@ run_step() {
 run_step "base packages" \
   "fix the error above, then re-run: ucli setup-system${desktop:+ $desktop}" \
   "$script_dir/install-packages.sh" base
+
+# pacman's own output: `Color` and `ILoveCandy` uncommented in /etc/pacman.conf.
+# Early on purpose — everything installed after this line is already coloured.
+# Advisory like the boot splash: a machine where /etc/pacman.conf cannot be
+# rewritten still gets a working setup, and the retry is named.
+if [[ -x "$script_dir/../system/setup-pacman.sh" ]]; then
+  ui_rule "pacman.conf (Color + ILoveCandy)"
+  if ! sudo "$script_dir/../system/setup-pacman.sh"; then
+    ui_note "pacman.conf left as it was — the message above says why"
+    printf '  %s\n' "retry later: sudo ucli setup-pacman" >&2
+  fi
+fi
 
 run_step "base flatpaks" \
   "fix the error above, then re-run: ucli setup-system${desktop:+ $desktop}" \

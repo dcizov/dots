@@ -33,6 +33,9 @@ ucli setup-system gnome     # gnome | kde | hyprland
 #    + chezmoi apply (now that those programs exist: ~/.zshrc, starship,
 #      ~/.config/ghostty, ~/.config/ucli/firefox) 
 #    + GNOME extensions (if gnome) + a "<DE> Setup" snapshot
+#    + pacman.conf: Color + ILoveCandy uncommented in [options] (backup taken,
+#      result validated with pacman-conf) — done early, so the install is coloured
+#      (standalone: ucli setup-pacman [--dry-run] [--status])
 #    + quiet boot: plymouth, and KERNEL_CMDLINE_EXTRA appended to limine
 #      (standalone: ucli setup-boot [--dry-run] [--no-plymouth])
 
@@ -131,6 +134,25 @@ cd dots-main && ./install.sh
 static, so to bootstrap from a non-main branch use method 3 or 4 (or point
 `--repo`/`--branch` at it). The bootstrap never needs root until it installs
 `git`/`chezmoi`/`just` with `pacman`, and it asks before doing that.
+
+**Two checkouts, on purpose.** `chezmoi init` clones the repo into chezmoi's source
+directory, `~/.local/share/chezmoi` — so after method 3 you have `~/dots` (the
+clone whose `./install.sh` you ran) *and* that clone (the one that owns `$HOME`).
+Only the second one is deployed: `~/.local/share/ucli/scripts/…`, `~/.config/ucli`,
+`~/.zshrc` and the rest come from it. Editing `~/dots` therefore changes nothing
+until you push the branch and run `chezmoi update -v`, or point chezmoi at the
+working copy instead:
+
+```bash
+chezmoi --source ~/dots apply -v      # one command, no push needed
+```
+
+To make that permanent, set the source directory in
+`~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+sourceDir = "/home/you/dots"
+```
 
 ## Snapshots: one script, one switch
 

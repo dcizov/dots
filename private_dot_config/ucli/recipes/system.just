@@ -25,6 +25,23 @@ setup-boot *ARGS:
     # plymouth + kernel parameters appended to limine (quiet boot)
     @sudo ~/.local/share/ucli/scripts/system/setup-boot.sh {{ARGS}}
 
+# pacman's own output: `Color` and `ILoveCandy`, uncommented in /etc/pacman.conf.
+# Both are stock comments nobody ever removes. This uncomments them inside
+# [options] (the only section pacman accepts them in), keeps a timestamped backup
+# of the file, and validates the result with `pacman-conf --config` before it
+# replaces the original — an unparsable pacman.conf would break every later
+# install. Idempotent: a second run reports "already set".
+#
+#   ucli setup-pacman               apply
+#   ucli setup-pacman --dry-run     print the diff, write nothing
+#   ucli setup-pacman --status      report the two lines, write nothing
+#
+# Runs inside `ucli setup-system` too, right after the base packages.
+[group('System')]
+setup-pacman *ARGS:
+    # Color + ILoveCandy in /etc/pacman.conf (backup, pacman-conf validated)
+    @sudo ~/.local/share/ucli/scripts/system/setup-pacman.sh {{ARGS}}
+
 # Write Firefox's policy file from ~/.config/ucli/firefox/extensions.txt (+ your
 # personal-extensions.txt, + dev-extensions.txt with --dev), so the extensions are
 # installed and enabled on the next start without a profile and without clicking.
