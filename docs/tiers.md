@@ -60,7 +60,7 @@ Three rules, applied to every array above:
 
 | AUR package | Why it is not optional |
 |---|---|
-| `shelly`, `shelly-flatpak-backend` | the GUI package manager, installed next to `gnome-software` rather than instead of it (either store works). Two entries because they are two packages of one PKGBUILD (the Flatpak backend is what makes Flathub browseable) |
+| `shelly`, `shelly-flatpak-backend` | the GUI package manager, and the reason `gnome-software` is not needed. Two entries because they are two packages of one PKGBUILD (the Flatpak backend is what makes Flathub browseable) |
 | `kwi-git` | KDE's terminal (`DESKTOP_TERMINAL_KDE` → `kwi`); not in the repos yet. Konsole from the `plasma` group is the fallback, so this one is a taste, not a dependency |
 | `ttf-ms-fonts` | Microsoft's core fonts. Nothing in the repos ships them, and documents/PDFs name them |
 | `vscodium-bin`, `vscodium-bin-marketplace` | VSCodium is AUR-only by design (the marketplace patch is what makes extensions installable from it). The marketplace package is the least loved piece here — last touched 2023, license `unknown` — so it is the first candidate to drop if it ever stops applying |

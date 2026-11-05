@@ -203,9 +203,10 @@ select_essentials() {
   case "$desktop" in
     gnome)
       add_array DESKTOP_TERMINAL_GNOME
-      # The second store. GNOME keeps `gnome-software` (fwupd and Flatpak support
-      # are its optdepends plugins); shelly is added next to it as the browsable
-      # Flathub/AUR front end, and it is also the AUR helper on CachyOS. It goes
+      # The store. `gnome-software` is in DESKTOP_REMOVE_GNOME, so the desktop is
+      # installed with a graphical package manager only if something else provides
+      # one — shelly is that something (repo packages + Flathub through
+      # shelly-flatpak-backend), and it is also the AUR helper on CachyOS. It goes
       # through the AUR path like any other AUR package in an array.
       add_array MANUAL_AUR
       # The repo-packaged extensions (appindicator, caffeine) belong here:
