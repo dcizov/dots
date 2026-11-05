@@ -24,7 +24,9 @@ if ! command -v dconf >/dev/null 2>&1; then
 fi
 
 if ! command -v gnome-extensions >/dev/null 2>&1; then
-  echo "missing required command: gnome-extensions (package: gnome-shell-extensions)" >&2
+  # The `gnome-extensions` CLI ships inside gnome-shell itself (usr/share/man/
+  # man1/gnome-extensions.1.gz), not in gnome-shell-extensions.
+  echo "missing required command: gnome-extensions (part of gnome-shell)" >&2
   exit 1
 fi
 

@@ -293,22 +293,24 @@ DESKTOP_GNOME_BASE=(
 # DESKTOP_<DE>_BASE + DESKTOP_<DE>_ADDITIONS for every desktop alike.
 DESKTOP_GNOME_ADDITIONS=()
 
-# ArchWiki: "gnome-shell-extensions package provides a set of very useful
-# extensions maintained as part of the GNOME project."
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
 # GNOME extensions, two sources on purpose:
 #
-#   * pacman, when Extra packages the extension — fewer moving parts, updates
-#     with the rest of the system. gnome-shell-extensions carries `user-theme`,
-#     which the Firefox GNOME theme styles the shell through.
-#   * gext / extensions.gnome.org, for everything the repos do not ship.
+#   * pacman, when Extra packages that extension on its own: fewer moving parts,
+#     updates with the rest of the system, files in /usr/share/gnome-shell/
+#     extensions (Extension Manager calls those "System Extensions").
+#   * gext / extensions.gnome.org, for everything the repos do not ship, or only
+#     ship in a bundle. `user-theme` used to come from gnome-shell-extensions,
+#     which is one 14-extension package: we wanted exactly one of the fourteen,
+#     and it arrived disabled anyway, so it was dead weight in the System
+#     Extensions list. It is PK 19 on EGO, maintained by GNOME's own fmuellner,
+#     and now part of the managed set below — installed *and* enabled.
 #
 # These were parallel PKS/UUIDS arrays once, and they drifted: 1319 is GSConnect
 # (the old list claimed appindicator support), 5489 is Search Light (the old list
 # claimed GSConnect), and AppIndicator support is 615. Hence one "PK:UUID" entry
 # per extension: PK is what `gext install` takes, UUID is what GNOME enables.
 GNOME_SYSTEM_EXTENSION_PACKAGES=(
-  gnome-shell-extensions                     # user-theme + classic set
   gnome-shell-extension-caffeine             # keep the screen awake
   gnome-shell-extension-appindicator         # tray icons (615 on EGO)
   extension-manager                          # the GUI for everything below:
@@ -323,6 +325,9 @@ GNOME_SYSTEM_EXTENSION_PACKAGES=(
 # blur-my-shell and search-light; the four at the end are "make it calm" tweaks
 # that belong to the same opinion, not to one person.
 GNOME_SYSTEM_EXTENSIONS=(
+  "19:user-theme@gnome-shell-extensions.gcampax.github.com"  # shell themes from ~/.themes
+                                                             # (firefox-gnome-theme styles the
+                                                             # shell through this one)
   "307:dash-to-dock@micxgx.gmail.com"                        # Ubuntu-like dock
   "3193:blur-my-shell@aunetx"                                # blur behind shell UI
   "1319:gsconnect@andyholmes.github.io"                      # phone integration
@@ -395,8 +400,6 @@ GNOME_APP_OVERRIDES=(
 # arrives with the desktop (and with `ucli setup-extensions`).
 
 # ArchWiki: gnome-tweaks — "Allows adjusting advanced GNOME options"
-# https://wiki.archlinux.org/title/GNOME#Advanced_settings
-# ArchWiki: gnome-shell-extensions — extensions maintained as part of GNOME
 # https://wiki.archlinux.org/title/GNOME#Advanced_settings
 
 # ArchWiki: gdm is the display manager included in the gnome group.

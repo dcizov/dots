@@ -49,7 +49,7 @@ GNOME is curated in `packages.bash`. Package group contents from
 
 | | Where | Installed by |
 |---|---|---|
-| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extensions` (carries `user-theme`, which the Firefox GNOME theme styles the shell through), `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator`, plus **Extension Manager** (`extension-manager`, Extra 0.6.5) and Copyous' `libgda6`/`gsound` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
+| repo-packaged | `GNOME_SYSTEM_EXTENSION_PACKAGES`: `gnome-shell-extension-caffeine`, `gnome-shell-extension-appindicator`, plus **Extension Manager** (`extension-manager`, Extra 0.6.5) and Copyous' `libgda6`/`gsound` | `install-packages.sh essentials` — i.e. the desktop step — and `ucli setup-extensions` (`gnome-extensions` mode) |
 | extensions.gnome.org | `GNOME_SYSTEM_EXTENSIONS`, the opinionated layout set | gext, on GNOME, in `setup-desktop` and `ucli setup-extensions` |
 
 **Extension Manager** is part of that package set on purpose. Before it, this was
@@ -60,11 +60,29 @@ the tool that manages them are the same job, so they ship together (pacman
 `extension-manager`, not the Flathub build, and `ucli debloat-desktop` can still
 remove it because the extension packages are among its candidates).
 
-The layout set is deliberately small — five extensions, the same five Bluefin
+Extension Manager calls these two rows two different things, and the difference is
+only the directory: pacman's go to `/usr/share/gnome-shell/extensions` (**System
+Extensions**), gext's to `~/.local/share/gnome-shell/extensions` (the user list).
+That is why exactly two entries show up as system extensions here and nine as
+user ones.
+
+`gnome-shell-extensions` is deliberately **not** installed. It is one package
+carrying fourteen classic extensions (apps-menu, auto-move-windows, drive-menu,
+launch-new-instance, light-style, native-window-placement, places-menu,
+screenshot-window-sizer, status-icons, system-monitor, `user-theme`, window-list,
+windowsNavigator, workspace-indicator) — of which this repo needs one, and only
+for `user-theme`, which arrived *disabled* because nothing enabled it. `user-theme`
+is PK 19 on extensions.gnome.org (upstream GNOME, fmuellner), so it is now part of
+the managed set below: installed **and** enabled, and the other thirteen never
+appear. Machines set up before that change still have the package; the set script
+says so and prints `sudo pacman -Rns gnome-shell-extensions`.
+
+The layout set is deliberately small — ten extensions, the same ones Bluefin
 ships a variation of:
 
 | PK | UUID | Why |
 |---|---|---|
+| 19 | `user-theme@gnome-shell-extensions.gcampax.github.com` | shell themes from `~/.themes`; what firefox-gnome-theme needs. Used to ride in on `gnome-shell-extensions` |
 | 307 | `dash-to-dock@micxgx.gmail.com` | Ubuntu-like dock |
 | 3193 | `blur-my-shell@aunetx` | blur behind shell UI |
 | 1319 | `gsconnect@andyholmes.github.io` | phone integration (KDE Connect protocol) |
@@ -117,6 +135,31 @@ in `/usr/share/glib-2.0/schemas/zz0-bluefin-modifications.gschema.override`
 (`[org.gnome.shell] enabled-extensions = [...]`), with per-extension settings in
 `/etc/dconf/db/distro.d/` keyfiles rebuilt by `dconf-update.service`, and
 hardware-specific bits applied per user by `ublue-user-setup.service`.
+
+What that means in Extension Manager: **everything Bluefin ships is under "System
+Extensions", and their user list is empty** until you install something from
+extensions.gnome.org yourself. Their inventory (current `main`: the directories in
+`system_files/shared/usr/share/gnome-shell/extensions`, built by
+`build_files/shared/build-gnome-extensions.sh`):
+
+| Bluefin extension | How it gets there |
+|---|---|
+| `appindicatorsupport@rgcjonas.gmail.com` | unpacked into the image, schemas compiled at build |
+| `blur-my-shell@aunetx` | `make` + unpack the extension zip in the build |
+| `dash-to-dock@micxgx.gmail.com` | same (`make` + `glib-compile-schemas`) |
+| `caffeine@patapon.info` | `gnome-extensions pack` (gettext catalogues) + unpack |
+| `gsconnect@andyholmes.github.io` | `meson setup` + `meson install` |
+| `logomenu@aryan_k` | unpacked, plus its `distroshelf-helper`/`missioncenter-helper` binaries into `/usr/bin` |
+| `search-light@icedman.github.com` | unpacked, schemas compiled |
+| `gradia-integration@alexandervanhee.github.io` | built by the extension's own `build.sh` |
+| `bazaar-integration@kolunmi.github.io` | unpacked |
+| — user list — | **nothing**: no gext, no per-user installs, so the section stays empty |
+
+Same nine-ish extensions as this repo's set, opposite packaging choice: they pay a
+rebuild per GNOME release inside their image pipeline (their issue tracker shows
+what happens when that lags — "GNOME System Extensions are old, unsupported for
+GNOME 50") and get a fixed list; we fetch the current EGO release per user, at the
+cost of a network call on the first run and a `gext` dependency.
 
 That is a *system-wide default*, and it has a documented failure mode inside
 Bluefin itself: the moment a user toggles anything in Extension Manager, a

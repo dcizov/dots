@@ -202,9 +202,11 @@ select_essentials() {
   case "$desktop" in
     gnome)
       add_array DESKTOP_TERMINAL_GNOME
-      # The repo-packaged extensions (and gnome-shell-extensions, which carries
-      # user-theme) belong here: setup-desktop.sh installs the DE itself and
-      # never calls `desktop` mode, so anything listed only there never lands.
+      # The repo-packaged extensions (appindicator, caffeine) belong here:
+      # setup-desktop.sh installs the DE itself and never calls `desktop` mode,
+      # so anything listed only there never lands. user-theme is not here — it
+      # comes from extensions.gnome.org in GNOME_SYSTEM_EXTENSIONS, because the
+      # Arch package that ships it drags in fourteen classic extensions for it.
       add_array GNOME_SYSTEM_EXTENSION_PACKAGES
       ;;
     hyprland)  add_array DESKTOP_TERMINAL_HYPRLAND ;;

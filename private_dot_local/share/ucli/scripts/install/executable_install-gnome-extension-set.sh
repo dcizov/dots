@@ -22,9 +22,9 @@ usage() {
   cat <<'USAGE'
 usage: install-gnome-extension-set.sh [system|personal] [--force]
 
-  system    the opinionated layout set (dash-to-dock, blur-my-shell, gsconnect,
-            search-light, copyous); the repo-packaged ones (caffeine,
-            appindicator, user-theme) are installed by install-packages.sh
+  system    the opinionated layout set (user-theme, dash-to-dock, blur-my-shell,
+            gsconnect, search-light, copyous); the repo-packaged ones (caffeine,
+            appindicator) are installed by install-packages.sh
   personal  your own, from PERSONAL_GNOME_EXTENSIONS in
             ~/.config/ucli/packages.local.bash
   --force   run even when the gate says this set is unchanged
@@ -240,6 +240,19 @@ enable_uuids() {
     run_gext enable "$u" >/dev/null 2>&1 || echo "warning: could not enable $u (may need shell restart)" >&2
   done
 }
+
+# Machines set up before user-theme moved to extensions.gnome.org still carry
+# gnome-shell-extensions: fourteen classic extensions (apps-menu, window-list,
+# status-icons, system-monitor, …) that nobody asked for, most of them only ever
+# active in the GNOME Classic session, plus a dormant copy of user-theme. Nothing
+# breaks while it is there — but it is the bulk of the "System Extensions" list, so
+# say how to get rid of it instead of leaving it as a mystery.
+if [[ "$mode" == system ]] && command -v pacman >/dev/null 2>&1 \
+   && pacman -Q gnome-shell-extensions >/dev/null 2>&1; then
+  echo "note: gnome-shell-extensions is installed (14 classic extensions, incl. a"
+  echo "      dormant user-theme). user-theme now comes from extensions.gnome.org,"
+  echo "      so the package is not needed: sudo pacman -Rns gnome-shell-extensions"
+fi
 
 echo "GNOME extension set '$mode' ..."
 uuids=()
