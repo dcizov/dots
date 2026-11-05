@@ -203,6 +203,12 @@ select_essentials() {
   case "$desktop" in
     gnome)
       add_array DESKTOP_TERMINAL_GNOME
+      # The store. `gnome-software` is in DESKTOP_REMOVE_GNOME (it is a PackageKit
+      # frontend, which is the wrong model on Arch), so the desktop is installed
+      # with a graphical package manager only if something else provides one —
+      # shelly is that something, and it is also the AUR helper on CachyOS. It goes
+      # through the AUR path like any other AUR package in an array.
+      add_array MANUAL_AUR
       # The repo-packaged extensions (appindicator, caffeine) belong here:
       # setup-desktop.sh installs the DE itself and never calls `desktop` mode,
       # so anything listed only there never lands. user-theme is not here — it
@@ -312,7 +318,7 @@ select_packages() {
       add_array SNAPSHOT_LIMINE
       ;;
     base|first-install)
-      # No desktop here: setup-desktop.sh owns that step (replacement matrix,
+      # No desktop here: setup-desktop.sh owns that step (DESKTOP_REMOVE_<DE> trim,
       # firefox + terminal, GNOME extensions, snapshot). `ucli setup-system` chains
       # into it; `install-packages.sh desktop` remains for manual use.
       select_packages ucli-runtime
@@ -362,7 +368,23 @@ fi
 
 (( dry_run )) && exit 0
 
+# Once more the desktop's removal list: `--ignore` keeps those group members out
+# of the transaction when this mode installs the group (DESKTOP_REMOVE_<DE> in
+# packages.bash). setup-desktop.sh does the same, and also removes them from a
+# desktop that an installer put there before this repo's first run.
+desktop_ignore=""
+if [[ -n "${desktop:-}" && "${desktop:-none}" != none ]]; then
+  ignore_var="DESKTOP_REMOVE_${desktop^^}"
+  # A nameref, not ${!var}: the list is an array, and indirect expansion would
+  # hand back only its first element.
+  if declare -n ignore_ref="$ignore_var" 2>/dev/null; then
+    desktop_ignore="$(IFS=,; printf '%s' "${ignore_ref[*]:-}")"
+    unset -n ignore_ref
+  fi
+fi
+
 pacman_args=(-S --needed)
+[[ -n "$desktop_ignore" ]] && pacman_args+=("--ignore=$desktop_ignore")
 paru_args=(-S --needed)
 if (( yes_flag )); then pacman_args+=(--noconfirm); paru_args+=(--noconfirm); fi
 

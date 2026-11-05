@@ -124,7 +124,7 @@ is easy to forget is the one that makes it usable: `docker` and `libvirt` both
 need a group membership, and a group change only applies to new sessions.
 
 `base` does not install a desktop: `setup-desktop.sh` owns that step, so the
-skip/replace matrix, firefox + terminal, the extension set and the snapshot all
+DESKTOP_REMOVE_<DE> trim, firefox + terminal, the extension set and the snapshot all
 happen in one place. `install-packages.sh full` still includes `desktop`.
 
 `base` installs the zsh *binary* (it is in `BOOTSTRAP`, and the dev box and the

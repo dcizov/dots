@@ -94,7 +94,7 @@ run_step "base flatpaks" \
   "$script_dir/install-flatpaks.sh" base
 
 # The desktop is one owner: setup-desktop.sh installs the DE with the
-# replacement matrix, adds ghostty + firefox, installs/enables the GNOME
+# DESKTOP_REMOVE_<DE> trim, adds ghostty + firefox, installs/enables the GNOME
 # extensions and takes a snapshot. Pass the desktop as $1 ("gnome", "kde",
 # "hyprland") or leave it empty to let it auto-detect/prompt.
 desktop_args=()

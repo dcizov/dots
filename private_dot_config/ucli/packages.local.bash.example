@@ -60,7 +60,6 @@ PERSONAL_FLATPAKS=(
   io.github.vikdevelop.SaveDesktop
   io.github.swordpuffin.rewaita
   io.github.swordpuffin.wardrobe
-  page.tesk.Refine
 )
 
 # --- GNOME extensions (extensions.gnome.org) ---------------------------------

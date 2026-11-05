@@ -27,7 +27,7 @@ ucli snapshot               # optional extra "clean machine" snapshot
 # 3. the machine: base packages + the desktop you want
 ucli setup-system gnome     # gnome | kde | hyprland
 #    = bootstrap, cpu/gpu, system tools, fonts, ucli runtime
-#    + DE with the replacement matrix
+#    + DE group minus DESKTOP_REMOVE_<DE> (snapshot, then `pacman -Rns`)
 #    + firefox and that desktop's terminal (ghostty / kwi)
 #    + the shell tier (zsh, oh-my-zsh, plugins, starship, chsh)
 #    + chezmoi apply (now that those programs exist: ~/.zshrc, starship,
@@ -83,7 +83,7 @@ What each layer actually puts on disk:
 | bootstrap | `install.sh` | `~/.local/bin/ucli`, `~/.config/ucli`, `~/.local/share/ucli`, `~/.bash_profile` (`~/.local/bin` on PATH) |
 | dotfiles | `chezmoi apply` | `~/.zshrc`, `~/.config/zsh/plugins.txt` (the one plugin list), `~/.config/zsh/conf.d/*` (aliases, functions, fzf, prompt), `~/.config/starship.toml`, `~/.config/ghostty` or `~/.config/kitty`, `~/.config/ucli/firefox` (copied into every Firefox profile) |
 | system | `ucli setup-system` | bootstrap (git, chezmoi, just, zsh), cpu/gpu, system tools + `fwupd`, multimedia codecs, hardware-detected extras (`fprintd`, `libinput-tools`), fonts, gum + pipx |
-| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set with skip/replace matrix, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), the repo-packaged GNOME extensions + the layout set, `chezmoi apply`, the Firefox profile (Betterfox `user.js` + GNOME theme), then a snapshot |
+| desktop | `ucli setup-system` → `setup-desktop.sh` | DE package set minus `DESKTOP_REMOVE_<DE>`, **firefox**, **ghostty** (gnome/hyprland) or **kwi** (kde), the repo-packaged GNOME extensions + the layout set, `chezmoi apply`, the Firefox profile (Betterfox `user.js` + GNOME theme), then a snapshot |
 | shell | `ucli setup-system` → `setup-desktop.sh`, or `ucli cli` | zsh, oh-my-zsh, 4 plugin clones into `$ZSH_CUSTOM/plugins`, **starship**, `chsh -s zsh` |
 | cosmetics | `ucli cli` | eza, bat, zoxide, atuin, tealdeer, glow, fzf |
 | apps | `ucli apps` | `APPS` (pacman) + `APP_FLATPAKS` (flatpak) + `MANUAL_AUR` (shelly) + your `PERSONAL_*` overlay + the Firefox extension lists (written as `/etc/firefox/policies/policies.json`) + the personal GNOME extension set. The Firefox *profile* (Betterfox, GNOME theme) belongs to the browser: the desktop step installs it, and `ucli apps` calls the same script so it still works when Firefox is installed from here |
@@ -234,7 +234,7 @@ The Snapper/Limine script skips CachyOS.
 | GNOME settings restore (`restore-gnome-settings`) | ✅ |
 | Dev packages (`devmode`, `--force` bypasses role check) | ✅ |
 | Personal apps (`apps`) | ✅ |
-| Software replacement matrix (skip + replace DE packages) | ✅ |
+| Desktop group trimmed on setup (`DESKTOP_REMOVE_<DE>`, snapshot first) | ✅ |
 | All scripts pass `bash -n` | ✅ |
 | All committed & pushed to `arena/fc51c308-dots` | ✅ |
 

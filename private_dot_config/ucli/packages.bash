@@ -540,7 +540,7 @@ SERVICES_HYPRLAND=(
 )
 
 # KDE essentials. The full `plasma` group brings the KDE application set that
-# most people never open (see DESKTOP_SKIP_KDE below); the terminal comes from
+# most people never open (see DESKTOP_REMOVE_KDE below); the terminal comes from
 # DESKTOP_TERMINAL_KDE. The two apps worth naming explicitly are ADDITIONS: on a
 # distro-provided Plasma they are already there, on a bare one they come with
 # `--additions-only` or `ucli setup-desktop --choose`.
@@ -583,49 +583,63 @@ MANUAL_AUR=(
 )
 
 # -----------------------------
-# Software replacement matrix
+# Desktop group: what this repo does not take from it
 # -----------------------------
 #
-# When installing a desktop environment, some packages from the DE group may
-# be unwanted or have better alternatives. This matrix defines:
+# The desktop arrives as a group (`pacman -S gnome` installs all of it), because a
+# hand-picked subset is how a session ends up missing a settings daemon three
+# months later. What this repo does not want from that group is the one list below.
 #
-#   DESKTOP_SKIP_<DE>   - packages from the DE group to NOT install
-#   DESKTOP_REPLACE_<DE> - package -> replacement pairs
+# There is no "replacement" mechanism any more, and none is needed: the three
+# packages that stand in for removed ones are ordinary entries in the arrays that
+# already install them —
 #
-# Replacements are installed instead of the skipped package. If no replacement
-# is listed, the package is simply not installed (debloat).
+#   gnome-console   → ghostty   DESKTOP_TERMINAL_GNOME (desktop step, `ucli apps`)
+#   gnome-software  → shelly    MANUAL_AUR (desktop step on GNOME, `ucli apps`)
+#   htop-ish        → btop      SYSTEM_QOL_TOOLS (the `base` tier)
 #
-# Examples:
-#   - gnome-software → shelly (AUR package: shelly in MANUAL_AUR)
-#   - gnome-system-monitor → mission-center (flatpak: io.missioncenter.MissionCenter in GNOME_FLATPAKS)
-#   - htop → btop (btop in SYSTEM_QOL_TOOLS)
-#   - gnome-console → ghostty (already configured via chezmoi)
+# It used to be `DESKTOP_REPLACE_<DE>=("orig=replacement")` pairs, which had to
+# guess how to install the right-hand side (a dot meant "flatpak", otherwise AUR
+# helper or pacman) — a second install path for packages the arrays already carry.
 #
-# ArchWiki: users should install only what they need from DE groups
+# How it is applied (setup-desktop.sh):
+#   * the group install passes `--ignore=<this list>`, so on a machine where ucli
+#     installs the desktop they never land;
+#   * after the install they are removed if present, with a snapshot first — that
+#     is the archinstall case, where the GNOME profile installed the group before
+#     the repo ran. `pacman -Rns` takes their now-unneeded dependencies with them.
+#
+# `ucli debloat-desktop` is the separate, interactive "and what else?" pass; it
+# starts from what is installed and does not use these lists.
+#
+# ArchWiki: install only what you need from DE groups
 # https://wiki.archlinux.org/title/GNOME
-
-# GNOME packages to skip (debloat) — none skipped by default
-DESKTOP_SKIP_GNOME=()
-
-# GNOME package replacements: "original=replacement"
-DESKTOP_REPLACE_GNOME=(
-  "gnome-software=shelly"           # shelly is the graphical software manager
-  "gnome-system-monitor=mission-center"  # mission-center flatpak
-  "gnome-console=ghostty"           # ghostty is the configured terminal
-  "htop=btop"                       # btop in SYSTEM_QOL_TOOLS
+#
+# The seven below are what a GNOME group install carries and this repo does not:
+#   epiphany          GNOME Web — Firefox is the browser here (DESKTOP_BROWSER)
+#   gnome-console     kgx — ghostty is the terminal here
+#   gnome-software    the store — shelly replaces it (and gnome-software's
+#                     PackageKit backend is the wrong model on Arch anyway)
+#   gnome-tour        first-run tour, one screen, seen once
+#   gnome-user-docs   offline help; only yelp can read it, so it goes with yelp
+#   malcontent        app-permission control. libmalcontent (the library
+#                     gnome-control-center depends on) stays; this is only the
+#                     optional package that adds the policy UI
+#   yelp              help viewer; nothing else opens it, and Help buttons in
+#                     GNOME apps simply do nothing without it
+DESKTOP_REMOVE_GNOME=(
+  epiphany
+  gnome-console
+  gnome-software
+  gnome-tour
+  gnome-user-docs
+  malcontent
+  yelp
 )
 
-# Hyprland packages to skip
-DESKTOP_SKIP_HYPRLAND=()
-
-# Hyprland package replacements
-DESKTOP_REPLACE_HYPRLAND=()
-
-# KDE packages to skip
-DESKTOP_SKIP_KDE=()
-
-# KDE package replacements
-DESKTOP_REPLACE_KDE=()
+# Nothing to drop from the other two: their groups are what this repo wants.
+DESKTOP_REMOVE_HYPRLAND=()
+DESKTOP_REMOVE_KDE=()
 
 # -----------------------------
 # Flatpak app IDs
@@ -637,13 +651,11 @@ DESKTOP_REPLACE_KDE=()
 APP_FLATPAKS=(
   com.github.tchx84.Flatseal       # per-app sandbox permissions
   io.github.flattool.Warehouse     # install/manage/uninstall flatpaks
-  io.github.flattool.Ignition      # installed-package overview
-  io.github.giantpinkrobots.flatsweep  # remove unused runtimes
 )
 
-# GNOME-specific flatpaks. No AddWater: the GNOME theme is installed directly by
-# firefox-gnome-theme. No MissionCenter: the pacman package arrives through the
-# gnome-system-monitor= replace, so the flatpak would be a second copy.
+# GNOME-specific flatpaks. No system monitor: gnome-system-monitor is a member of
+# the GNOME group and none of the removed packages, so it is already installed —
+# a flatpak replacement for it would be a second copy of the same thing.
 GNOME_FLATPAKS=(
   io.github.nacho.mecalin
   io.gitlab.adhami3310.Impression   # ISO writer

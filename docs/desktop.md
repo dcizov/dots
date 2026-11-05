@@ -1,19 +1,48 @@
 # Desktop and GNOME
 
-## Software replacement matrix
+## What the desktop step removes
 
-When installing a desktop environment, some packages from the DE group may be unwanted or have better alternatives. The matrix in `packages.bash` defines what to skip and what to replace:
+The desktop arrives as a group (`pacman -S gnome`), because a hand-picked subset is
+how a session ends up without a settings daemon three months later. What this repo
+does not want from that group is one list per desktop, `DESKTOP_REMOVE_<DE>` in
+`packages.bash`:
 
-| DE | Skip | Replace | With | Method |
-|----|------|---------|------|--------|
-| GNOME | none by default | `gnome-software` | `shelly` | AUR via `paru` (MANUAL_AUR) |
-| GNOME | — | `gnome-system-monitor` | `mission-center` | Flatpak (`io.missioncenter.MissionCenter`) |
-| GNOME | — | `gnome-console` | `ghostty` | Already chezmoi-managed |
-| GNOME | — | `htop` | `btop` | `btop` in `SYSTEM_QOL_TOOLS` |
-| Hyprland | none | — | — | — |
-| KDE | none | — | — | — |
+| DE | Removed from the group | Why |
+|---|---|---|
+| GNOME | `epiphany` | GNOME Web — Firefox is the browser here (`DESKTOP_BROWSER`) |
+| GNOME | `gnome-console` | ghostty is the terminal here (`DESKTOP_TERMINAL_GNOME`) |
+| GNOME | `gnome-software` | shelly is the store (`MANUAL_AUR`, installed with the desktop on GNOME) |
+| GNOME | `gnome-tour` | one first-run screen, seen once |
+| GNOME | `gnome-user-docs` | offline help; only `yelp` can read it |
+| GNOME | `malcontent` | app-permission UI. The library (`libmalcontent`) stays — it is a hard dependency of `gnome-control-center`; only this optional package goes |
+| GNOME | `yelp` | help viewer; nothing else opens it, and Help buttons just do nothing |
+| Hyprland, KDE | — | their groups are what this repo wants |
 
-Edit `DESKTOP_SKIP_<DE>` and `DESKTOP_REPLACE_<DE>` in `packages.bash` to customize. The replacement runs automatically during `setup-desktop`.
+Everything else the group carries stays: `gnome-system-monitor`, `gnome-disk-utility`,
+`baobab`, `gnome-maps`, `gnome-weather`, `nautilus`, `gnome-text-editor`, … —
+and `gnome-tweaks`, which is not a group member at all (`DESKTOP_GNOME_BASE`).
+
+**There is no replacement matrix.** The three packages that stand in for removed
+ones are ordinary entries in the arrays that install them anyway: `ghostty` in
+`DESKTOP_TERMINAL_GNOME`, `shelly` in `MANUAL_AUR`, `btop` in `SYSTEM_QOL_TOOLS`.
+The old `DESKTOP_REPLACE_<DE>=("orig=replacement")` pairs had to guess how to
+install the right-hand side (a dot meant "Flatpak", otherwise AUR helper or
+pacman) — a second install path for packages the arrays already carry.
+
+How it runs, in `setup-desktop`:
+
+1. the group install passes `--ignore=<list>`, so on a machine where this repo installs
+   the desktop they never land;
+2. afterwards a second pass removes any that *are* installed — the archinstall
+   case, where the GNOME profile installed the whole group before this repo was run —
+   and does it **after a snapshot** (`--no-snapshot` / `UCLI_NO_SNAPSHOT=1` skip it,
+   like every snapshot in the repo). It tries one `pacman -Rns` transaction so
+   their orphaned dependencies go with them, falls back to per-package attempts if
+   something installed still requires one, then verifies the result and names what
+   stayed.
+
+`ucli debloat-desktop` is the separate, interactive *"and what else?"* pass: it
+starts from what is installed, does not use these lists, and takes its own snapshot.
 
 ### The terminal is chosen per desktop
 

@@ -12,6 +12,12 @@
 # from packages.bash — this script holds no package list of its own, so
 # `install-packages.sh desktop`, `--choose` and this step cannot drift apart.
 #
+# What the desktop group carries but this repo does not want (epiphany,
+# gnome-console, gnome-software, gnome-tour, gnome-user-docs, malcontent, yelp on
+# GNOME) is DESKTOP_REMOVE_<DE>: skipped at install with `--ignore`, and removed
+# afterwards when they are already there — the archinstall case — with a snapshot
+# taken first.
+#
 # Intended for Arch minimal (archinstall) post-console-first-boot flow:
 #   1. curl -fsSL .../dcizov/dots/main/install.sh | bash   # git, chezmoi, just, ucli
 #   2. ucli setup-snapshots        # snapper + limine, snapshot #1 (btrfs)
@@ -92,46 +98,30 @@ real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 # shellcheck source=/dev/null
 source "$real_home/.config/ucli/packages.bash"
 
+# One snapshot script for the whole repo: the "before removing …" restore point
+# below and the "<DE> Setup" one at the end both go through it.
+snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
+
 # Resolve the AUR helper (distro-aware: AUR_HELPER from packages.bash when set,
 # else whatever is installed, else the distro default — nothing is cached).
 # Run as the real user since this may install the helper via makepkg (no root).
 aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
 
-# Install desktop packages applying the replacement matrix from packages.bash.
-# Skips packages in DESKTOP_SKIP_<DE> and replaces packages in DESKTOP_REPLACE_<DE>.
-install_desktop_with_replacements() {
+# Install this desktop's packages: BASE (what a session needs) + ADDITIONS (merely
+# convenient) + its services (gdm/sddm are packages too). The group is installed
+# whole — a hand-picked subset is how a session ends up without a settings daemon —
+# minus DESKTOP_REMOVE_<DE>, which is passed as `--ignore` so it never lands.
+# Packages the arrays list that are not in the repos go to the AUR helper.
+install_desktop() {
   local de="$1"
-  local skip_var="DESKTOP_SKIP_${de^^}"
-  local replace_var="DESKTOP_REPLACE_${de^^}"
-  local -a skip_pkgs=() replace_pkgs=() replace_flatpaks=()
-
-  # Collect packages to skip
-  if [[ -n "${!skip_var:-}" ]]; then
-    # shellcheck disable=SC2086
-    read -ra skip_pkgs <<< "${!skip_var}"
+  local remove_var="DESKTOP_REMOVE_${de^^}"
+  local -a unwanted=()
+  if [[ -n "${!remove_var:-}" ]]; then
+    local -n unwanted_ref="$remove_var"
+    unwanted=("${unwanted_ref[@]}")
   fi
 
-  # Collect replacements: "original=replacement"
-  if [[ -n "${!replace_var:-}" ]]; then
-    # shellcheck disable=SC2086
-    for pair in ${!replace_var}; do
-      local orig="${pair%%=*}"
-      local repl="${pair#*=}"
-      replace_pkgs+=("$orig")
-      # Check if replacement is a flatpak (contains a dot)
-      if [[ "$repl" == *.* ]]; then
-        replace_flatpaks+=("$repl")
-      else
-        replace_pkgs+=("$repl")
-      fi
-    done
-  fi
-
-  # Build the final package list from packages.bash: BASE (what a session needs)
-  # + ADDITIONS (what is merely convenient) + this desktop's services (sddm/gdm
-  # are packages too — enabling a unit whose package is missing is a no-op).
-  # The skip/replace matrix is applied on top. No package name is repeated here.
   local base_var="DESKTOP_${de^^}_BASE"
   local add_var="DESKTOP_${de^^}_ADDITIONS"
   local svc_var="SERVICES_${de^^}"
@@ -139,35 +129,37 @@ install_desktop_with_replacements() {
   local -n base_ref="$base_var" add_ref="$add_var" svc_ref="$svc_var"
   all_pkgs=("${base_ref[@]}" "${add_ref[@]}" "${svc_ref[@]}")
 
-  local -a final_pkgs=()
+  local ignore_csv=""
+  if (( ${#unwanted[@]} )); then
+    ignore_csv="$(IFS=,; printf '%s' "${unwanted[*]}")"
+  fi
+
+  local -a aur_pkgs=()
   for pkg in "${all_pkgs[@]}"; do
-    local skip=0
-    for s in "${skip_pkgs[@]}"; do
-      if [[ "$pkg" == "$s" ]]; then skip=1; break; fi
-    done
-    (( skip )) && continue
-    final_pkgs+=("$pkg")
-  done
-
-  # Install base packages one by one. Handles both individual packages
-  # and package groups (e.g. 'gnome' group with 59 packages). AUR-only
-  # packages are skipped here — handled by apply_replacements via AUR helper.
-  for pkg in "${final_pkgs[@]}"; do
     if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
-      sudo pacman -S --needed --noconfirm "$pkg"
+      # --ignore is what keeps the unwanted group members out of a fresh install;
+      # it is harmless for the single packages in the arrays (none of them is on
+      # the list). A package that some other target *requires* would make pacman
+      # refuse the transaction — none of these is required by anything.
+      local -a ignore_args=()
+      [[ -n "$ignore_csv" ]] && ignore_args=("--ignore=$ignore_csv")
+      sudo pacman -S --needed --noconfirm ${ignore_args[@]+"${ignore_args[@]}"} "$pkg"
     else
-      echo "  skipping $pkg: not in repos (handled by AUR helper if it's a replacement)"
+      # Not in the repos is not "missing": the KDE terminal lives in the AUR as
+      # kwi-git. The helper is already resolved above, so hand those over to it.
+      aur_pkgs+=("$pkg")
     fi
   done
 
-  # Install replacement flatpaks
-  if (( ${#replace_flatpaks[@]} > 0 )); then
-    if ! command -v flatpak >/dev/null 2>&1; then
-      sudo pacman -S --needed --noconfirm flatpak
-    fi
-    flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    # shellcheck disable=SC2086
-    flatpak install --user -y flathub "${replace_flatpaks[@]}"
+  if (( ${#aur_pkgs[@]} )); then
+    echo "AUR packages: ${aur_pkgs[*]}"
+    case "$aur_helper" in
+      paru)   runuser -u "$real_user" -- paru -S --needed "${aur_pkgs[@]}" \
+                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
+      shelly) runuser -u "$real_user" -- shelly install aur "${aur_pkgs[@]}" --needed --no-confirm \
+                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
+      *)      echo "warning: no AUR helper; install ${aur_pkgs[*]} by hand" >&2 ;;
+    esac
   fi
 }
 
@@ -260,90 +252,84 @@ if (( choose )); then
     esac
   fi
 else
-  # Install full desktop package set via the package resolver,
-  # applying the replacement matrix (skip + replace).
-  install_desktop_with_replacements "$desktop"
+  # Full desktop package set from the arrays.
+  install_desktop "$desktop"
 fi
 
-# Apply software replacement matrix: skip unwanted packages, install replacements.
-# ArchWiki: users should install only what they need from DE groups
-# https://wiki.archlinux.org/title/GNOME
-apply_replacements() {
+# Take out what this repo does not want from the desktop group
+# (DESKTOP_REMOVE_<DE>). On a machine where this repo installed the desktop the
+# group install above already skipped them with --ignore and this is a no-op; it
+# exists for the archinstall case, where the GNOME profile installed the whole
+# group beforehand, and for machines that predate the list.
+#
+# The removal is preceded by a snapshot: `pacman -Rns` is not reversible, and the
+# restore point is free. --no-snapshot / UCLI_NO_SNAPSHOT=1 skip it, like every
+# other snapshot in the repo.
+remove_desktop_unwanted() {
   local de="$1"
-  local skip_var="DESKTOP_SKIP_${de^^}"
-  local replace_var="DESKTOP_REPLACE_${de^^}"
-  local -a skip_pkgs=() replace_orig=() replace_with=() replace_flatpaks=()
+  local remove_var="DESKTOP_REMOVE_${de^^}"
+  [[ -n "${!remove_var:-}" ]] || return 0
+  local -n remove_ref="$remove_var"
 
-  if [[ -n "${!skip_var:-}" ]]; then
-    # shellcheck disable=SC2086
-    read -ra skip_pkgs <<< "${!skip_var}"
+  local -a present=()
+  local pkg
+  for pkg in "${remove_ref[@]}"; do
+    [[ -n "$pkg" ]] || continue
+    if pacman -Q "$pkg" >/dev/null 2>&1; then
+      present+=("$pkg")
+    fi
+  done
+  if (( ${#present[@]} == 0 )); then
+    echo "nothing to remove from the $de group (all ${#remove_ref[@]} already absent)"
+    return 0
   fi
-  if [[ -n "${!replace_var:-}" ]]; then
-    # shellcheck disable=SC2086
-    for pair in ${!replace_var}; do
-      local orig="${pair%%=*}"
-      local repl="${pair#*=}"
-      replace_orig+=("$orig")
-      if [[ "$repl" == *.* ]]; then
-        replace_flatpaks+=("$repl")
-      else
-        replace_with+=("$repl")
+
+  echo
+  echo "Not wanted from the $de group: ${present[*]}"
+  if (( take_snapshot )) && [[ -x "$snapshot_script" ]]; then
+    echo "Creating a snapshot before removing them ..."
+    "$snapshot_script" "before removing ${de} group packages" \
+      || echo "warning: snapshot failed; continuing (Ctrl-C now to abort)" >&2
+  fi
+
+  # One transaction first: it lets pacman resolve their now-orphaned dependencies
+  # (-s) together. If something installed still requires one of them the whole
+  # transaction is refused, so fall back to per-package attempts and say which
+  # ones are held back instead of pretending the set was removed.
+  local rc=0
+  pacman -Rns --noconfirm "${present[@]}" || rc=$?
+  if (( rc != 0 )); then
+    echo "one transaction was refused; removing one at a time ..." >&2
+    local -a still=()
+    for pkg in "${present[@]}"; do
+      pacman -Q "$pkg" >/dev/null 2>&1 || continue
+      if ! pacman -Rns --noconfirm "$pkg"; then
+        still+=("$pkg")
       fi
     done
+    if (( ${#still[@]} )); then
+      echo "warning: could not remove: ${still[*]}" >&2
+      echo "         something installed still requires them; remove that first and" >&2
+      echo "         re-run: sudo ucli setup-desktop $de" >&2
+    fi
   fi
 
-  # Remove skipped packages
-  for pkg in "${skip_pkgs[@]}"; do
-    if pacman -Q "$pkg" >/dev/null 2>&1; then
-      echo "removing skipped package: $pkg"
-      sudo pacman -Rs --noconfirm "$pkg" 2>/dev/null || true
-    fi
+  # Verify: this is a list of packages that must not be there afterwards.
+  local -a leftover=()
+  for pkg in "${present[@]}"; do
+    pacman -Q "$pkg" >/dev/null 2>&1 && leftover+=("$pkg")
   done
-
-  # Replace original packages with alternatives.
-  # Non-flatpak replacements: try pacman first (repo packages), then paru (AUR).
-  # ArchWiki: AUR packages require an AUR helper like paru
-  # https://wiki.archlinux.org/title/Arch_User_Repository
-  for i in "${!replace_orig[@]}"; do
-    local orig="${replace_orig[$i]}"
-    if pacman -Q "$orig" >/dev/null 2>&1; then
-      echo "replacing $orig with ${replace_with[$i]:-<flatpak>}"
-      sudo pacman -Rs --noconfirm "$orig" 2>/dev/null || true
-    fi
-    if [[ ${#replace_with[@]} -gt $i ]] && [[ -n "${replace_with[$i]:-}" ]]; then
-      if ! pacman -Q "${replace_with[$i]}" >/dev/null 2>&1; then
-        echo "installing replacement: ${replace_with[$i]}"
-        if [[ "$aur_helper" == "paru" ]] && command -v paru >/dev/null 2>&1; then
-          runuser -u "$real_user" -- paru -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || true
-        elif [[ "$aur_helper" == "shelly" ]] && command -v shelly >/dev/null 2>&1; then
-          # shelly install = repos, shelly install aur = AUR
-          # --needed skips already-installed packages (idempotent re-runs)
-          # --no-confirm makes shelly non-interactive (no prompts)
-          if pacman -Si "${replace_with[$i]}" >/dev/null 2>&1; then
-            runuser -u "$real_user" -- shelly install "${replace_with[$i]}" --needed --no-confirm 2>/dev/null || true
-          else
-            runuser -u "$real_user" -- shelly install aur "${replace_with[$i]}" --needed --no-confirm 2>/dev/null || true
-          fi
-        else
-          sudo pacman -S --needed --noconfirm "${replace_with[$i]}" 2>/dev/null || \
-            echo "  warning: ${replace_with[$i]} not in repos; install an AUR helper (ucli devmode) for AUR packages" >&2
-        fi
-      fi
-    fi
-  done
-
-  # Install replacement flatpaks
-  if (( ${#replace_flatpaks[@]} > 0 )); then
-    if ! command -v flatpak >/dev/null 2>&1; then
-      sudo pacman -S --needed --noconfirm flatpak
-    fi
-    flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    # shellcheck disable=SC2086
-    flatpak install --user -y flathub "${replace_flatpaks[@]}" 2>/dev/null || true
+  if (( ${#leftover[@]} )); then
+    echo "warning: still installed: ${leftover[*]}" >&2
+    return 1
   fi
+  echo "removed ${#present[@]} package(s) from the $de group"
 }
 
-apply_replacements "$desktop"
+# Not fatal: a package that something else requires is a reason to say so, not to
+# leave the machine without a shell, a browser or a snapshot.
+remove_desktop_unwanted "$desktop" \
+  || echo "warning: part of the ${desktop} group's unwanted set stayed installed (see above)" >&2
 
 # Enable this desktop's session manager (SERVICES_GNOME = gdm, SERVICES_HYPRLAND
 # and SERVICES_KDE = sddm). Same arrays install-packages.sh uses; installing the
@@ -384,7 +370,7 @@ fi
 # The desktop's own apps: firefox (the configured browser, on every desktop) plus
 # the terminal that desktop is configured for — ghostty on gnome/hyprland, kwi on
 # kde (AUR kwi-git today; Konsole from the plasma group is the safety net). The DE
-# install above only covers DE packages and the replacement matrix, and it never
+# install above only covers the DE packages and the removal list, and it never
 # installs a terminal it would then have two of.
 if [[ -x "$script_dir/install-packages.sh" ]]; then
   "$script_dir/install-packages.sh" essentials || true

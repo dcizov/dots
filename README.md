@@ -74,7 +74,7 @@ why the snapshot comes before the rest.
 | [docs/getting-started.md](docs/getting-started.md) | **Start here.** The four steps end to end: what each one installs, what it writes, how to configure it (shell flags, package arrays, chezmoi data, gates), where everything lands, and what to check afterwards |
 | [docs/install.md](docs/install.md) | The full pipeline step by step, the four ways to run the bootstrap, snapshots (`--no-snapshot`), the snapshot-only path, Arch-specific notes, fresh-install readiness |
 | [docs/tiers.md](docs/tiers.md) | Every package tier (`UCLI_RUNTIME`, `SHELL_TOOLS`, `DESKTOP_BROWSER`, `DESKTOP_TERMINAL_<DE>`, `CLI`, `DEV_CLI`, `DEV`, `GAMING`), what `ucli cli`/`devmode`/`apps` put on disk, per-machine shell flags in `local.zsh`, versioned gates and `--force` |
-| [docs/desktop.md](docs/desktop.md) | Software replacement matrix (skip/replace per DE), GNOME extension sets, settings backup/restore, adding backed-up settings to the repo |
+| [docs/desktop.md](docs/desktop.md) | What the desktop step removes from the DE group and why, the terminal per desktop, curated GNOME defaults, GNOME extension sets, settings backup/restore |
 | [docs/devbox.md](docs/devbox.md) | The distrobox dev box: creation, provisioning, versions, reconcile |
 | [docs/operations.md](docs/operations.md) | `ucli update`/`clean-system`/`logs`/`state`/`report`, the chezmoi workflow, and what `ucli check` + `ucli doctor` verify |
 | [docs/distros.md](docs/distros.md) | Arch vs CachyOS vs other Arch derivatives: paths, repositories, AUR helpers, what is installer-owned on CachyOS, and the Firefox profile paths |

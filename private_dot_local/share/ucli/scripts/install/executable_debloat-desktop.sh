@@ -10,6 +10,12 @@
 # Shows every installed package from the DE group (plus override packages)
 # and lets you pick which to remove with pacman -Rs.
 #
+# This is the "and what else?" pass. The packages this repo removes on its own —
+# epiphany, gnome-console, gnome-software, gnome-tour, gnome-user-docs, malcontent,
+# yelp on GNOME — are DESKTOP_REMOVE_<DE> in packages.bash and are gone before this
+# screen is reachable, so they only show up here on a machine that never ran
+# setup-desktop.
+#
 # A Snapper snapshot is taken before anything is removed (skip with
 # --no-snapshot, or when snapper is not configured): removing packages is the
 # one destructive thing in this repo, and the restore point is free.
