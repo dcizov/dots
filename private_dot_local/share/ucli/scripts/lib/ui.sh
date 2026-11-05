@@ -139,6 +139,19 @@ ui_hint() {
   fi
 }
 
+# ui_link <url> [text] — a clickable link where the terminal supports OSC 8,
+# the bare URL everywhere else (pipes, CI, UCLI_NO_LINKS=1). Same idea as ujust's
+# Urllink helper; kept here so every script prints links the same way.
+ui_link() {
+  local url="$1" text="${2:-$1}"
+  if [[ "${UCLI_NO_LINKS:-0}" == 1 ]] || ! ui_tty; then
+    printf '%s' "$text"
+    [[ "$text" == "$url" ]] || printf ' (%s)' "$url"
+    return 0
+  fi
+  printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "$text"
+}
+
 ui_ok()   { if ui_gum; then gum style --foreground "$UCLI_UI_OK" "✓ $*"; else printf '✓ %s\n' "$*"; fi; }
 ui_fail() { if ui_gum; then gum style --foreground "$UCLI_UI_FAIL" "✗ $*" >&2; else printf '✗ %s\n' "$*" >&2; fi; }
 

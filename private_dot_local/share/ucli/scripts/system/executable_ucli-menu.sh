@@ -6,6 +6,10 @@
 # then the recipes of that group with their one-line descriptions. The recipe
 # list is read from `just --list`, so the menu cannot drift from the justfile.
 #
+# Before the menu: the four-line status block from welcome.sh — machine, pending
+# updates, last restore point, reboot. That is the CachyOS-Hello "welcome" idea
+# without a window: `ucli` alone tells you what the machine is and what is due.
+#
 # Two levels on purpose:
 #   * ~45 flat rows is a wall of text, six groups is a question you can answer,
 #   * the second level is where the descriptions live.
@@ -77,6 +81,12 @@ for row in "${rows[@]}"; do
 done
 
 ui_title "ucli"
+
+# The status block is best-effort: a slow or broken probe must never stop the menu
+# from opening, so it is bounded and its failure is silent.
+if [[ -x "$script_dir/welcome.sh" ]]; then
+  "$script_dir/welcome.sh" --status 2>/dev/null || true
+fi
 echo
 
 menu=()

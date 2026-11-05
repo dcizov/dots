@@ -42,6 +42,35 @@ setup-pacman *ARGS:
     # Color + ILoveCandy in /etc/pacman.conf (backup, pacman-conf validated)
     @sudo ~/.local/share/ucli/scripts/system/setup-pacman.sh {{ARGS}}
 
+# Turn a registered service on or off — the service registry is TWEAKS in
+# packages.bash, so the switches live next to the package lists.
+#
+#   ucli tweak                    what is registered, and what is running
+#   sudo ucli tweak enable cups   install the package (repos) and enable+start it
+#   sudo ucli tweak disable cups  stop and disable it; the package stays installed
+#
+# No state file: `systemctl is-enabled` is the state. Disabling never uninstalls —
+# removal is what `ucli debloat-desktop` is for, and that one is snapshot-guarded.
+[group('System')]
+tweak *ARGS:
+    # list | enable <name> | disable <name> | status <name>
+    @~/.local/share/ucli/scripts/system/tweaks.sh {{ARGS}}
+
+# DNS for the connections NetworkManager knows about.
+#
+#   ucli dns list                    connections, their servers, the presets
+#   ucli dns status                  the active connection in one screen
+#   sudo ucli dns set cloudflare     a preset from DNS_PRESETS (packages.bash)
+#   sudo ucli dns set "1.1.1.1 9.9.9.9" --dot
+#   sudo ucli dns reset              back to the servers from DHCP
+#
+# `set` also sets ignore-auto-dns, otherwise NM keeps prepending the DHCP servers
+# and the preset is only half-applied. --connection <name> targets another profile.
+[group('System')]
+dns *ARGS:
+    # list | status | set <preset|"ip ip"> | reset  (--connection, --dot)
+    @~/.local/share/ucli/scripts/system/dns.sh {{ARGS}}
+
 # Write Firefox's policy file from ~/.config/ucli/firefox/extensions.txt (+ your
 # personal-extensions.txt, + dev-extensions.txt with --dev), so the extensions are
 # installed and enabled on the next start without a profile and without clicking.

@@ -32,6 +32,11 @@ install.sh
 {{- if not (lookPath "starship") }}
 .config/starship.toml
 {{- end }}
+# Fish is not the default shell here (zsh is), but the completion is harmless to
+# deploy when fish is installed — and a stale completion is worse than none.
+{{- if not (lookPath "fish") }}
+.config/fish/
+{{- end }}
 
 # Terminals: only the one that is installed (or named in .chezmoi.toml).
 # ghostty — gnome/hyprland; kwi — kde (its colours come from the Plasma scheme,

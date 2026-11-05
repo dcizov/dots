@@ -44,11 +44,16 @@ usage:
     @printf '%s\n' '  ucli system            # OS, CPU, disk, firmware facts'
     @printf '%s\n' '  ucli mirrors           # rank pacman mirrors (rate-mirrors, keeps a .bak)'
     @printf '%s\n' '  ucli check             # offline checks: bash/zsh syntax, just, arrays'
+    @printf '%s\n' '  ucli welcome           # what this machine is, what is pending, next steps'
+    @printf '%s\n' '  ucli fix               # repair: keyrings, db lock, orphans, cache, reinstall'
+    @printf '%s\n' '  ucli tweak             # turn a service on/off (bluetooth, cups, fstrim, …)'
+    @printf '%s\n' '  ucli dns set cloudflare  # DNS preset for the active connection'
     @printf '%s\n' '  ucli motd [on|always|off]  # login banner (fastfetch)'
     @printf '%s\n' '  ucli fingerprint       # reader in the DE Settings UI (--pam for login/sudo)'
     @printf '%s\n' ''
     @printf '%s\n' 'Maintenance:'
-    @printf '%s\n' '  ucli update            # full system upgrade'
+    @printf '%s\n' '  ucli update            # full upgrade; --level minimal or prompt'
+    @printf '%s\n' '  ucli update-timer on   # daily upgrade at 04:00 (--time HH:MM, off, status)'
     @printf '%s\n' '  ucli clean-system      # dangling images, old cache'
     @printf '%s\n' '  ucli report            # machine facts to file'
     @printf '%s\n' '  ucli bios / bios-info  # firmware settings'
@@ -68,6 +73,14 @@ usage:
     @printf '%s\n' 'Direct tools:'
     @printf '%s\n' '  chezmoi diff && chezmoi apply -v'
     @printf '%s\n' '  cd ~/.config/dev-services && docker compose up -d'
+
+# The front door: what this machine is, what is pending, what to run next.
+# `ucli` with no arguments shows the same status block above its menu, and a login
+# shell shows it once per machine.
+[group('Help')]
+welcome *ARGS:
+    # --status (four lines) | --first-login (once per machine)
+    @~/.local/share/ucli/scripts/system/welcome.sh {{ARGS}}
 
 # Show configured and detected profile data.
 [group('Help')]

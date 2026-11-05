@@ -6,13 +6,20 @@ Ported from Bluefin's `ujust`, adapted to pacman/AUR + distrobox:
 
 ```bash
 ucli update            # pacman -Syu, AUR (paru/yay), flatpak, mise, then the box
+ucli update --level minimal   # one ✓/✗ line per step, log tail on failure
+ucli update --level prompt    # ask before every step
+ucli update-timer      # status of the daily unattended upgrade (see below)
 ucli clean-system      # dangling images, unused flatpaks, old pkg cache (asks first)
+ucli fix               # repair: keyrings, db lock, orphans, cache, reinstall (see below)
+ucli tweak             # turn a registered service on or off (see below)
+ucli dns               # DNS presets for NetworkManager connections (see below)
+ucli welcome           # what this machine is, what is pending, next steps
 ucli report            # machine + toolchain facts to ~/report-<date>.txt
 ucli logs              # menu: this boot / last boot / devbox provision log / pacman
 ucli changelogs        # what the last pacman transaction changed
 ucli state             # versioned setup gates + devmode marker
 ucli bios              # reboot into firmware settings (asks first)
-ucli bios-info         # board + firmware version (hidden: also in ucli system)
+ucli bios-info         # board + firmware version (also in ucli system)
 ucli config-audit      # unmerged .pacnew files + locally modified package files
 ucli sync              # Syncthing: folder sync between two machines
 ucli virt              # qemu/libvirt/virt-manager + libvirtd + the libvirt group
@@ -30,6 +37,92 @@ either way — drift is normal, but it should not be invisible. Read-only.
 not root) and prints the Web GUI and this machine's device ID; pairing is the
 same two-click dance as Bluefin's *Sync Folder*, because writing `config.xml`
 behind the GUI's back would only fight it.
+
+### Front door
+
+`ucli welcome` is the CachyOS-Hello idea without a window: four lines that answer
+*what is this machine, what is pending, how old is the restore point, do I need to
+reboot*, then the recipes that are actually due.
+
+```
+  machine   GNOME · repo 77cbf57 (2 file(s) out of sync)
+  pending   4 package update(s)
+  snapshot  #12, 3h ago
+  reboot    no
+```
+
+`ucli welcome --status` prints just that block — it is also what `ucli` shows
+above its menu, so the first thing you see is state, not a list of verbs. A login
+shell runs `ucli welcome --first-login` once per machine (it commits a version
+gate, so it never repeats). Read-only, no sudo, no network: `pacman -Qu` reads the
+local sync database.
+
+### Repair (`ucli fix`)
+
+The five repair actions CachyOS Hello puts behind buttons, as one namespace:
+
+```bash
+sudo ucli fix keyrings      # refresh pacman's keys; --reset re-initialises + repopulates
+sudo ucli fix lock          # remove a stale /var/lib/pacman/db.lck (refuses while pacman runs)
+sudo ucli fix orphans       # pacman -Qtdq, asked, then -Rns
+sudo ucli fix cache         # paccache -rk2 + -ruk0, journal vacuum to 200M (--keep N)
+sudo ucli fix native        # reinstall every repo package in place (--list first!)
+```
+
+Every one accepts `--dry-run`, and `ucli fix` with no argument prints the table.
+Two deliberate choices: `fix lock` checks for an open handle (`fuser`) or a
+running pacman/paru/yay and refuses instead of corrupting the database; `fix
+native` filters `pacman -Qnq` against the sync databases first (a package dropped
+from the repos would otherwise fail the whole transaction) and wants `reinstall`
+typed before it starts, because it re-downloads a few thousand packages.
+
+### Tweaks (`ucli tweak`)
+
+```bash
+ucli tweak                  # registered switches, their units and state
+sudo ucli tweak enable cups # installs the package (repos only) and start/ enables it
+sudo ucli tweak disable cups
+```
+
+The registry is `TWEAKS` in `packages.bash` (see
+[tiers](tiers.md#switches-tweaks-and-dns_presets)). State is systemd's, not a
+file. Disabling keeps the package: uninstalling is `ucli debloat-desktop`'s job,
+where a snapshot comes first.
+
+### DNS (`ucli dns`)
+
+```bash
+ucli dns list                          # connections, their servers, the presets
+ucli dns status                        # the active connection, one screen
+sudo ucli dns set cloudflare           # preset from DNS_PRESETS
+sudo ucli dns set "1.1.1.1 9.9.9.9"    # literal servers
+sudo ucli dns set cloudflare --dot     # + DNS-over-TLS, when NM's plugin supports it
+sudo ucli dns reset                    # back to DHCP-provided servers
+```
+
+Everything goes through `nmcli connection modify`, so it survives reboots with the
+profile. `set` also sets `ipv4.ignore-auto-dns` / `ipv6.ignore-auto-dns`,
+otherwise NetworkManager keeps prepending the DHCP servers and the preset is only
+half-applied. `--connection <name>` targets another profile. DNS-over-TLS needs a
+NetworkManager DNS plugin that can do it (`dns-systemd-resolved`); the property is
+feature-detected, and when NM cannot do it the script says so rather than writing
+a setting that does nothing.
+
+### Scheduled upgrades (`ucli update-timer`)
+
+```bash
+ucli update-timer status               # state, next run, last result
+sudo ucli update-timer on              # daily, up to an hour of jitter
+sudo ucli update-timer on --time 04:30
+sudo ucli update-timer off
+```
+
+The timer runs `update.sh --scheduled`: repo packages, Flatpaks (system-wide and
+yours), mise, and a restore point first. **It does not run the AUR or the dev
+box** — an AUR build stops at a prompt, and a half-built package mid-upgrade is
+exactly what `ucli update`'s foreign-package warning is about. The unit files live
+in `/etc/systemd/system` and are written by the script; "is it on" is
+`systemctl is-enabled ucli-update.timer`, not a file in `$HOME`.
 
 ### Mirrors
 

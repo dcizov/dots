@@ -15,61 +15,25 @@
 
 # Update everything: pacman, AUR, flatpaks, mise runtimes, then the dev box.
 [group('Maintenance')]
-update:
-    #!/usr/bin/env bash
-    # full system upgrade: pacman + AUR + flatpaks + mise + dev box
-    set -uo pipefail
-    . "$HOME/.local/share/ucli/scripts/lib/common.sh"
+update *ARGS:
+    # pacman + AUR + flatpaks + mise + dev box (--level full|minimal|prompt)
+    @~/.local/share/ucli/scripts/system/update.sh {{ARGS}}
 
-    # Guard, ported from `ujust update`: Bluefin refuses to update while the
-    # image has layered packages, because that breaks its zero-maintenance
-    # promise. The Arch equivalent of "layered" is foreign (AUR / locally built)
-    # packages: they can need a rebuild or an upstream fix mid-upgrade, so show
-    # them first and ask. UCLI_YES=1 (or a non-interactive run) proceeds.
-    if have pacman; then
-      foreign="$(pacman -Qm 2>/dev/null || true)"
-      if [ -n "$foreign" ]; then
-        n=$(printf '%s\n' "$foreign" | wc -l | tr -d ' ')
-        ui_rule "foreign / AUR packages: $n"
-        printf '%s\n' "$foreign" | awk 'NR<=10 { printf "    %s\n", $0 }'
-        if [ "$n" -gt 10 ]; then printf '    … and %s more\n' "$((n - 10))"; fi
-        printf '    Not from the official repos: AUR rebuilds are your responsibility.\n'
-        if [ "${UCLI_YES:-0}" != 1 ] && [ -t 0 ]; then
-          ui_confirm "Continue with the upgrade?" || { printf 'aborted.\n'; exit 1; }
-        fi
-      fi
-    fi
-
-    ui_rule "pacman: system upgrade"
-    sudo pacman -Syu --noconfirm || true
-
-    if have paru; then
-    ui_rule "paru: AUR upgrades"
-    paru -Sua --noconfirm || printf 'paru: nothing to do, or it failed\n' >&2
-    elif have yay; then
-    ui_rule "yay: AUR upgrades"
-    yay -Sua --noconfirm || printf 'yay: nothing to do, or it failed\n' >&2
-    fi
-
-    if have flatpak; then
-    ui_rule "flatpak: updates"
-    flatpak update -y || true
-    fi
-
-    if have mise; then
-    ui_rule "mise: runtimes"
-    mise upgrade || true
-    fi
-
-    ui_rule "dev box"
-    if [[ -x "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
-    "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" || true
-    else
-    ui_rule "dev box: skipped (devbox-reconcile.sh not found)"
-    fi
-
-    ui_rule "done"
-    printf 'A reboot is only needed for kernel/driver updates.\n'
+# Unattended upgrades: a systemd timer that runs `update.sh --scheduled` daily.
+#
+#   sudo ucli update-timer on                 daily, up to an hour of jitter
+#   sudo ucli update-timer on --time 04:30    a specific time
+#   ucli update-timer status                  state, next run, last result
+#   sudo ucli update-timer off
+#
+# Scope of a scheduled run: repo packages, Flatpaks (system + yours), mise, and
+# the usual restore point first. NOT the AUR and not the dev box — an AUR build
+# can stop at a prompt, and a half-built package mid-upgrade is the failure mode
+# `ucli update` warns about. State lives in systemd, not in a file.
+[group('Maintenance')]
+update-timer *ARGS:
+    # on | off | status  (--time daily|HH:MM)
+    @sudo ~/.local/share/ucli/scripts/system/update-timer.sh {{ARGS}}
 
 # Named volumes are NEVER touched — dev_pgdata / dev_mysql hold your databases.
 # Reclaim space: dangling images, unused flatpaks, old package cache.
@@ -199,7 +163,7 @@ bios:
 
 # Board and firmware details — folded into `ucli system`; kept because it is
 # the one thing worth reading on a machine you are about to reflash.
-[private]
+[group('Maintenance')]
 bios-info:
     #!/usr/bin/env bash
     # show motherboard/BIOS firmware details

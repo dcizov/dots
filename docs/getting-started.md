@@ -144,6 +144,7 @@ load with the session.
 **Check it**
 
 ```bash
+ucli welcome                   # the front door: machine, updates, snapshot, reboot
 ucli doctor                    # every section should be OK / WARN-free except optional bits
 chezmoi diff                   # empty means the dotfiles are deployed
 echo $SHELL                    # /usr/bin/zsh after re-login

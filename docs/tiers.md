@@ -177,6 +177,24 @@ history) without forking the repo. A flag only gates the aliases — the binary
 stays installed and callable by its own name. `ucli doctor` lists the flags and
 whether `local.zsh` exists.
 
+### Switches: `TWEAKS` and `DNS_PRESETS`
+
+Two arrays in `packages.bash` are not package lists — they are the things `ucli
+tweak` and `ucli dns` act on, kept next to the packages they belong to so a
+machine can override them in `packages.local.bash`:
+
+| Array | Read by | Shape |
+|---|---|---|
+| `TWEAKS` | `ucli tweak list\|enable\|disable` | `name\|unit\|package\|kind\|description` — `kind` is `system`, or `template` for a per-user unit (`syncthing@.service` → `syncthing@<user>.service`). Eight entries: bluetooth, cups, fstrim, fwupd-refresh, syncthing, libvirtd, ufw, ppd |
+| `DNS_PRESETS` | `ucli dns set` | `name\|ipv4\|ipv6` — cloudflare, cloudflare-family, quad9, adguard, google, ffmuc |
+
+Neither keeps state: `systemctl is-enabled` answers for a tweak, and the DNS
+servers live in the NetworkManager connection profile. `ucli tweak disable` never
+uninstalls — removing a package is `ucli debloat-desktop`'s job, and that one
+takes a snapshot first. There is deliberately no `psd`/`systemd-oomd`/`bpftune`/
+`ananicy-cpp` entry: that is the performance-tooling class this repo does not
+ship (see *Not shipped: the profiling set*).
+
 ### Personal picks (the overlay)
 `packages.bash` holds the opinionated sets. Anything that is a taste, an account,
 a subscription or one specific piece of hardware goes into

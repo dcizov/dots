@@ -36,3 +36,12 @@ if [[ "$UCLI_SHELL_ENABLE_MOTD" == 1 ]] && [[ -t 1 ]] && (( $+commands[fastfetch
   fi
   unset _ucli_motd_mode
 fi
+
+# Welcome once per machine. `ucli welcome --first-login` prints the status block
+# (machine, pending updates, last restore point, reboot) plus the next steps the
+# first time any shell runs it, commits a version gate, and says nothing on every
+# later shell. That is the CachyOS-Hello first-login screen without a window.
+if [[ -t 1 ]] && (( $+commands[ucli] )) && [[ -z "${UCLI_WELCOME_SHOWN:-}" ]]; then
+  ucli welcome --first-login 2>/dev/null || true
+  export UCLI_WELCOME_SHOWN=1
+fi

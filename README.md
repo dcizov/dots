@@ -31,6 +31,7 @@ ucli cli                                         # shell cosmetics
 ucli apps                                        # apps, flatpaks, Firefox config
 ucli devmode                                     # optional: dev tools + dev box
 ucli mirrors                                     # optional: rank the pacman mirrors
+ucli welcome                                     # the front door: state + what is due
 ```
 
 `install.wtfaq.tech` is retired, so the bootstrap is a plain GitHub raw file.
@@ -64,6 +65,14 @@ for both spellings, and for CachyOS's repositories.
 Every step is idempotent and rerunnable on its own. `ucli doctor` says what a
 machine is missing, `ucli check` runs the offline static checks, and
 `ucli state` shows which versioned steps have already been applied.
+
+Day-to-day it is one namespace per job, in the shape of `ujust` and CachyOS
+Hello: `ucli update [--level …]` and `ucli update-timer` for upgrades,
+`ucli fix` for the five repairs (keyrings, db lock, orphans, cache, reinstall),
+`ucli tweak` for a registry of services you switch on and off, `ucli dns` for
+NetworkManager DNS presets, and `ucli welcome` for the four-line answer to "what
+is this machine and what is due" — which `ucli` with no arguments now shows above
+its menu.
 [docs/install.md](docs/install.md) explains the order, what each step owns, and
 why the snapshot comes before the rest.
 
@@ -76,7 +85,7 @@ why the snapshot comes before the rest.
 | [docs/tiers.md](docs/tiers.md) | Every package tier (`UCLI_RUNTIME`, `SHELL_TOOLS`, `DESKTOP_BROWSER`, `DESKTOP_TERMINAL_<DE>`, `CLI`, `DEV_CLI`, `DEV`, `GAMING`), what `ucli cli`/`devmode`/`apps` put on disk, per-machine shell flags in `local.zsh`, versioned gates and `--force` |
 | [docs/desktop.md](docs/desktop.md) | What the desktop step removes from the DE group and why, the terminal per desktop, curated GNOME defaults, GNOME extension sets, settings backup/restore |
 | [docs/devbox.md](docs/devbox.md) | The distrobox dev box: creation, provisioning, versions, reconcile |
-| [docs/operations.md](docs/operations.md) | `ucli update`/`clean-system`/`logs`/`state`/`report`, the chezmoi workflow, and what `ucli check` + `ucli doctor` verify |
+| [docs/operations.md](docs/operations.md) | `ucli welcome`, `update` (levels + timer), `fix`, `tweak`, `dns`, `clean-system`, `logs`, `state`, `report`, the chezmoi workflow, and what `ucli check` + `ucli doctor` verify |
 | [docs/distros.md](docs/distros.md) | Arch vs CachyOS vs other Arch derivatives: paths, repositories, AUR helpers, what is installer-owned on CachyOS, and the Firefox profile paths |
 | [docs/bluefin.md](docs/bluefin.md) | What `ujust bluefin-cli` actually does, what this repo took from it, and what it deliberately left |
 
@@ -87,7 +96,7 @@ why the snapshot comes before the rest.
 | `dot_zshrc`, `private_dot_config/zsh/` | `~/.zshrc`, `~/.config/zsh/` | shell entrypoint, `plugins.txt` (the one plugin list), `conf.d/*`, `local.zsh.example` — deployed once zsh exists |
 | `dot_bash_profile` | `~/.bash_profile` | `~/.local/bin` on `PATH` for the console epoch (ssh, TTYs, `su -`) |
 | `private_dot_config/ucli/` | `~/.config/ucli/` | `justfile`, `recipes/*.just`, `packages.bash` (every package array), `scripts/lib/` |
-| `private_dot_local/share/ucli/scripts/` | `~/.local/share/ucli/scripts/` | install, check (`check.sh`, `doctor.sh`), system, gnome, devbox, inventory scripts |
+| `private_dot_local/share/ucli/scripts/` | `~/.local/share/ucli/scripts/` | install, check (`check.sh`, `doctor.sh`), system (incl. `welcome.sh`, `update*.sh`, `tweaks.sh`, `dns.sh`), fix (the five repairs), gnome, devbox, inventory scripts |
 | `private_dot_local/bin/executable_ucli` | `~/.local/bin/ucli` | the `just` wrapper: `ucli` alone opens the grouped gum menu, `ucli <recipe>` runs one, `ucli --choose` is the fzf list |
 | `private_dot_config/` `ghostty`, `kitty`, `VSCodium`, `ucli/firefox` | the matching `~/.config` paths | terminal (only the installed one), editor, and ucli's Firefox sources (`user.js`, extension lists) |
 | `private_dot_config/distrobox/` | `~/.config/distrobox/` | dev box definition + `provision-dev.sh` |

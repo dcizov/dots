@@ -686,3 +686,51 @@ DEV_FLATPAKS=(
 )
 
 GAMING_FLATPAKS=()
+
+# -----------------------------
+# Tweaks: services this repo can turn on and off
+# -----------------------------
+# Not a package list — a registry of *switches*. `ucli tweak list` shows each one
+# with its unit, whether its package is installed and whether the unit is running;
+# `ucli tweak enable <name>` installs the package (repos only) and enables+starts
+# the unit; `ucli tweak disable <name>` stops and disables the unit and keeps the
+# package installed.
+#
+# Format: name|unit|package|kind|description
+#   kind = system     a normal system unit
+#   kind = template   a unit template, instantiated per user (syncthing@.service
+#                     becomes syncthing@$USER.service)
+#
+# Deliberately NOT in here: profile-sync-daemon, systemd-oomd, bpftune,
+# ananicy-cpp and the other CachyOS-Hello tweaks — that is the performance-tooling
+# class this repo does not ship. Everything below is a service that a normal
+# desktop either needs or explicitly turns off.
+#
+# State lives in systemd, not in a file: `systemctl is-enabled` is the answer, so
+# there is nothing to drift.
+TWEAKS=(
+  "bluetooth|bluetooth.service|bluez|system|Bluetooth stack and radios"
+  "cups|cups.socket|cups|system|Printing, socket-activated (no cupsd while idle)"
+  "fstrim|fstrim.timer|util-linux|system|Weekly TRIM for SSDs"
+  "fwupd-refresh|fwupd-refresh.timer|fwupd|system|Daily firmware metadata refresh (gnome-firmware reads it)"
+  "syncthing|syncthing@.service|syncthing|template|Folder sync for this user (ucli sync installs the package)"
+  "libvirtd|libvirtd.socket|libvirt|system|Virtual machines, socket-activated (ucli virt installs the package)"
+  "ufw|ufw.service|ufw|system|Simple host firewall"
+  "ppd|power-profiles-daemon.service|power-profiles-daemon|system|Power profiles; archinstall installs it, this only toggles"
+)
+
+# -----------------------------
+# DNS presets
+# -----------------------------
+# What `ucli dns set <name>` can put on a NetworkManager connection. Format:
+#   name|ipv4 (space separated)|ipv6 (space separated)
+# `ucli dns set` also accepts a literal list ("1.1.1.1 9.9.9.9") and
+# `ucli dns reset` puts the connection back on DHCP-provided servers.
+DNS_PRESETS=(
+  "cloudflare|1.1.1.1 1.0.0.1|2606:4700:4700::1111 2606:4700:4700::1001"
+  "cloudflare-family|1.1.1.2 1.0.0.2|2606:4700:4700::1112 2606:4700:4700::1002"
+  "quad9|9.9.9.9 149.112.112.112|2620:fe::fe 2620:fe::9"
+  "adguard|94.140.14.14 94.140.15.15|2a10:50c0::ad1:ff 2a10:50c0::ad2:ff"
+  "google|8.8.8.8 8.8.4.4|2001:4860:4860::8888 2001:4860:4860::8844"
+  "ffmuc|185.150.99.255 5.1.66.255|2001:678:e68:f000:: 2001:678:ed0:f000::"
+)
