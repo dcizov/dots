@@ -11,7 +11,7 @@ All package decisions are backed by the [Arch Linux package database](https://ar
 | Machine | Installer | DE choice | Snapper/Limine | This repo's role |
 |---------|-----------|-----------|----------------|------------------|
 | Arch minimal (laptop) | archinstall (minimal profile, console login) | Manual after first boot (`just setup-desktop`) | You run `ucli setup-snapshots` | Full setup: ucli → snapshots → DE + packages + dotfiles → snapshot |
-| CachyOS (desktop) | Calamares GUI (picks DE during install) | Already installed by Calamares | Calamares handles it | Dotfiles + packages only (`chezmoi init --apply`, then `ucli devmode`/`ucli apps`) |
+| CachyOS (desktop) | Calamares GUI (picks DE during install) | Already installed by Calamares | Leave the existing setup alone | [Back up first](docs/backup.md) on an existing installation, then preview and apply the desired dotfiles |
 
 
 ## Quick start (Arch minimal → working machine)
@@ -87,6 +87,7 @@ why the snapshot comes before the rest.
 | [docs/devbox.md](docs/devbox.md) | The distrobox dev box: creation, provisioning, versions, reconcile |
 | [docs/operations.md](docs/operations.md) | `ucli welcome`, `update` (levels + timer), `fix`, `tweak`, `dns`, `clean-system`, `logs`, `state`, `report`, the chezmoi workflow, and what `ucli check` + `ucli doctor` verify |
 | [docs/distros.md](docs/distros.md) | Arch vs CachyOS vs other Arch derivatives: paths, repositories, AUR helpers, what is installer-owned on CachyOS, and the Firefox profile paths |
+| [docs/backup.md](docs/backup.md) | First encrypted backup to ext4: packages, Flatpaks, AppImages, home, and `/etc`; test a restore before applying dotfiles |
 | [docs/bluefin.md](docs/bluefin.md) | What `ujust bluefin-cli` actually does, what this repo took from it, and what it deliberately left |
 
 ## Repository layout
@@ -102,6 +103,6 @@ why the snapshot comes before the rest.
 | `private_dot_config/distrobox/` | `~/.config/distrobox/` | dev box definition + `provision-dev.sh` |
 | `run_*.sh.tmpl`, `install.sh` | — (run by chezmoi / the bootstrap) | bootstrap, plugin repair hook, theme scripts |
 
-`.github/workflows/check.yml` runs `ucli check`'s script against the checkout on
-every push and PR. `README.md`, `docs/` and `install.sh` are in
-`.chezmoiignore` — they are repo furniture, not dotfiles.
+`.github/workflows/check.yml` runs `ucli check`'s script and the backup tests against
+the checkout on every push and PR. `README.md`, `docs/`, `tests/`, and `install.sh`
+are in `.chezmoiignore` — they aren't dotfiles.

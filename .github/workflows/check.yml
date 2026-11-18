@@ -27,10 +27,13 @@ jobs:
         with:
           tool: just
 
-      - name: Install zsh and shellcheck
+      - name: Install check dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq zsh shellcheck
+          sudo apt-get install -y -qq zsh shellcheck restic
 
       - name: Run checks
         run: bash private_dot_local/share/ucli/scripts/check/executable_check.sh "$PWD"
+
+      - name: Test inventory and backup with a temporary repository
+        run: python3 -B -m unittest discover -s tests -v

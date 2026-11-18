@@ -1,16 +1,11 @@
-.cache
-.cache/**
-.Trash
-.Trash/**
-node_modules
-node_modules/**
-dist
-dist/**
-build
-build/**
-target
-target/**
-__pycache__
-__pycache__/**
-.venv
-.venv/**
+# Restic expands $HOME here. These paths are for the user's home backup only.
+# Don't exclude every directory called build/target/dist: some contain real work.
+$HOME/.cache
+$HOME/.local/share/Trash
+$HOME/.snapshots
+
+# Reinstall Flatpak payloads from the saved refs/remotes. Keep ~/.var/app and
+# ~/.local/share/flatpak/overrides (including overrides for uninstalled apps).
+$HOME/.local/share/flatpak/app
+$HOME/.local/share/flatpak/runtime
+$HOME/.local/share/flatpak/repo

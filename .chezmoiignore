@@ -16,6 +16,7 @@
 README.md
 AGENT_HANDOFF.md
 docs/
+tests/
 *.tar.gz
 *.zip
 *.bak

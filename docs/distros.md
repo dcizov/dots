@@ -70,6 +70,17 @@ What the scripts do about it:
 exits (add `--force` to run the Arch path anyway). For a restore point there, use
 `ucli snapshot "…"` — the same script every other step uses.
 
+## Adopting these dotfiles on a running CachyOS Plasma desktop
+
+Start with the [manual backup and restore test](backup.md). Use `ucli profile`
+when deployed to check detection. Set `desktop = "kde"` and
+`machine = "workstation"` in your local chezmoi `[data]` if you want explicit
+values; Plasma's live settings and current terminal can stay as they are. The
+GNOME palette hook checks the session, not just whether `gsettings` is present.
+Review the proposed changes and apply selected files with scripts excluded
+first. Do not run `ucli setup-system` on a working CachyOS machine merely to add
+these dotfiles or the backup tools.
+
 ## Firefox paths (the one path that moved)
 
 Firefox 147 (January 2026) finally implemented XDG, so the profile root is now:

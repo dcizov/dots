@@ -1,14 +1,17 @@
 #!/bin/sh
 # Point the GNOME background at the palette.
 #
-# Runs whenever this file changes. Silent no-op when there is no GNOME
-# session (no gsettings, or no session bus), so it is harmless on the dev
-# box and on any non-GNOME desktop.
+# Runs whenever this file changes. Plasma can have both gsettings and a
+# session bus, so require a GNOME session rather than just those tools.
 #
 # Only the background is touched. The desktop's colour scheme and accent
 # colour are left exactly as they are — repainting every GTK app is not a
 # side effect of aligning a background.
 
+case ":${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}}:" in
+  *:[Gg][Nn][Oo][Mm][Ee]:*|*:[Gg][Nn][Oo][Mm][Ee]-[Cc]lassic:*) ;;
+  *) exit 0 ;;
+esac
 command -v gsettings >/dev/null 2>&1 || exit 0
 [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || exit 0
 
