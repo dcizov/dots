@@ -6,23 +6,25 @@ export LC_ALL=C
 fail() { printf 'inventory: %s\n' "$*" >&2; exit 1; }
 usage() {
   cat <<'USAGE'
-usage: inventory.sh [OUTPUT-DIR] [--appimage PATH ...]
+usage: inventory.sh [OUTPUT-DIR] [--appimage PATH ...] [--exclude-path PATH ...]
 
 Capture a private manifest as the desktop user. OUTPUT-DIR must not exist.
 Defaults to ~/system-inventory/clean-<timestamp>. The home filesystem is
 scanned for AppImages; pass --appimage for any additional directory or file.
+--exclude-path skips an exact absolute path and its contents in that scan.
 This records AppImages and checksums, not copies of the binaries.
 USAGE
 }
 
 out=""
 image_paths=()
+exclude_args=()
 while (($#)); do
   case "$1" in
     -h|--help) usage; exit 0 ;;
-    --appimage)
-      (($# >= 2)) || fail '--appimage needs a path'
-      image_paths+=("$2")
+    --appimage|--exclude-path)
+      (($# >= 2)) || fail "$1 needs a path"
+      if [[ "$1" == --appimage ]]; then image_paths+=("$2"); else exclude_args+=("$2"); fi
       shift ;;
     -*) fail "unknown option: $1" ;;
     *) [[ -z "$out" ]] || fail 'give at most one output directory'; out="$1" ;;
@@ -30,6 +32,14 @@ while (($#)); do
   shift
 done
 (( EUID != 0 )) || fail 'run as the desktop user, not with sudo'
+script_dir="$(dirname -- "$(realpath -e -- "${BASH_SOURCE[0]}")")"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/backup-paths.sh"
+excluded_paths=()
+for path in "${exclude_args[@]}"; do
+  excluded="$(backup_excluded_path "$path")" || fail "--exclude-path needs an absolute path below /: $path"
+  excluded_paths+=("$excluded")
+done
 for cmd in pacman pacman-conf; do
   command -v "$cmd" >/dev/null || fail "$cmd is required"
 done
@@ -156,12 +166,28 @@ esac
 
 home="$(realpath -e -- "$HOME")"
 appimages="$stage/appimages"
-# Traverse only the selected filesystem at each root, just like the home backup.
-# A caller can name an AppImage file or an extra mount/subvolume explicitly.
+if ((${#excluded_paths[@]})); then
+  printf '%s\n' "${excluded_paths[@]}" > "$appimages/excluded-paths.txt"
+fi
+prune=(-false)
+for path in "$home/.cache" "$home/.snapshots" "$home/.local/share/Trash" "${excluded_paths[@]}"; do
+  prune+=(-o -path "$(backup_literal_pattern "$path")")
+done
+
+is_excluded() {
+  local path
+  for path in "${excluded_paths[@]}"; do
+    if backup_path_within "$1" "$path"; then return 0; fi
+  done
+  return 1
+}
+
+# Traverse only the selected filesystem at each root. Prune reviewed paths
+# before descending; a permission error elsewhere still aborts the inventory.
 for path in "$home" "${image_paths[@]}"; do
   root="$(realpath -e -- "$path")" || fail "AppImage source is missing: $path"
-  find "$root" -xdev \
-    \( -path "$home/.cache" -o -path "$home/.snapshots" -o -path "$home/.local/share/Trash" \) -prune -o \
+  if is_excluded "$root"; then continue; fi
+  find "$root" -xdev \( "${prune[@]}" \) -prune -o \
     \( -type f -o \( -type l -xtype f \) \) -iname '*.AppImage' -print0
 done | sort -zu > "$appimages/appimages.paths0"
 touch -- "$appimages"/{appimages.txt,appimages.sha256.txt,appimages.symlinks.tsv}
@@ -173,8 +199,9 @@ while IFS= read -r -d '' file; do
   fi
 done < "$appimages/appimages.paths0"
 
-if [[ -d "$data_home/applications" ]]; then
-  find "$data_home/applications" -type f -name '*.desktop' -print0 > "$stage/.launchers"
+launchers="$(realpath -ms -- "$data_home/applications")"
+if [[ -d "$launchers" ]] && ! is_excluded "$launchers"; then
+  find "$launchers" \( "${prune[@]}" \) -prune -o -type f -name '*.desktop' -print0 > "$stage/.launchers"
   while IFS= read -r -d '' file; do
     if grep -qiI -- appimage "$file"; then
       printf '%s\n' "$file"

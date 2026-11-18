@@ -12,16 +12,16 @@ Run on the CachyOS PC, not in the repo sandbox:
 lsblk -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINTS
 findmnt -T / -o TARGET,SOURCE,FSTYPE
 findmnt -T "$HOME" -o TARGET,SOURCE,FSTYPE
-findmnt -T /mnt/Data/Backup -o TARGET,SOURCE,FSTYPE,UUID
-df -h "$HOME" /mnt/Data/Backup
-du -shx "$HOME"
+findmnt --mountpoint /mnt/Data -o TARGET,SOURCE,FSTYPE,UUID
+/usr/bin/df -h -- "$HOME" /mnt/Data
+du -shx -- "$HOME"
 ```
 
-Confirm that `Backup` is on the expected **separate ext4 drive**, note its filesystem UUID and actual mount point (possibly `/mnt/Data`), and check that there is room for the first copy plus history. If `findmnt` reports `/` for the backup path, stop: an ordinary directory can still exist when the data drive is unmounted. Review any separately mounted data not counted by `du -x`.
+Check the actual mount point (`/mnt/Data`), not the `Backup` subdirectory, which may not exist yet. Stop if there is no matching mount or it isn't the expected **separate ext4 drive**. Note its filesystem UUID and check available space for the first copy plus history. The runbook checks the mount and UUID before creating `Backup`. `/usr/bin/df` bypasses the `duf` alias. A `du -x` total doesn't cover other filesystems or unreadable data.
 
 Use two Restic repositories under `/mnt/Data/Backup/cachyos/`: `home` owned by your desktop user, and `system` owned by root. This keeps the home job unprivileged while allowing the system job to read protected `/etc` files. Initialize them manually only after checking the mount. Keep repository passwords and recovery instructions available independently of this PC and the repositories. Don't commit passwords, unredacted manifests, or private app data to Git.
 
-Close browsers, mail, and other apps that write databases; stop or export any VM or service data you intend to include. The home backup helper creates and includes a fresh private inventory. Take the home and system backups manually and verify them before applying any dotfile changes.
+Close browsers, mail, and other apps that write databases; stop or export any VM or service data you intend to include. If [rootless Podman storage](backup.md#rootless-podman-storage) is unreadable, preserve and verify any unique data before opting out of the raw store. The home backup helper creates and includes a fresh private inventory. Take the home and system backups manually and verify them before applying any dotfile changes.
 
 ## 2. Define what will be restored
 

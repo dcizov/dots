@@ -10,6 +10,7 @@ usage: ucli backup preflight|init|run|snapshots|check
        ucli backup run [--dry-run] [--tag TAG]
 
 Configure ~/.config/ucli/backup.local.bash first (or set UCLI_BACKUP_CONFIG).
+Preflight lists the sources and any literal BACKUP_EXCLUDE_PATHS.
 Use the desktop user, not sudo. No automatic initialization or pruning.
 USAGE
 }
@@ -39,7 +40,9 @@ else
 fi
 
 (( EUID != 0 )) || fail 'run as the desktop user, not with sudo (see the runbook for /etc)'
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+script_dir="$(dirname -- "$(realpath -e -- "${BASH_SOURCE[0]}")")"
+# shellcheck source=/dev/null
+source "$script_dir/../lib/backup-paths.sh"
 home="$(realpath -e -- "$HOME")"
 [[ "$home" != / && -d "$home" ]] || fail 'HOME is not a valid home directory'
 config="${UCLI_BACKUP_CONFIG:-$HOME/.config/ucli/backup.local.bash}"
@@ -47,6 +50,7 @@ config="${UCLI_BACKUP_CONFIG:-$HOME/.config/ucli/backup.local.bash}"
 BACKUP_REPO=/mnt/Data/Backup/cachyos/home
 BACKUP_UUID=""
 BACKUP_EXTRA_PATHS=()
+BACKUP_EXCLUDE_PATHS=()
 BACKUP_EXCLUDE_FILE=""
 # Local Bash settings, intentionally sourced only as the desktop user.
 # shellcheck source=/dev/null
@@ -86,9 +90,29 @@ for path in "${BACKUP_EXTRA_PATHS[@]}"; do
   extra+=("$resolved")
 done
 
+state="$home/.local/state/ucli/backup"
+manifest="$state/inventory.tar"
+excluded_paths=()
+for path in "${BACKUP_EXCLUDE_PATHS[@]}"; do
+  excluded="$(backup_excluded_path "$path")" || fail "invalid BACKUP_EXCLUDE_PATHS entry; use an absolute path below /: $path"
+  covered=0
+  for selected in "$home" "${extra[@]}" "$manifest"; do
+    if backup_path_within "$selected" "$excluded"; then
+      fail "excluded path covers a selected source: $excluded ($selected)"
+    fi
+    if backup_path_within "$excluded" "$selected"; then covered=1; fi
+  done
+  ((covered)) || fail "excluded path is not under a selected source: $excluded"
+  excluded_paths+=("$excluded")
+done
+
 if [[ "$action" == preflight ]]; then
   printf 'Verified ext4 mount %s (UUID %s)\nRepository: %s\nSources:\n' "$mount" "$uuid" "$repo"
   printf '  %s\n' "$home" "${extra[@]}"
+  if ((${#excluded_paths[@]})); then
+    printf 'Paths excluded from Restic and AppImage discovery:\n'
+    printf '  %s\n' "${excluded_paths[@]}"
+  fi
   if [[ -f config && ! -L config ]]; then
     printf 'Repository config exists.\n'
   else
@@ -108,14 +132,10 @@ if [[ -n "${RESTIC_PASSWORD_FILE:-}" ]]; then
   password_path="$(realpath -e -- "$RESTIC_PASSWORD_FILE")"
   mode="$(stat -c %a -- "$password_path")"
   (( (8#$mode & 077) == 0 )) || fail 'RESTIC_PASSWORD_FILE must not be accessible to group or other users'
-  pattern="${password_path//\\/\\\\}"
-  pattern="${pattern//\[/\\[}"
-  pattern="${pattern//\*/\\*}"
-  pattern="${pattern//\?/\\?}"
   for path in "${extra[@]}"; do
     [[ "$path" != "$password_path" ]] || fail 'do not list the password file as an extra source'
   done
-  restic_args+=(--exclude "$pattern")
+  restic_args+=(--exclude "$(backup_literal_pattern "$password_path")")
 fi
 
 if [[ "$action" == init ]]; then
@@ -145,7 +165,6 @@ if [[ -n "$BACKUP_EXCLUDE_FILE" ]]; then
   restic_args+=(--exclude-file "$BACKUP_EXCLUDE_FILE")
 fi
 
-state="$home/.local/state/ucli/backup"
 [[ "$(realpath -m -- "$state")" == "$state" ]] || fail "inventory state directory must not use symlinks: $state"
 state_parent="$state"
 while [[ ! -e "$state_parent" ]]; do state_parent="${state_parent%/*}"; done
@@ -157,13 +176,26 @@ stage="$(mktemp -d -- "$state/.run.XXXXXXXX")"
 trap 'rm -rf -- "$stage"' EXIT
 image_args=()
 for path in "${extra[@]}"; do image_args+=(--appimage "$path"); done
+for path in "${excluded_paths[@]}"; do image_args+=(--exclude-path "$path"); done
 "$inventory" "$stage/manifest" "${image_args[@]}" >/dev/null || fail 'inventory failed; no backup attempted'
 # A single stable path makes it easy to find the manifest in any snapshot.
-manifest="$state/inventory.tar"
 tar -C "$stage/manifest" -cf "$stage/inventory.tar" .
 mv -T -- "$stage/inventory.tar" "$manifest"
 rm -rf -- "$stage"
 trap - EXIT
+
+# Read these exact exclusions last, so a pattern file cannot re-include a path
+# that the inventory skipped. Escape Restic's file-based $ expansion; the final
+# slash protects trailing spaces from trimming and Restic normalizes it away.
+if ((${#excluded_paths[@]})); then
+  exec {excludes_fd}< <(
+    for path in "${excluded_paths[@]}"; do
+      pattern="$(backup_literal_pattern "$path")"
+      printf '%s/\n' "${pattern//\$/\$\$}"
+    done
+  )
+  restic_args+=(--exclude-file "/dev/fd/$excludes_fd")
+fi
 
 # --one-file-system keeps unrelated nested mounts out. Explicitly selected
 # extra paths and the current manifest are still included as separate roots.

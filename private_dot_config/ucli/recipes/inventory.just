@@ -1,10 +1,10 @@
-# Generate a private package/app/settings manifest (not a file backup).
+# Generate a private manifest; --exclude-path PATH prunes the AppImage scan.
 [group('Inventory')]
 [positional-arguments]
 inventory *ARGS:
     @exec "$HOME/.local/share/ucli/scripts/inventory/inventory.sh" "$@"
 
-# Verify or run a manual Restic home backup; start with preflight.
+# Manual Restic home backup; preflight shows sources and exact path exclusions.
 [group('Inventory')]
 [positional-arguments]
 backup *ARGS:

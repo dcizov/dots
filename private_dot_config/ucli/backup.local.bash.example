@@ -1,7 +1,7 @@
 # Copy to ~/.config/ucli/backup.local.bash and edit. Run as your user, not sudo.
 # Never commit credentials or put the repository password in this file.
 BACKUP_REPO=/mnt/Data/Backup/cachyos/home
-# Get the filesystem UUID with: findmnt -T /mnt/Data/Backup -o TARGET,SOURCE,FSTYPE,UUID
+# Get the filesystem UUID with: findmnt --mountpoint /mnt/Data -o TARGET,SOURCE,FSTYPE,UUID
 # Verify the row really is your separate ext4 drive; leave blank until checked.
 BACKUP_UUID=""
 
@@ -12,6 +12,13 @@ BACKUP_EXTRA_PATHS=(
   # "/path/on/another/drive/Portable Apps"
 )
 
-# Optional, additional Restic exclude patterns in a local file. Defaults already
-# skip just the home cache, trash, local snapshot tree, and Flatpak payloads.
+# Optional exact absolute paths to omit from BOTH Restic and AppImage discovery.
+# No container data is skipped by default. Only exclude the raw store after
+# exporting or deciding you don't need its contents (see docs/backup.md).
+BACKUP_EXCLUDE_PATHS=(
+  # "$HOME/.local/share/containers/storage"
+)
+
+# Optional extra glob patterns for Restic only; the inventory doesn't read this
+# file. Use BACKUP_EXCLUDE_PATHS for an unreadable directory both must skip.
 BACKUP_EXCLUDE_FILE=""

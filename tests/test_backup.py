@@ -15,6 +15,7 @@ SCRIPTS = REPO / "private_dot_local/share/ucli/scripts"
 BACKUP = SCRIPTS / "backup/executable_backup-home.sh"
 INVENTORY = SCRIPTS / "inventory/executable_inventory.sh"
 PALETTE = REPO / "run_onchange_after_96-desktop-palette.sh"
+RUNBOOK = REPO / "docs/backup.md"
 REAL_RESTIC = shutil.which("restic")
 REAL_JUST = shutil.which("just")
 UUID = "096a9598-b488-4d51-8d14-e592387e1338"
@@ -60,12 +61,14 @@ class BackupTests(unittest.TestCase):
             '[Installation "secondary"]\nPath=/var/lib/secondary-flatpak\n'
         )
         self.log = self.root / "restic.args"
+        self.exclude_log = self.root / "restic.patterns"
         self.env = {k: v for k, v in os.environ.items() if not k.startswith(("RESTIC_", "FLATPAK_", "XDG_"))}
         self.env.update(
             HOME=str(self.home), PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
             UCLI_BACKUP_CONFIG=str(self.config), XDG_CURRENT_DESKTOP="KDE",
             FLATPAK_CONFIG_DIR=str(self.flatpakconf), TEST_LOG=str(self.log),
-            TEST_UUID=UUID, TEST_DRIVE=str(self.drive), TEST_REPO=str(self.dest),
+            TEST_EXCLUDES=str(self.exclude_log), TEST_UUID=UUID,
+            TEST_DRIVE=str(self.drive), TEST_REPO=str(self.dest),
             DBUS_SESSION_BUS_ADDRESS="unix:path=/not-a-real-bus",
         )
         self.stub("pacman", r'''
@@ -104,7 +107,12 @@ target=$(realpath -e -- "$4") || exit 1
 case "$target" in
   "$TEST_DRIVE"|"$TEST_DRIVE/"*)
     case "$2" in
-      TARGET) echo "${MOCK_TARGET:-$TEST_DRIVE}" ;;
+      TARGET)
+        if [[ "$target" == "$TEST_DRIVE/Backup" && -n "${MOCK_BACKUP_TARGET:-}" ]]; then
+          echo "$MOCK_BACKUP_TARGET"
+        else
+          echo "${MOCK_TARGET:-$TEST_DRIVE}"
+        fi ;;
       FSTYPE) echo "${MOCK_FSTYPE:-ext4}" ;;
       UUID) echo "${MOCK_UUID:-$TEST_UUID}" ;;
       *) exit 99 ;;
@@ -116,6 +124,15 @@ esac
 [[ "$PWD" == "$TEST_REPO" && "$1" == --repo && "$2" == . ]] || exit 99
 printf '%s\0' "$@" >> "$TEST_LOG"
 if [[ "$3" == init ]]; then touch config; fi
+if [[ "$3" == backup ]]; then
+  while (($#)); do
+    if [[ "$1" == --exclude-file ]]; then
+      cat -- "$2" >> "$TEST_EXCLUDES"
+      shift
+    fi
+    shift
+  done
+fi
 exit "${RESTIC_EXIT:-0}"
 ''')
 
@@ -123,6 +140,10 @@ exit "${RESTIC_EXIT:-0}"
         path = self.home / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(data)
+
+    def configure_path_excludes(self, *paths):
+        with self.config.open("a") as config:
+            config.write("BACKUP_EXCLUDE_PATHS=(" + " ".join(shlex.quote(str(p)) for p in paths) + ")\n")
 
     def stub(self, name, script):
         path = self.bin / name
@@ -182,6 +203,35 @@ exit "${RESTIC_EXIT:-0}"
         self.assertFalse((self.home / ".local/state").exists())
         self.assertEqual(list(self.dest.iterdir()), [])
 
+    def test_runbook_creates_backup_only_on_verified_mount(self):
+        # Run only the directory setup snippet, with a fixture drive and no real sudo.
+        setup = RUNBOOK.read_text().split("\n```bash\ndrive=/mnt/Data\n", 1)[1].split("\n```", 1)[0]
+        setup = 'drive="$TEST_DRIVE"\n' + setup.replace("'REPLACE-WITH-THE-VERIFIED-EXT4-UUID'", '"$TEST_UUID"')
+        self.stub("sudo", 'case "$1" in mkdir|install) exec "$@" ;; *) exit 99 ;; esac\n')
+        backup = self.drive / "Backup"
+        for override in ({"MOCK_TARGET": "/"}, {"MOCK_FSTYPE": "btrfs"}, {"MOCK_UUID": "other"}):
+            with self.subTest(override=override):
+                result = self.invoke("bash", "-c", setup, **override)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Expected ext4 UUID", result.stderr)
+                self.assertFalse(backup.exists())
+        backup.mkdir()
+        self.assertNotEqual(self.invoke("bash", "-c", setup, MOCK_BACKUP_TARGET=str(backup)).returncode, 0)
+        self.assertEqual(list(backup.iterdir()), [])
+        backup.rmdir()
+        backup.symlink_to(self.extra, target_is_directory=True)
+        result = self.invoke("bash", "-c", setup)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.extra / "cachyos").exists())
+        backup.unlink()
+        self.ok("bash", "-c", setup)
+        for scope in ("home", "system"):
+            self.assertEqual((backup / "cachyos" / scope).stat().st_mode & 0o777, 0o700)
+        marker = backup / "cachyos/home/keep"
+        marker.touch()
+        self.assertNotEqual(self.invoke("bash", "-c", setup).returncode, 0)
+        self.assertTrue(marker.is_file())
+
     def test_missing_tag_value_cannot_swallow_the_dry_run_flag(self):
         (self.dest / "config").touch()
         result = self.invoke(BACKUP, "run", "--tag", "--dry-run")
@@ -226,6 +276,71 @@ exit "${RESTIC_EXIT:-0}"
             self.assertIn(str(self.image).encode(), tar.extractfile("./appimages/appimages.txt").read())
         self.assertEqual(manifest.stat().st_mode & 0o077, 0)
 
+    def test_only_reviewed_unreadable_path_is_pruned(self):
+        (self.dest / "config").touch()
+        omitted = self.home / r".local/share/containers/storage [dev]*? \$podman "
+        omitted.mkdir(parents=True)
+        (omitted / "Skip.AppImage").write_text("container data\n")
+        sibling = omitted.with_name(omitted.name + "-keep") / "Keep.AppImage"
+        sibling.parent.mkdir()
+        sibling.write_text("keep sibling data\n")
+        omitted.chmod(0o000)
+        self.addCleanup(omitted.chmod, 0o700)
+        patterns = self.root / "restic-only.excludes"
+        patterns.write_text(f"{omitted.parent}/storage* /\n")
+        with self.config.open("a") as config:
+            config.write(f"BACKUP_EXCLUDE_FILE={shlex.quote(str(patterns))}\n")
+
+        result = self.invoke(BACKUP, "run", "--dry-run")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Permission denied", result.stderr)
+        self.assertIn("inventory failed; no backup attempted", result.stderr)
+        self.assertFalse(self.log.exists())
+        manifest = self.home / ".local/state/ucli/backup/inventory.tar"
+        self.assertFalse(manifest.exists())
+
+        self.configure_path_excludes(f"{omitted}/.")
+        self.assertIn(f"  {omitted}\n", self.ok(BACKUP, "preflight"))
+        self.ok(BACKUP, "run", "--dry-run")
+        with tarfile.open(manifest) as tar:
+            self.assertEqual(tar.extractfile("./appimages/excluded-paths.txt").read().decode(), f"{omitted}\n")
+            listed = tar.extractfile("./appimages/appimages.txt").read().decode().splitlines()
+            self.assertIn(str(sibling), listed)
+            self.assertIn(str(self.image), listed)
+            self.assertNotIn(str(omitted / "Skip.AppImage"), listed)
+        self.assertEqual(
+            self.exclude_log.read_text().splitlines()[-1],
+            f"{omitted.parent}/" + r"storage \[dev]\*\? \\$$podman /",
+        )
+
+        unrelated = self.home / "other unreadable directory"
+        unrelated.mkdir(mode=0o000)
+        self.addCleanup(unrelated.chmod, 0o700)
+        self.log.unlink()
+        saved_manifest = manifest.read_bytes()
+        result = self.invoke(BACKUP, "run")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(str(unrelated), result.stderr)
+        self.assertIn("Permission denied", result.stderr)
+        self.assertFalse(self.log.exists())
+        self.assertEqual(manifest.read_bytes(), saved_manifest)
+
+    def test_excluded_paths_cannot_hide_sources_or_the_manifest(self):
+        for path, message in (
+            ("relative", "use an absolute path"),
+            ("/", "use an absolute path"),
+            (self.home, "covers a selected source"),
+            (self.extra, "covers a selected source"),
+            (self.home / ".local/state", "covers a selected source"),
+            (self.root / "not a source", "not under a selected source"),
+        ):
+            with self.subTest(path=path):
+                self.configure_path_excludes(path)
+                result = self.invoke(BACKUP, "preflight")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+        self.assertFalse(self.log.exists())
+
     def test_failed_flatpak_inventory_prevents_snapshot(self):
         (self.dest / "config").touch()
         result = self.invoke(BACKUP, "run", BROKEN_FLATPAK="1")
@@ -237,14 +352,19 @@ exit "${RESTIC_EXIT:-0}"
         self.assertFalse((state / "inventory.tar").exists())
 
     @unittest.skipUnless(REAL_JUST, "just is not installed")
-    def test_just_recipe_preserves_paths_with_spaces(self):
+    def test_inventory_recipe_forwards_extra_and_excluded_paths(self):
         deployed = self.home / ".local/share/ucli/scripts/inventory/inventory.sh"
         deployed.parent.mkdir(parents=True)
         deployed.symlink_to(INVENTORY)
         output = self.root / "output with spaces"
+        omitted = self.extra / "Unreadable [old]"
+        omitted.mkdir(mode=0o000)
+        self.addCleanup(omitted.chmod, 0o700)
+        self.configure_path_excludes(self.extra)  # Standalone inventory must not consume this config.
         justfile = REPO / "private_dot_config/ucli/justfile"
-        self.ok(REAL_JUST, "--justfile", justfile, "inventory", output, "--appimage", self.extra)
+        self.ok(REAL_JUST, "--justfile", justfile, "inventory", output, "--appimage", self.extra, "--exclude-path", omitted)
         self.assertIn(str(self.image), (output / "appimages/appimages.txt").read_text())
+        self.assertEqual((output / "appimages/excluded-paths.txt").read_text(), f"{omitted}\n")
 
     @unittest.skipUnless(REAL_RESTIC, "Restic is not installed")
     def test_real_restic_round_trip(self):
@@ -255,6 +375,20 @@ exit "${RESTIC_EXIT:-0}"
         password.write_text("fixture password\n")
         password.chmod(0o600)
         self.env["RESTIC_PASSWORD_FILE"] = str(password)
+        omitted = self.extra / r"storage [abc]*? \$local "
+        omitted.mkdir()
+        (omitted / "Skip.AppImage").write_text("reviewed omission\n")
+        omitted.chmod(0o000)
+        self.addCleanup(omitted.chmod, 0o700)
+        keep = self.extra / "storage a-glob-matchZ $local " / "Keep.AppImage"
+        keep.parent.mkdir()
+        keep.write_text("must survive even though it matches the unescaped glob\n")
+        self.configure_path_excludes(omitted)
+        # Make sure the exact omission still wins with existing Restic-only patterns.
+        patterns = self.root / "restic-only.excludes"
+        patterns.write_text("!storage*\n")
+        with self.config.open("a") as config:
+            config.write(f"BACKUP_EXCLUDE_FILE={shlex.quote(str(patterns))}\n")
         self.ok(BACKUP, "init")
         self.ok(BACKUP, "run", "--dry-run")
         direct = (REAL_RESTIC, "--repo", self.dest)
@@ -272,6 +406,8 @@ exit "${RESTIC_EXIT:-0}"
         self.assertFalse((home / ".cache/browser").exists())
         self.assertFalse((home / ".local/share/flatpak/repo/objects.dat").exists())
         self.assertFalse((home / password.name).exists())
+        self.assertFalse((target / omitted.relative_to("/")).exists())
+        self.assertEqual((target / keep.relative_to("/")).read_bytes(), keep.read_bytes())
         image = target / self.image.relative_to("/")
         self.assertEqual(image.read_bytes(), self.image.read_bytes())
         self.assertEqual(image.stat().st_mode & 0o777, 0o755)
