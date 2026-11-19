@@ -64,6 +64,22 @@ stub() {
   chmod +x "$T_BIN/$name"
 }
 
+# t_minimal_path — PATH becomes the stub dir plus a dir holding only the basic
+# tools a script needs to run at all, so `command -v X` answers from the test's
+# stubs, never from whatever the host happens to have installed.
+T_BASICS=(bash sh env cat grep sed awk find head tail wc tr cut sort uniq basename
+  dirname mkdir rm cp mv ln touch chmod stat id getent uname date mktemp ls readlink
+  realpath tee xargs cmp diff sleep printf test true false seq)
+t_minimal_path() {
+  local tool real
+  mkdir -p "$T_ROOT/basics"
+  for tool in "${T_BASICS[@]}"; do
+    real="$(PATH="/usr/bin:/bin" command -v "$tool" 2>/dev/null)" || continue
+    [[ "$real" == /* ]] && ln -sf "$real" "$T_ROOT/basics/$tool"
+  done
+  export PATH="$T_BIN:$T_ROOT/basics"
+}
+
 # t_config_file <name> — write stdin to ~/.config/ucli/<name> in the sandbox.
 t_config_file() {
   mkdir -p "$HOME/.config/ucli"

@@ -9,9 +9,14 @@
 # something is MISSING, 0 otherwise (WARN lines do not fail the run).
 set -euo pipefail
 
-real_home="${HOME:-$(getent passwd "${USER:-$(id -un)}" | cut -d: -f6)}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+
+real_home="$(ucli_real_home)"
 config_dir="$real_home/.config/ucli"
 zsh_dir="$real_home/.config/zsh"
+etc_root="${UCLI_ETC_ROOT:-}"   # test seam: /etc paths are read below this root
 missing=0
 warned=0
 
@@ -20,10 +25,6 @@ miss() { printf '  %-10s %s\n' "MISSING" "$1"; missing=$((missing + 1)); }
 warn() { printf '  %-10s %s\n' "WARN" "$1"; warned=$((warned + 1)); }
 info() { printf '  %-10s %s\n' "—" "$1"; }
 section() { printf '\n== %s ==\n' "$1"; }
-
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$script_dir/../lib/common.sh"
 
 # A desktop exists once one of its session binaries does. Before that the box is a
 # console install: .chezmoiignore keeps the shell/terminal/browser config out of
@@ -156,8 +157,9 @@ fi
 # flags are defaults in conf.d; show which ones exist so a "why is ls GNU again"
 # question has a starting point
 if [[ -d "$zsh_dir/conf.d" ]]; then
+  # `|| true`: an empty conf.d (no match) must not end the run under pipefail
   flags="$(grep -ho 'UCLI_SHELL_ENABLE_[A-Z]*' "$zsh_dir"/conf.d/*.zsh 2>/dev/null |
-    sort -u | sed 's/^UCLI_SHELL_ENABLE_//' | tr '\n' ' ')"
+    sort -u | sed 's/^UCLI_SHELL_ENABLE_//' | tr '\n' ' ' || true)"
   [[ -n "$flags" ]] && info "shell flags available: ${flags% }"
 fi
 
@@ -217,7 +219,7 @@ else
   warn "firefox missing (run: ucli setup-system / ucli apps)"
 fi
 
-if [[ -f /etc/snapper/configs/root ]]; then
+if [[ -f "$etc_root/etc/snapper/configs/root" ]]; then
   ok "snapper root config (snapshots work)"
 else
   warn "no snapper config — setup-desktop cannot take a restore point (ucli setup-snapshots)"
@@ -227,8 +229,9 @@ desktop="${XDG_CURRENT_DESKTOP:-none}"
 case "${desktop,,}" in
   *gnome*)
     if have gsettings; then
-      enabled="$(gsettings get org.gnome.shell enabled-extensions 2>/dev/null || echo none)"
-      count="$(grep -o "'" <<<"$enabled" | wc -l)"
+      # "['a@b', 'c@d']" — count the quoted UUIDs, not the quote characters
+      enabled="$(gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true)"
+      count="$(grep -o "'[^']*'" <<<"$enabled" | wc -l || true)"   # none enabled: no match
       ok "gnome: ${count} extensions enabled"
     fi
     ;;
@@ -238,14 +241,11 @@ esac
 # ---------------------------------------------------------------------------
 section "personal overlay"
 personal_file="$config_dir/packages.local.bash"
-# packages.bash first: it defines the empty PERSONAL_* defaults the overlay fills.
-if [[ -f "$config_dir/packages.bash" ]]; then
-  # shellcheck source=/dev/null
-  source "$config_dir/packages.bash"
-fi
-if [[ -f "$personal_file" ]]; then
-  # shellcheck source=/dev/null
-  source "$personal_file"
+# packages.bash defines the empty PERSONAL_* defaults the overlay fills; without
+# it the counts below would be unbound, so it is a finding of its own.
+if ! ucli_load_packages "$real_home" 2>/dev/null; then
+  miss ".config/ucli/packages.bash (run: ucli chezmoi-apply)"
+elif [[ -f "$personal_file" ]]; then
   ok "packages.local.bash: ${#PERSONAL_PKGS[@]} package(s), ${#PERSONAL_FLATPAKS[@]} flatpak(s), ${#PERSONAL_GNOME_EXTENSIONS[@]} extension(s)"
 else
   info "no packages.local.bash — only the repo's opinionated sets are installed"
