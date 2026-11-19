@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# system/detect.sh (`ucli detect`) and system-check.sh (`ucli system-check`):
-# read-only reports. detect prints the configured chezmoi data and what is
+# system/detect.sh (`ucli profile`) and system-check.sh:
+# read-only reports. profile prints the configured chezmoi data and what is
 # detected; system-check prints the machine's facts by section.
 . "$(dirname -- "${BASH_SOURCE[0]}")/harness.sh"
 

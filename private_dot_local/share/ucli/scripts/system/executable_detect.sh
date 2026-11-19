@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# `ucli detect`: what ucli would decide on this machine — the chezmoi data it
-# was configured with, then what it detects — one key: value per line.
+# `ucli profile`: the chezmoi data this machine was configured with, then
+# what the detection helpers decide — one key: value per line.
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
