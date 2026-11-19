@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
+# Check every name in every package array against pacman (package or group)
+# and the AUR, and every GNOME extension pk against extensions.gnome.org.
+# Network, read-only. The personal overlay (packages.local.bash) is checked
+# too: a typo there breaks `ucli apps` exactly like one in packages.bash.
+#
+#   validate-packages.sh          exit 0 when everything resolves, 1 otherwise
+#   validate-packages.sh --all    accepted for compatibility; same as no flag
 set -euo pipefail
 
-usage() { echo 'usage: validate-packages.sh [--all]'; }
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/aur.sh
+. "$script_dir/../lib/aur.sh"
+
 while (($#)); do
   case "$1" in
     --all) shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; ucli_script_help >&2; exit 2 ;;
   esac
 done
 
-# shellcheck source=/dev/null
-source "$HOME/.config/ucli/packages.bash"
-
-# shellcheck source=/dev/null
-source "$HOME/.local/share/ucli/scripts/lib/aur.sh"
+ucli_load_packages
 
 status=0
 package_arrays=(
@@ -26,10 +34,11 @@ package_arrays=(
   DESKTOP_HYPRLAND_BASE DESKTOP_HYPRLAND_ADDITIONS DESKTOP_KDE_BASE DESKTOP_KDE_ADDITIONS
   DESKTOP_BROWSER DESKTOP_TERMINAL_GNOME DESKTOP_TERMINAL_HYPRLAND DESKTOP_TERMINAL_KDE
   APPS MANUAL_AUR
+  PERSONAL_PKGS PERSONAL_DEV
 )
 # Extension lists are "PK:UUID" pairs (see packages.bash for why). The personal
-# list is optional and lives in the overlay.
-extension_lists=("GNOME_MANAGED_EXTENSIONS")
+# list is empty unless the overlay fills it.
+extension_lists=(GNOME_MANAGED_EXTENSIONS PERSONAL_GNOME_EXTENSIONS)
 
 extension_pk_exists() {
   local pk="$1"

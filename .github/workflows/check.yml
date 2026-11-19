@@ -37,3 +37,8 @@ jobs:
 
       - name: Test inventory and backup with a temporary repository
         run: python3 -B -m unittest discover -s tests -v
+
+      # Bash unit tests: each script is sourced in a sandbox with stubbed system
+      # commands (tests/harness.sh), so nothing touches the runner.
+      - name: Shell tests
+        run: bash tests/run.sh
