@@ -61,6 +61,8 @@ if [[ -d "$root/private_dot_local/share/ucli" ]]; then
   config_dir="$root/private_dot_config/ucli"
   zsh_dir="$root/private_dot_config/zsh"
   zshrc="$root/dot_zshrc"
+  wrapper="$root/private_dot_local/bin/executable_ucli"
+  distrobox_dir="$root/private_dot_config/distrobox"
   extra_shell=()
   while IFS= read -r f; do extra_shell+=("$f"); done < <(
     find "$root" -maxdepth 1 -name '*.sh' -type f ! -name '*.tmpl' | sort
@@ -71,10 +73,24 @@ elif [[ -d "$root/.local/share/ucli" ]]; then
   config_dir="$root/.config/ucli"
   zsh_dir="$root/.config/zsh"
   zshrc="$root/.zshrc"
+  wrapper="$root/.local/bin/ucli"
+  distrobox_dir="$root/.config/distrobox"
   extra_shell=()
 else
   echo "check: no ucli tree under $root" >&2
   exit 1
+fi
+
+# Bash outside the scripts tree, in both layouts: the wrapper, the package arrays
+# every install script sources, and the dev box provisioning that runs inside the
+# container (deployed only for role=dev, hence the existence checks).
+for f in "$wrapper" "$config_dir/packages.bash"; do
+  [[ -f "$f" ]] && extra_shell+=("$f")
+done
+if [[ -d "$distrobox_dir" ]]; then
+  while IFS= read -r f; do extra_shell+=("$f"); done < <(
+    find "$distrobox_dir" -name '*.sh' -type f | sort
+  )
 fi
 
 fail=0

@@ -104,6 +104,7 @@ if ! as_user git -C "$workdir/src" fetch -q --depth 1 origin "$ref"; then
 fi
 as_user git -C "$workdir/src" checkout -q FETCH_HEAD
 
+# shellcheck disable=SC2016  # $1 is the inner bash's argument, passed after `_`
 if ! as_user bash -c 'cd "$1" && ./build.sh' _ "$workdir/src"; then
   echo "error: build.sh failed for Gradia Capture ($ref)" >&2
   exit 1

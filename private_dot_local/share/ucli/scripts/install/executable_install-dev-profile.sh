@@ -273,6 +273,7 @@ for id in "${selected[@]}"; do
     failed+=("$id")
     if is_fatal "$id"; then
       printf '\n✗ %s failed; stopping.\n' "$(name_for "$id")" >&2
+      # shellcheck disable=SC2016  # the backticks quote a command in the message
       printf '  Fix it and re-run `ucli devmode` — nothing was recorded as installed.\n' >&2
       exit 1
     fi

@@ -149,6 +149,8 @@ ui_link() {
     [[ "$text" == "$url" ]] || printf ' (%s)' "$url"
     return 0
   fi
+  # OSC 8 hyperlink; \033\\ is the string terminator (ESC \), escaped for printf.
+  # shellcheck disable=SC1003
   printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "$text"
 }
 

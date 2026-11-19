@@ -22,6 +22,7 @@ note(){ printf '        %s\n' "$1"; }
 
 # Sourced alone, in a throwaway shell. $HOME is expanded by the REMOTE bash.
 probe() {
+    # shellcheck disable=SC2029  # $1 is the candidate, interpolated here on purpose
     printf '%s\n' "$PAYLOAD" | ssh "$HOST" "bash -c '$1 >/dev/null 2>&1; cat'" 2>/dev/null
 }
 
@@ -29,6 +30,7 @@ R "== bisecting the bash -l profile chain on $HOST =="
 
 # /etc/profile sources /etc/profile.d/*.sh in alphabetical order, then bash
 # reads the FIRST of ~/.bash_profile, ~/.bash_login, ~/.profile.
+# shellcheck disable=SC2016  # $HOME stays literal: the remote bash expands it
 CANDIDATES='/etc/profile
 /etc/profile.d/bash_completion.sh
 /etc/profile.d/distrobox_profile.sh
@@ -58,10 +60,10 @@ fi
 
 # --- confirm end to end, exactly like the extension ---------------------------
 R "== full pipeline after the fix =="
-printf '%s\n' "echo HELLO" | base64 -w0 > /tmp/.b64
-out=$(ssh "$HOST" "echo $(cat /tmp/.b64) | base64 -d | bash -c 'host-spawn() { :; }; exec bash -l'" 2>&1)
+hello_b64="$(printf '%s\n' "echo HELLO" | base64 -w0)"
+# shellcheck disable=SC2029  # the payload is encoded here, decoded in the box
+out=$(ssh "$HOST" "echo $hello_b64 | base64 -d | bash -c 'host-spawn() { :; }; exec bash -l'" 2>&1)
 note "bash -l with guard -> [${out}]"
-rm -f /tmp/.b64
 
 # --- evidence -----------------------------------------------------------------
 R "== /etc/profile.d/distrobox_profile.sh (distrobox regenerates this every start) =="

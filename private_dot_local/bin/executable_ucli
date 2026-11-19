@@ -20,6 +20,7 @@ JUST_DIR="$(dirname "$JUSTFILE")"
 
 if [ "${choose:-0}" = 1 ]; then
   if [ ! -t 0 ]; then
+    # shellcheck disable=SC2016  # the backticks quote a command in the message
     printf 'ucli: --choose needs a terminal (try `ucli usage` for the plain list)\n' >&2
     exit 2
   fi

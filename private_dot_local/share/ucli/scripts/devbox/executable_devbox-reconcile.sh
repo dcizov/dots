@@ -91,6 +91,7 @@ status_start() {
   { : >&3; } 2>/dev/null || return 0
   (
     set +e
+    # shellcheck disable=SC1003  # '|/-\' ends in a literal backslash frame, not an escape
     case "${DEVBOX_SPINNER:-bar}" in
       braille)       frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' ;;
       static-char:*) frames="${DEVBOX_SPINNER#static-char:}" ;;
@@ -142,15 +143,17 @@ narrate() {
   '
 }
 
-STDBUF=""
-command -v stdbuf >/dev/null 2>&1 && STDBUF="stdbuf -oL -eL"
+# Prefix that line-buffers a command's output; empty when stdbuf is missing.
+STDBUF=()
+command -v stdbuf >/dev/null 2>&1 && STDBUF=(stdbuf -oL -eL)
 
 run_dim() {
   local label="$1" rc=0; shift
   local -a pre=()
   # stdbuf exec()s its argument, so only wrap real executables, never functions
-  # shellcheck disable=SC2206  # STDBUF is a word list ("stdbuf -oL -eL")
-  [ -n "$STDBUF" ] && [ "$(type -t "$1" 2>/dev/null)" = "file" ] && pre=($STDBUF)
+  if [ "$(type -t "$1" 2>/dev/null)" = "file" ]; then
+    pre=("${STDBUF[@]}")
+  fi
   status_start "$label"
   set +e
   "${pre[@]}" "$@" 2>&1 | narrate
@@ -452,9 +455,12 @@ fi
 printf '%s\n' "$FP_CURRENT" >"$FP_FILE"
 
 log "state of '$BOX'"
-in_box sh -c 'printf "  debian:   %s\n" "$(cat /etc/debian_version)"' || true
-in_box su -l "$(id -un 1000)" -s /bin/bash -c \
-  'export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh" 2>/dev/null; printf "  node:     %s\n  npm:      %s\n" "$(node -v 2>/dev/null)" "$(npm -v 2>/dev/null)"' || true
-in_box sh -c 'printf "  php:      %s\n" "$(php -v 2>/dev/null | head -1)"; printf "  composer: %s\n" "$(composer --version 2>/dev/null)"' || true
+# shellcheck disable=SC2016  # every $(…) and $HOME here is for the box's shell to expand
+{
+  in_box sh -c 'printf "  debian:   %s\n" "$(cat /etc/debian_version)"' || true
+  in_box su -l "$(id -un 1000)" -s /bin/bash -c \
+    'export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh" 2>/dev/null; printf "  node:     %s\n  npm:      %s\n" "$(node -v 2>/dev/null)" "$(npm -v 2>/dev/null)"' || true
+  in_box sh -c 'printf "  php:      %s\n" "$(php -v 2>/dev/null | head -1)"; printf "  composer: %s\n" "$(composer --version 2>/dev/null)"' || true
+}
 
 [ "${QUIET:-0}" = "1" ] || printf '\n%s==> devbox: ready in %s%s\n' "$GRN" "$(dur $(( SECONDS - SCRIPT_T0 )))" "$RST"

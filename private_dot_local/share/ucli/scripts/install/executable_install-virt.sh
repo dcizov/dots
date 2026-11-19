@@ -125,7 +125,7 @@ fi
 if (( take_service )) && have virsh; then
   as_root virsh -c qemu:///system net-start default >/dev/null 2>&1 || true
   as_root virsh -c qemu:///system net-autostart default >/dev/null 2>&1 || true
-  echo "$(net_state)"
+  net_state
 fi
 
 cat <<'NEXT'

@@ -285,9 +285,19 @@ detect_btrfs_layout() {
 }
 
 detect_snapper_root() {
-  [[ -f /etc/snapper/configs/root ]] && printf 'ok\n' || { printf 'missing\n'; return 1; }
+  if [[ -f /etc/snapper/configs/root ]]; then
+    printf 'ok\n'
+  else
+    printf 'missing\n'
+    return 1
+  fi
 }
 
 detect_limine() {
-  command -v limine-update >/dev/null 2>&1 && printf 'ok\n' || { printf 'missing\n'; return 1; }
+  if command -v limine-update >/dev/null 2>&1; then
+    printf 'ok\n'
+  else
+    printf 'missing\n'
+    return 1
+  fi
 }

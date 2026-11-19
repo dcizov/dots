@@ -51,6 +51,7 @@ fi
 R "2. login shell sshd will use (container /etc/passwd, not the host's)"
 shell=$(ssh "$HOST" 'getent passwd "$(id -un)" | cut -d: -f7')
 note "shell = ${shell:-<empty>}"
+# shellcheck disable=SC2029  # $shell came from the box; test that path there
 if [ -n "$shell" ] && ssh "$HOST" "[ -x '$shell' ]"; then
     ok "$shell exists and is executable in the box"
 else
@@ -62,7 +63,11 @@ fi
 # --- 3. plain exec ------------------------------------------------------------
 R "3. plain remote exec (no bash, no profile)"
 out=$(ssh "$HOST" 'uname -s' 2>&1)
-[ "$out" = "Linux" ] && ok "uname -s -> Linux" || bad "uname -s -> [$out] (expected Linux)"
+if [ "$out" = "Linux" ]; then
+    ok "uname -s -> Linux"
+else
+    bad "uname -s -> [$out] (expected Linux)"
+fi
 
 # --- 4. server prerequisites --------------------------------------------------
 # code.visualstudio.com/docs/remote/linux: openssh-server, bash, curl|wget, tar
@@ -75,8 +80,11 @@ ssh "$HOST" 'printf "  glibc     %s\n" "$(ldd --version 2>/dev/null | head -1)"'
 # --- 5. THE decisive test -----------------------------------------------------
 # Exactly the extension's pipeline, A/B against a non-login bash.
 R "5. open-remote-ssh pipeline:  echo <b64> | base64 -d | bash -l"
-a=$(ssh "$HOST" "echo $MARKER_B64 | base64 -d | bash -l" 2>&1)
-b=$(ssh "$HOST" "echo $MARKER_B64 | base64 -d | bash"   2>&1)
+# shellcheck disable=SC2029  # the marker is encoded here, decoded in the box
+{
+  a=$(ssh "$HOST" "echo $MARKER_B64 | base64 -d | bash -l" 2>&1)
+  b=$(ssh "$HOST" "echo $MARKER_B64 | base64 -d | bash"   2>&1)
+}
 note "with    -l  -> [${a}]"
 note "without -l  -> [${b}]"
 if [ "$a" = "HELLO" ]; then

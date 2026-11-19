@@ -1,8 +1,10 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2034  # sourced data: every array is read by the scripts, not here
 # Package sets for ucli.
 # Resolver policy:
 # - exact package/group names only
 # - pacman repo/group first
-# - AUR fallback through paru
+# - AUR fallback through AUR_HELPER (paru or shelly, see below)
 # - GNOME extension packages stay repo-only; non-repo extensions use extensions.gnome.org API scripts
 
 # ------------------------------------------------------------------

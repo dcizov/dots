@@ -289,6 +289,7 @@ if have distrobox; then
   if distrobox list --no-color 2>/dev/null | grep -qE '\bdev\b'; then
     # a container that exists but was never provisioned looks identical to a
     # healthy one unless we ask about the versions the tooling assumes
+    # shellcheck disable=SC2016  # the $(…) run inside the box, not here
     out="$(distrobox enter dev -- bash -lc \
       'printf "%s|%s|%s\n" "$(cat /etc/debian_version)" \
       "$(node -v 2>/dev/null || echo MISSING)" \

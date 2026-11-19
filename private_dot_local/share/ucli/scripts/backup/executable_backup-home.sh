@@ -70,7 +70,7 @@ uuid="$(findmnt -nro UUID --target .)" || fail 'cannot identify the repository U
 [[ -n "$mount" && "$mount" != / && "$fstype" == ext4 && "${uuid,,}" == "${BACKUP_UUID,,}" ]] \
   || fail "expected ext4 UUID $BACKUP_UUID at $repo; found mount=${mount:-none} type=${fstype:-none} UUID=${uuid:-none}. No backup written."
 repo_mode="$(stat -c %a -- .)"
-[[ -O . && -w . ]] && (( (8#$repo_mode & 077) == 0 )) \
+{ [[ -O . && -w . ]] && (( (8#$repo_mode & 077) == 0 )); } \
   || fail "the repository directory must belong to you and be private (0700): $repo"
 
 validate_source() {

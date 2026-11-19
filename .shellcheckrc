@@ -1,0 +1,5 @@
+# Resolve `# shellcheck source=../lib/x.sh` relative to the script, not the cwd,
+# and follow those sources, so lib functions are known wherever shellcheck runs
+# (check.sh, CI, an editor). Not deployed: chezmoi skips dotfiles in the source root.
+source-path=SCRIPTDIR
+external-sources=true

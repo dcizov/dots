@@ -68,7 +68,8 @@ cd "$workdir"
 # Verify the PGP signature on the source tarball if gpg is available.
 if command -v gpg >/dev/null 2>&1; then
   echo "verifying PGP signature on shelly source ..." >&2
-  sig_file="$(ls *.sig 2>/dev/null | head -1 || true)"
+  sig_file=""
+  for f in ./*.sig; do [[ -e "$f" ]] && { sig_file="$f"; break; }; done
   if [[ -n "$sig_file" ]] && gpg --verify "$sig_file" 2>/dev/null; then
     echo "PGP signature verified." >&2
   else

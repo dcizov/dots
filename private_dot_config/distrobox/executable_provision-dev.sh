@@ -74,6 +74,7 @@ status_start() {
   { : >&3; } 2>/dev/null || return 0
   (
     set +e
+    # shellcheck disable=SC1003  # '|/-\' ends in a literal backslash frame, not an escape
     case "${DEVBOX_SPINNER:-bar}" in
       braille)       frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' ;;
       static-char:*) frames="${DEVBOX_SPINNER#static-char:}" ;;
@@ -124,8 +125,9 @@ narrate() {
   '
 }
 
-STDBUF=""
-command -v stdbuf >/dev/null 2>&1 && STDBUF="stdbuf -oL -eL"
+# Prefix that line-buffers a command's output; empty when stdbuf is missing.
+STDBUF=()
+command -v stdbuf >/dev/null 2>&1 && STDBUF=(stdbuf -oL -eL)
 
 # run <label> <cmd...> — streams the command's output dimmed + indented while
 # verbose, keeps the status line moving, discards output otherwise.
@@ -139,9 +141,8 @@ run() {
     # stdbuf exec()s its argument, so it can only wrap a real executable:
     # `stdbuf apt_get …` fails with "failed to run command 'apt_get'".
     local -a pre=()
-    if [ -n "$STDBUF" ] && [ "$(type -t "$1" 2>/dev/null)" = "file" ]; then
-      # shellcheck disable=SC2206  # STDBUF is a word list ("stdbuf -oL -eL")
-      pre=($STDBUF)
+    if [ "$(type -t "$1" 2>/dev/null)" = "file" ]; then
+      pre=("${STDBUF[@]}")
     fi
     set +e
     "${pre[@]}" "$@" 2>&1 | narrate
@@ -185,7 +186,7 @@ fi
 [ -n "$DEV_USER" ] || { fail "could not determine the container user"; exit 1; }
 DEV_HOME="$(getent passwd "$DEV_USER" | cut -d: -f6)"
 DEV_GROUP="$(id -gn "$DEV_USER")"
-as_user() { $STDBUF su -l "$DEV_USER" -s /bin/bash -c "$1"; }
+as_user() { "${STDBUF[@]}" su -l "$DEV_USER" -s /bin/bash -c "$1"; }
 
 DEBIAN_MAJOR="$(cut -d. -f1 /etc/debian_version 2>/dev/null || echo "")"
 # shellcheck disable=SC1091
@@ -212,8 +213,8 @@ export DEBIAN_FRONTEND=noninteractive
 # DPkg::Use-Pty=0 keeps dpkg line-based when there is no tty (otherwise it
 # tries to drive a pty and interleaves escape sequences); Progress-Fancy off for
 # the same reason. Together with stdbuf in run(), output appears as it happens.
-APT_OPTS="-o DPkg::Lock::Timeout=600 -o Dpkg::Use-Pty=0 -o Dpkg::Progress-Fancy=0 -o APT::Color=0"
-apt_get() { $STDBUF apt-get $APT_OPTS "$@"; }
+APT_OPTS=(-o DPkg::Lock::Timeout=600 -o Dpkg::Use-Pty=0 -o Dpkg::Progress-Fancy=0 -o APT::Color=0)
+apt_get() { "${STDBUF[@]}" apt-get "${APT_OPTS[@]}" "$@"; }
 APT_Q="-qq"; [ "$V" = "1" ] && APT_Q="-q"
 
 # ---------------------------------------------------------------------------
@@ -286,11 +287,11 @@ fi
 step "apt: refreshing indexes"
 run "apt-get update" apt_get update "$APT_Q"
 
-BASE_PKGS="ca-certificates curl wget gnupg lsb-release apt-transport-https git unzip zip xz-utils procps"
+BASE_PKGS=(ca-certificates curl wget gnupg lsb-release apt-transport-https git unzip zip xz-utils procps)
 step "apt: base tooling"
-say "$BASE_PKGS"
-if ! run "apt-get install base packages" apt_get install -y "$APT_Q" --no-install-recommends $BASE_PKGS; then
-  for p in $BASE_PKGS; do
+say "${BASE_PKGS[*]}"
+if ! run "apt-get install base packages" apt_get install -y "$APT_Q" --no-install-recommends "${BASE_PKGS[@]}"; then
+  for p in "${BASE_PKGS[@]}"; do
     run "apt-get install $p" apt_get install -y "$APT_Q" --no-install-recommends "$p" || warn "skip $p"
   done
 fi
@@ -301,20 +302,20 @@ if [ "${DEVBOX_SKIP_APT_TOOLING:-0}" != "1" ]; then
   # alacritty, wezterm, kitty or ghostty zle loses the capabilities it redraws
   # the prompt with.
   # starship is NOT in this list on purpose — see the pinned install below.
-  TOOLING_PKGS="bash-completion zsh fzf fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential ncurses-term"
+  TOOLING_PKGS=(bash-completion zsh fzf fd-find ripgrep bat eza jq yq tree tmux shellcheck shfmt openssh-server build-essential ncurses-term)
   step "apt: interactive tooling (best-effort)"
-  say "$TOOLING_PKGS"
-  TOOLING_FAILED=""
-  if ! run "apt-get install tooling" apt_get install -y "$APT_Q" --no-install-recommends $TOOLING_PKGS; then
-    for p in $TOOLING_PKGS; do
+  say "${TOOLING_PKGS[*]}"
+  TOOLING_FAILED=()
+  if ! run "apt-get install tooling" apt_get install -y "$APT_Q" --no-install-recommends "${TOOLING_PKGS[@]}"; then
+    for p in "${TOOLING_PKGS[@]}"; do
       run "apt-get install $p" apt_get install -y "$APT_Q" --no-install-recommends "$p" \
-        || TOOLING_FAILED="$TOOLING_FAILED $p"
+        || TOOLING_FAILED+=("$p")
     done
   fi
 
   # starship and eza are not in bookworm main (trixie has both): retry whatever
   # failed from <codename>-backports before falling back to upstream installers.
-  if [ -n "${TOOLING_FAILED// /}" ]; then
+  if (( ${#TOOLING_FAILED[@]} )); then
     if ! grep -rqs "backports" /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null; then
       step "apt: enabling ${SURY_SUITE}-backports"
       cat >/etc/apt/sources.list.d/backports.sources <<EOF2
@@ -326,17 +327,17 @@ Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF2
       run "apt-get update (backports)" apt_get update "$APT_Q"
     fi
-    STILL_FAILED=""
-    for p in $TOOLING_FAILED; do
+    STILL_FAILED=()
+    for p in "${TOOLING_FAILED[@]}"; do
       run "apt-get install -t ${SURY_SUITE}-backports $p" \
         apt_get install -y "$APT_Q" --no-install-recommends -t "${SURY_SUITE}-backports" "$p" \
-        || STILL_FAILED="$STILL_FAILED $p"
+        || STILL_FAILED+=("$p")
     done
-    TOOLING_FAILED="$STILL_FAILED"
+    TOOLING_FAILED=("${STILL_FAILED[@]}")
   fi
 
-  if [ "${TOOLING_FAILED// /}" != "" ]; then
-    for p in $TOOLING_FAILED; do
+  if (( ${#TOOLING_FAILED[@]} )); then
+    for p in "${TOOLING_FAILED[@]}"; do
       case "$p" in
         starship)
           step "starship: upstream installer -> /usr/local/bin"
@@ -441,7 +442,7 @@ esac
 LOC_WANT="${LOC_WANT%%@*}"            # strip @euro and friends
 LOC_BASE="${LOC_WANT%%.*}"
 # `locale -a` spells them de_DE.UTF-8 -> de_DE.utf8
-LOC_GREP="$(printf '%s' "$LOC_BASE" | tr 'A-Z' 'a-z').utf8"
+LOC_GREP="${LOC_BASE,,}.utf8"
 
 step "locale"
 # The `locales` package is what provides /etc/locale.gen; a plain debian image has
@@ -495,15 +496,17 @@ case "$DEBIAN_MAJOR" in
   14) DEB_PHP="8.5" ;;
 esac
 if ! dpkg -l "php${PHP_BRANCH}-cli" 2>/dev/null | grep -q '^ii'; then
-  purge=""
+  # apt patterns, quoted so the shell never globs them against the cwd.
+  purge=()
   if [ -n "$DEB_PHP" ] && dpkg -l "php${DEB_PHP}-*" 2>/dev/null | grep -q '^ii'; then
-    purge="php${DEB_PHP}-*"
+    purge+=("php${DEB_PHP}-*")
   fi
-  dpkg -l 'php-cli' 2>/dev/null | grep -q '^ii' && purge="$purge php-*"
-  if [ -n "${purge// /}" ]; then
+  if dpkg -l 'php-cli' 2>/dev/null | grep -q '^ii'; then
+    purge+=('php-*')
+  fi
+  if (( ${#purge[@]} )); then
     step "apt: purging Debian PHP (${DEB_PHP:-metapackages})"
-    # shellcheck disable=SC2086
-    run "apt-get purge $purge" apt_get purge -y "$APT_Q" $purge || true
+    run "apt-get purge ${purge[*]}" apt_get purge -y "$APT_Q" "${purge[@]}" || true
     run "apt-get autoremove" apt_get autoremove -y "$APT_Q" || true
   fi
 fi
@@ -583,19 +586,20 @@ if ! dpkg -l "php${PHP_BRANCH}-cli" 2>/dev/null | grep -q '^ii'; then
   # Not every extension exists as a package for every branch: since PHP 8.5
   # OPcache is built into the binary and there is no php8.5-opcache at all, and
   # a single unknown name aborts the whole apt-get run.
-  PHP_PKGS=""; PHP_SKIP=""
+  PHP_PKGS=(); PHP_MODS=(); PHP_SKIP=()
   for ext in cli fpm opcache curl mbstring xml zip gd intl bcmath sqlite3 mysql pgsql redis; do
     cand="php${PHP_BRANCH}-${ext}"
     if apt-cache show "$cand" >/dev/null 2>&1; then
-      PHP_PKGS="$PHP_PKGS $cand"
+      PHP_PKGS+=("$cand"); PHP_MODS+=("$ext")
     else
-      PHP_SKIP="$PHP_SKIP $ext"
+      PHP_SKIP+=("$ext")
     fi
   done
-  say "modules:$(printf '%s' "$PHP_PKGS" | sed "s/ php${PHP_BRANCH}-/ /g")"
-  [ -n "$PHP_SKIP" ] && note "not packaged for php${PHP_BRANCH} (skipped):${PHP_SKIP}"
-  # shellcheck disable=SC2086  # word splitting is the point here
-  run "apt-get install php${PHP_BRANCH}" apt_get install -y "$APT_Q" --no-install-recommends $PHP_PKGS
+  say "modules: ${PHP_MODS[*]}"
+  if (( ${#PHP_SKIP[@]} )); then
+    note "not packaged for php${PHP_BRANCH} (skipped): ${PHP_SKIP[*]}"
+  fi
+  run "apt-get install php${PHP_BRANCH}" apt_get install -y "$APT_Q" --no-install-recommends "${PHP_PKGS[@]}"
 else
   step "php: ${PHP_BRANCH} already installed"
 fi
