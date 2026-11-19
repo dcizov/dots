@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
+# shellcheck source=../lib/ui.sh
 . "$script_dir/../lib/ui.sh"
-
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
 
 # Args: an optional desktop name, plus the flags shared by the machine-setup steps.
 #   --no-snapshot   no restore point before or after (also UCLI_NO_SNAPSHOT=1)
@@ -43,14 +39,11 @@ UCLI_NO_SNAPSHOT="${UCLI_NO_SNAPSHOT:-0}"
 if (( ! take_snapshot )); then UCLI_NO_SNAPSHOT=1; fi
 export UCLI_NO_SNAPSHOT
 
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
-
-
 # Preflight: the desktop step is the destructive one (packages, chsh, a snapshot
 # at the end), so on a machine with no snapper config warn and — on a TTY — ask.
 # Same rule as `ucli update`: a pipe/non-TTY proceeds, UCLI_YES=1 proceeds.
-if [[ ! -f /etc/snapper/configs/root ]] && [[ "$UCLI_NO_SNAPSHOT" != "1" ]]; then
+# UCLI_ETC_ROOT: the test seam the /etc readers share.
+if [[ ! -f "${UCLI_ETC_ROOT:-}/etc/snapper/configs/root" ]] && [[ "$UCLI_NO_SNAPSHOT" != "1" ]]; then
   echo "warning: no Snapper config found — the desktop step will not be able to"
   echo "         create a restore point first. 'ucli setup-snapshots' sets it up."
   if [[ -t 0 && "${UCLI_YES:-0}" != "1" ]]; then
