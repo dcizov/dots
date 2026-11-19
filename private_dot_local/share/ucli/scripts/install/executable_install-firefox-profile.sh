@@ -18,33 +18,31 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# Profile locations (147+ XDG, legacy ~/.mozilla, flatpak) live in one place.
+# shellcheck source=../lib/firefox.sh
+source "$script_dir/../lib/firefox.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
 
 force_args=()
 for arg in "$@"; do
   case "$arg" in
     --force) force_args=(--force) ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
 
 # When run via sudo, use the invoking user's home — a profile in /root is useless.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 if ! command -v firefox >/dev/null 2>&1; then
   echo "firefox not installed; skipping Firefox profile setup" >&2
   exit 0
 fi
-
-# Profile locations (147+ XDG, legacy ~/.mozilla, flatpak) live in one place.
-fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
-if [[ ! -r "$fx_lib" ]]; then
-  echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
-  exit 1
-fi
-# shellcheck source=/dev/null
-source "$fx_lib"
 
 firefox_profiles_ini() {
   local root
@@ -61,8 +59,12 @@ firefox_headless() {
   # mktemp -u only *names* a file; a private directory cannot be raced.
   shot_dir="$(mktemp -d "${TMPDIR:-/tmp}/ucli-firefox-XXXXXX")"
   shot="$shot_dir/shot.png"
-  if [[ "$EUID" -eq 0 ]]; then
-    runuser -u "$real_user" -- timeout 40 firefox --headless --screenshot "$shot" about:blank \
+  if [[ "${EUID:-$(id -u)}" -eq 0 && "$real_user" != root ]]; then
+    # As the user, with the user's HOME: runuser keeps root's environment, so
+    # without it the profile was created in /root and the user still had none.
+    # The shot dir is root's 0700 mktemp, so it has to be handed over too.
+    chown "$real_user" "$shot_dir"
+    runuser -u "$real_user" -- env HOME="$real_home" timeout 40 firefox --headless --screenshot "$shot" about:blank \
       >/dev/null 2>&1 || true
   else
     timeout 40 firefox --headless --screenshot "$shot" about:blank >/dev/null 2>&1 || true
@@ -92,15 +94,7 @@ ensure_firefox_profile
 
 # firefox-gnome-theme — only makes sense on GNOME, where it also needs the
 # user-theme extension to apply.
-desktop="none"
-detect_lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
-if [[ -r "$detect_lib" ]]; then
-  desktop="$( (
-    # shellcheck source=/dev/null
-    source "$detect_lib"
-    detect_desktop
-  ) 2>/dev/null || echo none )"
-fi
+desktop="$(detect_desktop 2>/dev/null || echo none)"
 
 case "$desktop" in
   gnome|gnome-*)
