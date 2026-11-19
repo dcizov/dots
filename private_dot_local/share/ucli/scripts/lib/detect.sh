@@ -20,28 +20,28 @@ print(f if v is None else v)' "$key" "$fallback" 2>/dev/null || printf '%s\n' "$
   fi
 }
 
-detect_distro_raw() {
-  if [[ -r /etc/os-release ]]; then
+# os_release_field <KEY> [fallback] — one field of /etc/os-release (ID, ID_LIKE,
+# NAME, VERSION_ID, …), or the fallback when the file or the field is missing.
+# The file is sourced in a subshell, so none of its variables leak into the
+# caller. This is the only place a ucli script reads /etc/os-release.
+os_release_field() {
+  local key="$1" fallback="${2:-}"
+  [[ -r /etc/os-release ]] || { printf '%s\n' "$fallback"; return 0; }
+  (
     # shellcheck disable=SC1091
     . /etc/os-release
-    printf '%s\n' "${ID:-unknown}"
-  else
-    printf 'unknown\n'
-  fi
+    printf '%s\n' "${!key:-$fallback}"
+  )
 }
+
+# The distro as the machine reports it, ignoring any chezmoi override (that is
+# detect_distro).
+detect_distro_raw() { os_release_field ID unknown; }
 
 # ID_LIKE from /etc/os-release. Arch and CachyOS both ship /etc/os-release (a
 # symlink to /usr/lib/os-release) and the same pacman layout; every Arch
 # derivative that sets ID_LIKE=arch (EndeavourOS, Garuda, Arco, Artix, …) does too.
-detect_distro_like() {
-  if [[ -r /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    . /etc/os-release
-    printf '%s\n' "${ID_LIKE:-}"
-  else
-    printf ''
-  fi
-}
+detect_distro_like() { os_release_field ID_LIKE; }
 
 detect_distro() {
   local override

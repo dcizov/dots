@@ -42,8 +42,10 @@ if ! command -v pacman >/dev/null 2>&1; then
   exit 1
 fi
 
-. /etc/os-release
-id_like=" ${ID:-} ${ID_LIKE:-} "
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/detect.sh
+. "$script_dir/../lib/detect.sh"
+id_like=" $(detect_distro_raw) $(detect_distro_like) "
 
 if (( yes_flag )); then
   sudo pacman -S --needed --noconfirm git base-devel

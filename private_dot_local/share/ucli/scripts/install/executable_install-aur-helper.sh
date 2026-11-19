@@ -50,6 +50,8 @@ done
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/detect.sh
+. "$script_dir/../lib/detect.sh"
 
 # The preference lives in the config of the user who will run the helper, which
 # is not necessarily the user running this script: from setup-desktop or
@@ -74,16 +76,6 @@ load_preference() {
     . "$cfg"
   done
   AUR_HELPER="${AUR_HELPER:-}"
-}
-
-detect_distro_raw() {
-  if [[ -r /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    . /etc/os-release
-    printf '%s\n' "${ID:-unknown}"
-  else
-    printf 'unknown\n'
-  fi
 }
 
 # When run as root (e.g. from setup-desktop.sh), drop to the invoking user

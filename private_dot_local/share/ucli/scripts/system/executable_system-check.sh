@@ -9,11 +9,15 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/ui.sh
 . "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/detect.sh
+. "$script_dir/../lib/detect.sh"
 
 field() { printf '  %-13s %s\n' "$1" "$2"; }
 
 ui_rule "os"
-field distro "$(. /etc/os-release && printf '%s %s' "$NAME" "$VERSION_ID")"
+# Rolling releases (Arch, CachyOS) carry no VERSION_ID; print the name alone.
+os_version="$(os_release_field VERSION_ID)"
+field distro "$(os_release_field NAME unknown)${os_version:+ $os_version}"
 field kernel "$(uname -r)"
 field arch "$(uname -m)"
 field desktop "${XDG_CURRENT_DESKTOP:-(console)}"

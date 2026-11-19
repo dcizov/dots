@@ -75,24 +75,27 @@ fi
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
 
 if (( EUID != 0 )); then
   echo "Run as root: sudo $0" >&2
   exit 1
 fi
 
-. /etc/os-release
+distro_id="$(detect_distro_raw)"
+distro_like="$(detect_distro_like)"
 
 # Arch family. Everything below (pacman, /etc/snapper, mkinitcpio, limine) comes
 # from Arch, so CachyOS, EndeavourOS, Garuda and friends take the same path; only
 # non-Arch systems are refused outright.
-case "${ID:-}" in
+case "$distro_id" in
   arch|archlinux|cachyos) ;;
   *)
-    if [[ " ${ID_LIKE:-} " == *" arch "* ]]; then
-      echo "note: ID=$ID is Arch-based (ID_LIKE=$ID_LIKE); continuing with Arch paths" >&2
+    if [[ " $distro_like " == *" arch "* ]]; then
+      echo "note: ID=$distro_id is Arch-based (ID_LIKE=$distro_like); continuing with Arch paths" >&2
     else
-      echo "unsupported: ID=${ID:-unknown} is not Arch-based; nothing here applies" >&2
+      echo "unsupported: ID=$distro_id is not Arch-based; nothing here applies" >&2
       exit 1
     fi
     ;;
@@ -101,7 +104,7 @@ esac
 # CachyOS already ships the whole stack: snapper's root config, snap-pac,
 # limine-snapper-sync and limine-mkinitcpio-hook in its own repositories, and
 # Calamares writes /etc/default/limine. Rewriting that is how you break a boot.
-if [[ "${ID:-}" == "cachyos" ]] && (( ! force )); then
+if [[ "$distro_id" == "cachyos" ]] && (( ! force )); then
   cat <<'EOF'
 CachyOS detected: the Snapper + Limine stack is installer-owned there, so nothing
 was changed. Already in place on a CachyOS install:
