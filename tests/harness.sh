@@ -83,6 +83,28 @@ t_minimal_path() {
   export PATH="$T_BIN:$T_ROOT/basics"
 }
 
+# t_deployed <area>/<name> — copy scripts/<area>/executable_<name>.sh to its
+# deployed name under $T_ROOT/scripts (with lib/ linked in), for scripts that
+# call their siblings by deployed name; prints the copy's path. Siblings it
+# calls can then be faked next to it. Tests still source the real file for
+# everything that needs no sibling.
+t_deployed() {
+  local area="${1%/*}" name="${1#*/}" d="$T_ROOT/scripts"
+  mkdir -p "$d/$area"
+  [[ -e "$d/lib" ]] || ln -s "$(cd "$T_SCRIPTS/lib" && pwd)" "$d/lib"
+  cp "$T_SCRIPTS/$area/executable_$name.sh" "$d/$area/$name.sh"
+  chmod +x "$d/$area/$name.sh"
+  printf '%s\n' "$d/$area/$name.sh"
+}
+
+# t_fake_script <path> [body] — an executable that records "<basename> args"
+# in T_CALLS and runs body (default: succeed).
+t_fake_script() {
+  mkdir -p "$(dirname "$1")"
+  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "%s $*" >>"$T_CALLS"\n%s\n' "${1##*/}" "${2:-exit 0}" >"$1"
+  chmod +x "$1"
+}
+
 # t_config_file <name> — write stdin to ~/.config/ucli/<name> in the sandbox.
 t_config_file() {
   mkdir -p "$HOME/.config/ucli"

@@ -26,16 +26,16 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+# The libs ship next to the scripts (../lib), so they resolve from this file's
+# own path even when the script runs under sudo.
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/version-script.sh
+. "$script_dir/../lib/version-script.sh"
 
-# The UI layer ships next to the scripts (../lib), so it resolves from this
-# file's own path even when the script runs under sudo.
-# shellcheck source=/dev/null
-. "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../lib" && pwd)/ui.sh"
-# shellcheck source=/dev/null
-. "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
+# Under sudo, $HOME is root's: the marker and the dev box belong to the caller.
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 DEVMODE_VERSION=1
 state_dir="${XDG_STATE_HOME:-$real_home/.local/state}/ucli"
@@ -49,14 +49,17 @@ while (($#)); do
     --yes|-y) assume_yes=1 ;;
     --status) mode=status ;;
     --reset)  mode=reset ;;
-    -h|--help)
-      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
-      exit 0
-      ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
   shift
 done
+
+# No terminal, no menu: the header's promise is that CI and piped runs get
+# everything, not an empty selection from a menu nobody can answer.
+if [[ "$mode" == wizard ]] && ! ui_tty; then
+  mode=all
+fi
 
 # --- item catalogue ---------------------------------------------------------
 
@@ -109,7 +112,7 @@ is_fatal() { [[ "$1" == dev-cli || "$1" == dev-pkgs ]]; }
 # Shell command for an item. Kept as a string so `ui_step` can hand it to
 # `bash -c`: shell functions do not survive the fork that `gum spin` performs.
 cmd_for() {
-  local reconcile="$real_home/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
+  local reconcile="$script_dir/../devbox/devbox-reconcile.sh"
   case "$1" in
     dev-cli)  printf '%s' "\"$script_dir/install-packages.sh\" dev-cli" ;;
     # docker needs more than the package: the daemon off by default and the
@@ -302,7 +305,9 @@ fi
 
 echo
 if ((${#failed[@]})); then
-  ui_box "Developer Mode partially set up. Re-run 'ucli devmode' to retry: $(IFS=', '; printf '%s' "${failed[*]}")"
+  failed_names=""
+  for id in "${failed[@]}"; do failed_names+="${failed_names:+, }$(name_for "$id")"; done
+  ui_box "Developer Mode partially set up. Re-run 'ucli devmode' to retry: $failed_names"
   exit 1
 fi
 
