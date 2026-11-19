@@ -34,40 +34,55 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+. "$script_dir/../lib/detect.sh"
 
 choose=0
 take_snapshot=1
 firefox_force=0
+desktop=""
+# Options anywhere: install-profile.sh passes `<desktop> --no-snapshot --force`,
+# and stopping at the first non-option (as this loop used to) dropped both.
 while (($#)); do
   case "$1" in
     --choose) choose=1 ;;
     --no-snapshot) take_snapshot=0 ;;
     --force) firefox_force=1 ;;
-    --help|-h)
-      awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"
-      exit 0
-      ;;
+    --help|-h) ucli_script_help; exit 0 ;;
     -*) echo "unknown option: $1" >&2; exit 2 ;;
-    *) break ;;
+    *) desktop="$1" ;;
   esac
   shift
 done
 
-if (( EUID != 0 )); then
-  echo "Run as root: sudo $0 [--choose] [--no-snapshot] [--force] <gnome|hyprland|kde>" >&2
+# UCLI_TEST_ROOT is the test seam the fix scripts use: it skips the root check.
+if (( EUID != 0 )) && [[ -z "${UCLI_TEST_ROOT:-}" ]]; then
+  echo "Run as root: sudo ucli setup-desktop [--choose] [--no-snapshot] [--force] <gnome|hyprland|kde>" >&2
   exit 1
 fi
 
-desktop="${1:-}"
+# When run via sudo, $HOME is root's home; use the invoking user's home instead.
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
-# Auto-detect desktop: CLI arg → chezmoi profile → environment → installed pkgs
-if [[ -z "$desktop" ]]; then
-  # chezmoi profile value (set during initial setup)
-  if command -v chezmoi >/dev/null 2>&1; then
-    desktop="$(chezmoi data 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("desktop","none"))' 2>/dev/null || echo none)"
+# The `desktop` chezmoi data of the user this desktop is for. Asked as that
+# user: as root, chezmoi reads root's (empty) config and the answer was "none".
+profile_desktop() {
+  command -v chezmoi >/dev/null 2>&1 || { echo none; return 0; }
+  local -a as_owner=()
+  if (( EUID == 0 )) && [[ -n "${SUDO_USER:-}" ]]; then
+    as_owner=(runuser -u "$real_user" -- env HOME="$real_home")
   fi
+  "${as_owner[@]}" chezmoi data 2>/dev/null |
+    python3 -c 'import json,sys; print(json.load(sys.stdin).get("desktop","none"))' 2>/dev/null || echo none
+}
+
+# Auto-detect desktop: argument → chezmoi data → the running session →
+# installed packages → ask.
+if [[ -z "$desktop" ]]; then
+  desktop="$(profile_desktop)"
 fi
 if [[ -z "$desktop" || "$desktop" == "none" || "$desktop" == "auto" ]]; then
   # Environment / detected desktop session
@@ -86,17 +101,11 @@ if [[ -z "$desktop" || "$desktop" == "none" ]]; then
 fi
 case "$desktop" in
   gnome|hyprland|kde) ;;
+  plasma) desktop=kde ;;   # the arrays and removal list are spelled KDE
   *) echo "Invalid desktop: $desktop" >&2; exit 2 ;;
 esac
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
-
-# shellcheck source=/dev/null
-source "$real_home/.config/ucli/packages.bash"
+ucli_load_packages "$real_home"
 
 # One snapshot script for the whole repo: the "before removing …" restore point
 # below and the "<DE> Setup" one at the end both go through it.
@@ -108,6 +117,46 @@ snapshot_script="$script_dir/../system/snapshot-fresh-install.sh"
 aur_helper="$(runuser -u "$real_user" -- "$script_dir/install-aur-helper.sh")"
 echo "AUR helper: $aur_helper"
 
+# install_pkgs <pkg…> — repository packages (and groups) in ONE pacman
+# transaction, with DESKTOP_REMOVE_<DE> as --ignore so those group members
+# never land; whatever the repos do not carry goes to the AUR helper. One
+# transaction, not one per package as before: dozens of pacman runs, each
+# re-reading the databases, for what is a single install.
+install_pkgs() {
+  local -a repo=() aur=() ignore_args=() unwanted=()
+  local pkg remove_var="DESKTOP_REMOVE_${desktop^^}"
+  if declare -p "$remove_var" >/dev/null 2>&1; then
+    local -n unwanted_ref="$remove_var"
+    unwanted=("${unwanted_ref[@]}")
+  fi
+  if (( ${#unwanted[@]} )); then
+    ignore_args=("--ignore=$(IFS=,; printf '%s' "${unwanted[*]}")")
+  fi
+  for pkg in "$@"; do
+    [[ -n "$pkg" ]] || continue
+    if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
+      repo+=("$pkg")
+    else
+      # Not in the repos is not "missing": the KDE terminal lives in the AUR
+      # as kwi-git. The helper was resolved above.
+      aur+=("$pkg")
+    fi
+  done
+  if (( ${#repo[@]} )); then
+    sudo pacman -S --needed --noconfirm ${ignore_args[@]+"${ignore_args[@]}"} "${repo[@]}"
+  fi
+  if (( ${#aur[@]} )); then
+    echo "AUR packages: ${aur[*]}"
+    case "$aur_helper" in
+      paru)   runuser -u "$real_user" -- paru -S --needed "${aur[@]}" \
+                || echo "warning: AUR install failed (${aur[*]}); run 'ucli apps' later" >&2 ;;
+      shelly) runuser -u "$real_user" -- shelly install aur "${aur[@]}" --needed --no-confirm \
+                || echo "warning: AUR install failed (${aur[*]}); run 'ucli apps' later" >&2 ;;
+      *)      echo "warning: no AUR helper; install ${aur[*]} by hand" >&2 ;;
+    esac
+  fi
+}
+
 # Install this desktop's packages: BASE (what a session needs) + ADDITIONS (merely
 # convenient) + its services (gdm/sddm are packages too). The group is installed
 # whole — a hand-picked subset is how a session ends up without a settings daemon —
@@ -115,52 +164,8 @@ echo "AUR helper: $aur_helper"
 # Packages the arrays list that are not in the repos go to the AUR helper.
 install_desktop() {
   local de="$1"
-  local remove_var="DESKTOP_REMOVE_${de^^}"
-  local -a unwanted=()
-  if [[ -n "${!remove_var:-}" ]]; then
-    local -n unwanted_ref="$remove_var"
-    unwanted=("${unwanted_ref[@]}")
-  fi
-
-  local base_var="DESKTOP_${de^^}_BASE"
-  local add_var="DESKTOP_${de^^}_ADDITIONS"
-  local svc_var="SERVICES_${de^^}"
-  local -a all_pkgs=()
-  local -n base_ref="$base_var" add_ref="$add_var" svc_ref="$svc_var"
-  all_pkgs=("${base_ref[@]}" "${add_ref[@]}" "${svc_ref[@]}")
-
-  local ignore_csv=""
-  if (( ${#unwanted[@]} )); then
-    ignore_csv="$(IFS=,; printf '%s' "${unwanted[*]}")"
-  fi
-
-  local -a aur_pkgs=()
-  for pkg in "${all_pkgs[@]}"; do
-    if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
-      # --ignore is what keeps the unwanted group members out of a fresh install;
-      # it is harmless for the single packages in the arrays (none of them is on
-      # the list). A package that some other target *requires* would make pacman
-      # refuse the transaction — none of these is required by anything.
-      local -a ignore_args=()
-      [[ -n "$ignore_csv" ]] && ignore_args=("--ignore=$ignore_csv")
-      sudo pacman -S --needed --noconfirm ${ignore_args[@]+"${ignore_args[@]}"} "$pkg"
-    else
-      # Not in the repos is not "missing": the KDE terminal lives in the AUR as
-      # kwi-git. The helper is already resolved above, so hand those over to it.
-      aur_pkgs+=("$pkg")
-    fi
-  done
-
-  if (( ${#aur_pkgs[@]} )); then
-    echo "AUR packages: ${aur_pkgs[*]}"
-    case "$aur_helper" in
-      paru)   runuser -u "$real_user" -- paru -S --needed "${aur_pkgs[@]}" \
-                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
-      shelly) runuser -u "$real_user" -- shelly install aur "${aur_pkgs[@]}" --needed --no-confirm \
-                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
-      *)      echo "warning: no AUR helper; install ${aur_pkgs[*]} by hand" >&2 ;;
-    esac
-  fi
+  local -n base_ref="DESKTOP_${de^^}_BASE" add_ref="DESKTOP_${de^^}_ADDITIONS" svc_ref="SERVICES_${de^^}"
+  install_pkgs "${base_ref[@]}" "${add_ref[@]}" "${svc_ref[@]}"
 }
 
 if (( choose )); then
@@ -223,34 +228,15 @@ if (( choose )); then
     exit 1
   fi
 
-  install_pkgs=()
+  group_pkgs=()
   for c in "${chosen[@]}"; do
     gname="${c%% — *}"
     # The group's packages were stored space-separated (it is a word list).
     read -r -a group_items <<<"${pkgs[$gname]:-}"
-    install_pkgs+=("${group_items[@]}")
+    group_pkgs+=("${group_items[@]}")
   done
 
-  aur_pkgs=()
-  for pkg in "${install_pkgs[@]}"; do
-    if pacman -Si "$pkg" >/dev/null 2>&1 || pacman -Sgq "$pkg" >/dev/null 2>&1; then
-      sudo pacman -S --needed --noconfirm "$pkg"
-    else
-      # Not in the repos is not "missing": kwi lives in the AUR as kwi-git. The
-      # helper is already resolved above, so hand those over to it.
-      aur_pkgs+=("$pkg")
-    fi
-  done
-  if (( ${#aur_pkgs[@]} )); then
-    echo "AUR packages: ${aur_pkgs[*]}"
-    case "$aur_helper" in
-      paru)   runuser -u "$real_user" -- paru -S --needed "${aur_pkgs[@]}" \
-                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
-      shelly) runuser -u "$real_user" -- shelly install aur "${aur_pkgs[@]}" --needed --no-confirm \
-                || echo "warning: AUR install failed (${aur_pkgs[*]}); run 'ucli apps' later" >&2 ;;
-      *)      echo "warning: no AUR helper; install ${aur_pkgs[*]} by hand" >&2 ;;
-    esac
-  fi
+  install_pkgs "${group_pkgs[@]}"
 else
   # Full desktop package set from the arrays.
   install_desktop "$desktop"
@@ -268,7 +254,8 @@ fi
 remove_desktop_unwanted() {
   local de="$1"
   local remove_var="DESKTOP_REMOVE_${de^^}"
-  [[ -n "${!remove_var:-}" ]] || return 0
+  # declare -p, not ${!var}: indirect expansion sees only an array's first element
+  declare -p "$remove_var" >/dev/null 2>&1 || return 0
   local -n remove_ref="$remove_var"
 
   local -a present=()
