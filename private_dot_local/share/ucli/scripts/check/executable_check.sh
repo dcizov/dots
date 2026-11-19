@@ -45,7 +45,7 @@ set -euo pipefail
 root=""
 for arg in "$@"; do
   case "$arg" in
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) root="$arg" ;;
   esac
@@ -123,7 +123,9 @@ for f in "${bash_files[@]:-}"; do
     n=$((n + 1))
   else
     bash_fail=1
-    out="$(bash -n "$f" 2>&1 | head -3 | tr '\n' ' ')"
+    # `|| true`: under pipefail the expected syntax error would end the script
+    # here, before fail_msg could say which file (CI failed with no message).
+    out="$(bash -n "$f" 2>&1 | head -3 | tr '\n' ' ' || true)"
     fail_msg x "bash -n ${f#"$root"/}: $out"
   fi
 done
@@ -147,7 +149,7 @@ if command -v zsh >/dev/null 2>&1; then
     if zsh -n "$f" 2>/dev/null; then
       zm=$((zm + 1))
     else
-      out="$(zsh -n "$f" 2>&1 | head -3 | tr '\n' ' ')"
+      out="$(zsh -n "$f" 2>&1 | head -3 | tr '\n' ' ' || true)"
       fail_msg x "zsh -n ${f#"$root"/}: $out"
     fi
   done
