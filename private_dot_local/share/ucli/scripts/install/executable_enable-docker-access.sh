@@ -20,7 +20,11 @@
 # Usage: enable-docker-access.sh [--no-service] [--status]
 set -euo pipefail
 
-real_user="${SUDO_USER:-$USER}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+
+real_user="$(ucli_real_user)"
 
 take_service=1
 mode=apply
@@ -28,7 +32,7 @@ for arg in "$@"; do
   case "$arg" in
     --no-service) take_service=0 ;;
     --status) mode=status ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -37,10 +41,6 @@ if ! command -v docker >/dev/null 2>&1; then
   echo "docker is not installed; nothing to grant (run: ucli devmode)"
   exit 0
 fi
-
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$script_dir/../lib/common.sh"
 
 in_docker_group() { id -nG "$real_user" 2>/dev/null | tr ' ' '\n' | grep -qx docker; }
 service_enabled() { systemctl is-enabled docker.service >/dev/null 2>&1; }
