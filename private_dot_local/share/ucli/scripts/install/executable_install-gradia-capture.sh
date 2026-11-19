@@ -49,8 +49,13 @@ done
 
 # When run via sudo (from setup-desktop.sh), $HOME is root's home and a per-user
 # extension installed by root lands in /root — the desktop session never sees it.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/version-script.sh
+source "$script_dir/../lib/version-script.sh"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 ext_dir="$real_home/.local/share/gnome-shell/extensions/$uuid"
 
 as_user() {
@@ -76,8 +81,6 @@ if ! command -v zip >/dev/null 2>&1; then
   exit 1
 fi
 
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
 gate_name="gnome-gradia-capture"
 if ((!force)) && ! vs_check "$gate_name" user "$ref"; then
   if [[ -d "$ext_dir" ]]; then
