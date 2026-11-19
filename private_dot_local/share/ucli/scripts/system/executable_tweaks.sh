@@ -22,8 +22,10 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/ui.sh"
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 usage() {
   cat <<'USAGE'
@@ -55,13 +57,12 @@ for arg in "$@"; do
 done
 
 packages_bash="$real_home/.config/ucli/packages.bash"
-if [[ ! -r "$packages_bash" ]]; then
+# packages.bash, then the overlay: TWEAKS can be overridden in
+# packages.local.bash, which sourcing packages.bash alone used to ignore.
+if ! ucli_load_packages "$real_home" 2>/dev/null; then
   echo "no package registry at $packages_bash (run the bootstrap first)" >&2
   exit 1
 fi
-# shellcheck source=/dev/null
-. "$packages_bash"
-
 if ! declare -p TWEAKS >/dev/null 2>&1 || (( ${#TWEAKS[@]} == 0 )); then
   echo "TWEAKS is empty in $packages_bash" >&2
   exit 1
