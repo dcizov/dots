@@ -320,7 +320,9 @@ ucli only copies `~/.config/ucli/firefox/user.js` into them.
 - **Different terminal:** edit `DESKTOP_TERMINAL_<DE>`, or install the terminal
   yourself and run `ucli chezmoi-apply` — the config follows the program.
 - **Undo everything:** `ucli uninstall` (takes a snapshot first, asks before
-  removing packages). `--no-snapshot` skips the restore point.
+  removing packages). `--no-snapshot` skips the restore point. It keeps the
+  dotfiles repository (`~/.local/share/chezmoi`) and your own
+  `packages.local.bash`, `backup.local.bash` and `personal-extensions.txt`.
 
 ## If something looks wrong
 

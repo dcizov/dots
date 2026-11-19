@@ -9,6 +9,11 @@ set -euo pipefail
 # by ucli cli/devmode/gaming. Does NOT remove system packages installed
 # outside of ucli (e.g. bootstrap packages, desktop environment).
 #
+# Never removed: the dotfiles repository itself (chezmoi's source directory —
+# it can hold commits that exist nowhere else), and your own files in
+# ~/.config/ucli (packages.local.bash, backup.local.bash,
+# firefox/personal-extensions.txt), which the repo never manages.
+#
 # Usage:
 #   uninstall.sh [--yes]   # skip confirmation prompts
 #
@@ -46,12 +51,38 @@ if ! declare -F ui_confirm >/dev/null 2>&1; then
 fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
+# shellcheck source=../lib/common.sh
 source "$script_dir/../lib/common.sh"
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$HOME/.config/ucli/packages.bash"
+# Under sudo $HOME is root's: these are the invoking user's dotfiles.
+home="$(ucli_real_home)"
+HOME="$home"
+ucli_load_packages "$home" 2>/dev/null || true
+
+# Yours, inside a directory that is otherwise ucli's: kept, in place.
+KEEP=(
+  "$HOME/.config/ucli/packages.local.bash"
+  "$HOME/.config/ucli/backup.local.bash"
+  "$HOME/.config/ucli/firefox/personal-extensions.txt"
+)
+is_kept() { local k; for k in "${KEEP[@]}"; do [[ "$1" == "$k" ]] && return 0; done; return 1; }
+
+# remove_path <path> — rm -rf, except that a directory holding a kept file
+# loses everything but that file (and the directories leading to it).
+remove_path() {
+  local path="$1" k f has_kept=0
+  for k in "${KEEP[@]}"; do [[ "$k" == "$path"/* && -e "$k" ]] && has_kept=1; done
+  if (( ! has_kept )); then
+    rm -rf -- "$path"
+    return 0
+  fi
+  while IFS= read -r -d '' f; do
+    is_kept "$f" || rm -f -- "$f"
+  done < <(find "$path" \( -type f -o -type l \) -print0)
+  find "$path" -depth -type d -empty -delete
+}
+
+source_dir="$(chezmoi source-path 2>/dev/null || printf '%s' "$HOME/.local/share/chezmoi")"
 
 HOME_TARGETS=(
   # chezmoi-managed dotfiles (private_dot_* -> ~/.*, dot_* -> ~/.*)
@@ -81,8 +112,7 @@ HOME_TARGETS=(
   "$HOME/.local/bin/ucli"
   # kwi (KDE's terminal) runtime data, if it ever ships one
   "$HOME/.local/share/kwi"
-  # chezmoi runtime state
-  "$HOME/.local/share/chezmoi"
+  # chezmoi's config and state — NOT its source directory (the dotfiles repo)
   "$HOME/.config/chezmoi"
   "$HOME/.chezmoi.toml"
   # oh-my-zsh + plugins (cloned by install-shell.sh, not chezmoi-managed)
@@ -94,6 +124,9 @@ for t in "${HOME_TARGETS[@]}"; do
   if [[ -e "$t" ]]; then
     printf '  %s\n' "$t"
   fi
+done
+for k in "${KEEP[@]}"; do
+  [[ -e "$k" ]] && printf '  (kept: %s)\n' "$k"
 done
 
 echo
@@ -114,8 +147,8 @@ if (( take_snapshot )) && [[ -x "$snapshot_script" ]]; then
 fi
 
 for t in "${HOME_TARGETS[@]}"; do
-  if [[ -e "$t" ]]; then
-    rm -rf "$t"
+  if [[ -e "$t" || -L "$t" ]]; then
+    remove_path "$t"
     echo "removed: $t"
   fi
 done
@@ -169,4 +202,8 @@ if command -v chezmoi >/dev/null 2>&1 && pacman -Q chezmoi >/dev/null 2>&1; then
 fi
 
 echo
-echo "uninstall complete. You may want to remove the dotfiles repo clone too."
+echo "uninstall complete."
+if [[ -d "$source_dir" ]]; then
+  echo "The dotfiles repository is still at $source_dir — check it for unpushed"
+  echo "work (git -C $source_dir status), then remove it yourself if you want."
+fi
