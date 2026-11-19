@@ -11,11 +11,11 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+  ucli_script_help
   exit 0
 fi
 
