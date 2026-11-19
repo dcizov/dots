@@ -34,20 +34,47 @@ mkdir -p "$output_dir"
 
 echo "Backing up GNOME settings to: $output_dir"
 
+# save <file> <cmd…> — write the command's output to <file> only when it
+# succeeds. Redirecting straight into the file truncated it first, so a failing
+# dconf (no session bus over ssh, say) used to blank a good backup silently.
+failed=()
+save() {
+  local file="$output_dir/$1" tmp
+  shift
+  tmp="$(mktemp "$file.XXXXXX")"
+  if "$@" >"$tmp" 2>/dev/null; then
+    mv -f -- "$tmp" "$file"
+  else
+    rm -f -- "$tmp"
+    failed+=("${file##*/}")
+  fi
+}
+
 # --- dconf settings ---
-dconf dump /org/gnome/desktop/ > "$output_dir/desktop.dconf" || true
-dconf dump /org/gnome/shell/ > "$output_dir/shell.dconf" || true
-dconf dump /org/gnome/shell/extensions/ > "$output_dir/extensions.dconf" || true
+save desktop.dconf dconf dump /org/gnome/desktop/
+save shell.dconf dconf dump /org/gnome/shell/
+save extensions.dconf dconf dump /org/gnome/shell/extensions/
 
-# --- Enabled extensions list ---
-gnome-extensions list --enabled > "$output_dir/enabled-extensions.txt" || true
+# --- extensions: enabled, and everything installed ---
+save enabled-extensions.txt gnome-extensions list --enabled
+save installed-extensions.txt gnome-extensions list
 
-# --- All installed extensions (enabled + disabled) ---
-gnome-extensions list > "$output_dir/installed-extensions.txt" || true
+if ((${#failed[@]})); then
+  echo "Backup incomplete — kept the previous copy of: ${failed[*]}" >&2
+  echo "  (dconf and gnome-extensions need the desktop session: run this from it, not over ssh)" >&2
+  exit 1
+fi
 
 echo "Backup complete."
 echo "  dconf:     $output_dir/desktop.dconf, shell.dconf, extensions.dconf"
 echo "  enabled:   $output_dir/enabled-extensions.txt"
 echo "  installed: $output_dir/installed-extensions.txt"
 echo ""
+# The default directory is a chezmoi target: the next `chezmoi apply` puts the
+# repo's copy back unless the new one is added to the source.
+if [[ -z "${1:-}" ]] && command -v chezmoi >/dev/null 2>&1; then
+  echo "Keep it in the dotfiles repo (or the next chezmoi apply reverts it):"
+  echo "  chezmoi re-add $output_dir"
+  echo ""
+fi
 echo "To restore: ucli restore-gnome-settings"
