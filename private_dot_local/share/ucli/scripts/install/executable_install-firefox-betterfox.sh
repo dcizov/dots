@@ -11,23 +11,31 @@
 # Source: https://github.com/yokoffing/Betterfox
 set -euo pipefail
 
-# When run via sudo, use the invoking user's home
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# Where Firefox keeps its profiles (147+ XDG, legacy, flatpak) lives in one place.
+# shellcheck source=../lib/firefox.sh
+source "$script_dir/../lib/firefox.sh"
+# shellcheck source=../lib/version-script.sh
+source "$script_dir/../lib/version-script.sh"
+
+force=0
+for arg in "$@"; do
+  case "$arg" in
+    --force) force=1 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
+    *) echo "unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
+# Under sudo: the invoking user's home and profiles, not root's.
+real_home="$(ucli_real_home)"
 
 if ! command -v firefox >/dev/null 2>&1; then
   echo "firefox not installed; skipping Betterfox" >&2
   exit 0
 fi
-
-# Where Firefox keeps its profiles (147+ XDG, legacy, flatpak) lives in one place.
-fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
-if [[ ! -r "$fx_lib" ]]; then
-  echo "error: $fx_lib missing; run 'ucli chezmoi-apply' to deploy the ucli scripts" >&2
-  exit 1
-fi
-# shellcheck source=/dev/null
-source "$fx_lib"
 
 PROFILE_DIR="$(fx_profile_root "$real_home")"
 SOURCE_USER_JS="$(fx_config_dir "$real_home")/user.js"
@@ -55,27 +63,30 @@ fi
 # Versioned gate: the token is the content hash of the source user.js, so the
 # copy only happens when Betterfox (or one of your overrides) actually changed.
 # --force re-copies into every profile.
-# shellcheck source=/dev/null
-if [[ -r "$real_home/.local/share/ucli/scripts/lib/version-script.sh" ]]; then
-  source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
-  force=0
-  [[ "${1:-}" == "--force" ]] && force=1
-  betterfox_version="$(vs_hash "$SOURCE_USER_JS")"
-  if (( ! force )) && ! vs_check firefox-betterfox user "$betterfox_version"; then
-    echo "Betterfox user.js unchanged since the last run (${betterfox_version}); skipping."
-    echo "    re-run with --force to copy it into every profile again"
-    exit 0
-  fi
+betterfox_version="$(vs_hash "$SOURCE_USER_JS")"
+if (( ! force )) && ! vs_check firefox-betterfox user "$betterfox_version"; then
+  echo "Betterfox user.js unchanged since the last run (${betterfox_version}); skipping."
+  echo "    re-run with --force to copy it into every profile again"
+  exit 0
 fi
 
 # Every profile Firefox knows about gets the same user.js.
 echo "Installing Betterfox user.js into Firefox profiles ($(fx_short_root "$PROFILE_DIR" "$real_home")) ..."
 
+copied=0
 while IFS= read -r prof_dir; do
   [[ -n "$prof_dir" ]] || continue
   cp -f "$SOURCE_USER_JS" "$prof_dir/user.js"
   echo "  installed to $(fx_short_root "$prof_dir" "$real_home")/user.js"
+  copied=$((copied + 1))
 done < <(fx_profile_dirs "$PROFILE_DIR")
 
-[[ -n "${betterfox_version:-}" ]] && vs_commit firefox-betterfox user "$betterfox_version"
+# Commit the gate only once a profile got the file: a root with no profile yet
+# (Firefox never launched) used to commit it anyway, and the profile created
+# later was then skipped as "unchanged" on every run.
+if (( copied == 0 )); then
+  echo "no profile in profiles.ini yet; launch Firefox once, then re-run: ucli apps" >&2
+  exit 0
+fi
+vs_commit firefox-betterfox user "$betterfox_version"
 echo "Betterfox user.js installed. Restart Firefox to apply."

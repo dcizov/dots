@@ -104,5 +104,10 @@ fx_config_dir() {
 fx_short_root() {
   local root="$1"
   local home="${2:-$HOME}"
-  printf '%s\n' "${root#"$home"/}"
+  if [[ "$root" == "$home"/* ]]; then
+    # shellcheck disable=SC2088  # a literal ~ for display, not a path
+    printf '~/%s\n' "${root#"$home"/}"
+  else
+    printf '%s\n' "$root"
+  fi
 }
