@@ -60,23 +60,29 @@ repos_arg=""
 tool="auto"
 install_tool=0
 
+# need_value <option> <args…> — the option's value or a usage error; a bare
+# trailing option used to die on the loop's second shift with no message.
+need_value() {
+  [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || { printf '%s needs a value\n' "$1" >&2; exit 2; }
+  printf '%s' "$2"
+}
 while (($#)); do
   case "$1" in
     --dry-run|-n) dry_run=1 ;;
     --yes|-y) assume_yes=1 ;;
     --no-snapshot) take_snapshot=0 ;;
     --no-geo) use_geo=0 ;;
-    --country) country="${2:-}"; use_geo=0; shift ;;
+    --country) country="$(need_value "$@")"; use_geo=0; shift ;;
     --country=*) country="${1#*=}"; use_geo=0 ;;
-    --protocol) protocol="${2:-}"; shift ;;
+    --protocol) protocol="$(need_value "$@")"; shift ;;
     --protocol=*) protocol="${1#*=}" ;;
-    --max-delay) max_delay="${2:-}"; shift ;;
+    --max-delay) max_delay="$(need_value "$@")"; shift ;;
     --max-delay=*) max_delay="${1#*=}" ;;
-    --max-mirrors) max_mirrors="${2:-}"; shift ;;
+    --max-mirrors) max_mirrors="$(need_value "$@")"; shift ;;
     --max-mirrors=*) max_mirrors="${1#*=}" ;;
-    --repos) repos_arg="${2:-}"; shift ;;
+    --repos) repos_arg="$(need_value "$@")"; shift ;;
     --repos=*) repos_arg="${1#*=}" ;;
-    --tool) tool="${2:-}"; shift ;;
+    --tool) tool="$(need_value "$@")"; shift ;;
     --tool=*) tool="${1#*=}" ;;
     --install) install_tool=1 ;;
     -h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' \
@@ -204,7 +210,8 @@ if (( dry_run )); then
 fi
 
 # --- snapshot ---------------------------------------------------------------
-if (( take_snapshot )) && [[ -x "$script_dir/snapshot-fresh-install.sh" ]]; then
+# A dry run writes nothing, so it needs no restore point either.
+if (( take_snapshot && ! dry_run )) && [[ -x "$script_dir/snapshot-fresh-install.sh" ]]; then
   sudo "$script_dir/snapshot-fresh-install.sh" "ucli mirrors: before ranking" || true
 fi
 
@@ -248,6 +255,12 @@ rank_command() { # rank_command <repo> <outfile>
       cmd+=" --max-mirrors-to-output=$max_mirrors $(printf '%q' "$target")"
       ;;
     reflector)
+      # reflector ranks Arch mirrors only. Writing those into
+      # cachyos-mirrorlist pointed every CachyOS repository at Arch servers.
+      if [[ "$target" != arch ]]; then
+        printf 'printf "%%s\\n" %q >&2; false' "reflector cannot rank $repo mirrors (Arch only); install rate-mirrors for that"
+        return 0
+      fi
       cmd="reflector --protocol $protocol"
       local g
       for g in "${geo[@]}"; do cmd+=" $(printf '%q' "$g")"; done

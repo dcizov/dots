@@ -72,7 +72,7 @@ stub() {
 # stubs, never from whatever the host happens to have installed.
 T_BASICS=(bash sh env cat grep sed awk find head tail wc tr cut sort uniq basename
   dirname mkdir rm cp mv ln touch chmod stat id getent uname date mktemp ls readlink
-  realpath tee xargs cmp diff sleep printf test true false seq)
+  realpath tee xargs cmp diff sleep printf test true false seq install)
 t_minimal_path() {
   local tool real
   mkdir -p "$T_ROOT/basics"
