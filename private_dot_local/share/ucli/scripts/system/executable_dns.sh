@@ -26,8 +26,9 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/ui.sh"
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+real_home="$(ucli_real_home)"
 
 usage() {
   cat <<'USAGE'
@@ -50,7 +51,9 @@ dry_run=0
 while (($#)); do
   case "$1" in
     -h|--help) usage; exit 0 ;;
-    --connection) connection="${2:-}"; shift 2 ;;
+    --connection)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "--connection needs a name" >&2; exit 2; }
+      connection="$2"; shift 2 ;;
     --connection=*) connection="${1#*=}"; shift ;;
     --dot) dot=1; shift ;;
     --dry-run|-n) dry_run=1; shift ;;
@@ -67,11 +70,8 @@ if ! ui_have nmcli; then
   exit 1
 fi
 
-packages_bash="$real_home/.config/ucli/packages.bash"
-if [[ -r "$packages_bash" ]]; then
-  # shellcheck source=/dev/null
-  . "$packages_bash"
-fi
+# DNS_PRESETS (the overlay may add its own); a missing config means none.
+ucli_load_packages "$real_home" 2>/dev/null || true
 if ! declare -p DNS_PRESETS >/dev/null 2>&1; then
   DNS_PRESETS=()
 fi
@@ -219,7 +219,8 @@ set_dns() {
     # Not a preset: accept a literal list of IPv4 addresses (IPv6 needs a preset
     # or --ipv6; nmcli itself would reject a mixed string).
     if [[ "$want" =~ ^[0-9.]+([[:space:],]+[0-9.]+)*$ ]]; then
-      v4="${want//,/ }"
+      # "a, b" and "a,b" alike: commas to spaces, then one space between
+      v4="$(tr ',' ' ' <<<"$want" | tr -s ' ')"
     else
       echo "no preset '$want'; presets:" >&2
       for entry in "${DNS_PRESETS[@]}"; do
@@ -231,18 +232,18 @@ set_dns() {
   fi
 
   ui_rule "dns: $c ← ${want}"
+  # IPv6 always follows the choice: servers when it has some, otherwise back
+  # to automatic. Leaving ipv6.dns alone kept the *previous* preset's IPv6
+  # resolvers answering after a switch to an IPv4-only choice.
+  local -a v6_args=(ipv6.dns "" ipv6.ignore-auto-dns no)
+  [[ -n "$v6" ]] && v6_args=(ipv6.dns "$v6" ipv6.ignore-auto-dns yes)
   if (( dry_run )); then
-    printf '+ nmcli connection modify "%s" ipv4.dns "%s" ipv4.ignore-auto-dns yes\n' "$c" "$v4"
-    if [[ -n "$v6" ]]; then
-      printf '+ nmcli connection modify "%s" ipv6.dns "%s" ipv6.ignore-auto-dns yes\n' "$c" "$v6"
-    fi
+    printf '+ nmcli connection modify "%s" ipv4.dns "%s" ipv4.ignore-auto-dns yes %s "%s" %s %s\n' \
+      "$c" "$v4" "${v6_args[@]}"
   else
-    nmcli connection modify "$c" ipv4.dns "$v4" ipv4.ignore-auto-dns yes
-    if [[ -n "$v6" ]]; then
-      nmcli connection modify "$c" ipv6.dns "$v6" ipv6.ignore-auto-dns yes
-    fi
+    nmcli connection modify "$c" ipv4.dns "$v4" ipv4.ignore-auto-dns yes "${v6_args[@]}"
     ui_ok "ipv4.dns = $v4"
-    [[ -n "$v6" ]] && ui_ok "ipv6.dns = $v6"
+    if [[ -n "$v6" ]]; then ui_ok "ipv6.dns = $v6"; else ui_ok "ipv6.dns = automatic"; fi
   fi
   apply_dot "$c"
   reactivate "$c"
