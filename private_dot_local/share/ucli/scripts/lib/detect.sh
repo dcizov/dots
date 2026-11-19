@@ -23,13 +23,14 @@ print(f if v is None else v)' "$key" "$fallback" 2>/dev/null || printf '%s\n' "$
 # os_release_field <KEY> [fallback] — one field of /etc/os-release (ID, ID_LIKE,
 # NAME, VERSION_ID, …), or the fallback when the file or the field is missing.
 # The file is sourced in a subshell, so none of its variables leak into the
-# caller. This is the only place a ucli script reads /etc/os-release.
+# caller. This is the only place a ucli script reads /etc/os-release
+# (below UCLI_ETC_ROOT, the test seam the /etc readers share).
 os_release_field() {
-  local key="$1" fallback="${2:-}"
-  [[ -r /etc/os-release ]] || { printf '%s\n' "$fallback"; return 0; }
+  local key="$1" fallback="${2:-}" file="${UCLI_ETC_ROOT:-}/etc/os-release"
+  [[ -r "$file" ]] || { printf '%s\n' "$fallback"; return 0; }
   (
-    # shellcheck disable=SC1091
-    . /etc/os-release
+    # shellcheck disable=SC1090
+    . "$file"
     printf '%s\n' "${!key:-$fallback}"
   )
 }

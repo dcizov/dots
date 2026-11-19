@@ -48,33 +48,18 @@ for arg in "$@"; do
 done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
 # shellcheck source=../lib/detect.sh
 . "$script_dir/../lib/detect.sh"
 
-# The preference lives in the config of the user who will run the helper, which
-# is not necessarily the user running this script: from setup-desktop or
-# arch-snapper-limine that is root with SUDO_USER set.
-config_home() {
-  if [[ "${EUID:-$(id -u)}" -eq 0 && -n "${SUDO_USER:-}" ]]; then
-    getent passwd "$SUDO_USER" | cut -d: -f6
-  else
-    printf '%s\n' "${HOME:-$(getent passwd "${USER:-root}" | cut -d: -f6)}"
-  fi
-}
-
-# AUR_HELPER="paru" in packages.bash, or anything else in the overlay. Both files
-# are plain assignments, which is why they can be sourced here.
+# AUR_HELPER="paru" in packages.bash, or anything else in the overlay. The
+# config belongs to the user who will run the helper — under sudo (from
+# setup-desktop or arch-snapper-limine) that is SUDO_USER, not root. A missing
+# packages.bash just means "no preference".
 load_preference() {
-  local home cfg
-  home="$(config_home)"
   AUR_HELPER="${AUR_HELPER:-}"
-  for cfg in "$home/.config/ucli/packages.bash" "$home/.config/ucli/packages.local.bash"; do
-    [[ -r "$cfg" ]] || continue
-    # shellcheck source=/dev/null
-    . "$cfg"
-  done
+  ucli_load_packages "$(ucli_real_home)" 2>/dev/null || true
   AUR_HELPER="${AUR_HELPER:-}"
 }
 
@@ -147,7 +132,7 @@ main() {
 
   # Nothing usable installed. AUR_HELPER wins, then CachyOS' shelly, then paru; a
   # human gets asked unless --yes.
-  local want="${AUR_HELPER:-}"
+  local want="${AUR_HELPER:-}" configured="${AUR_HELPER:-}"
   if [[ -z "$want" ]]; then
     want=shelly
     [[ "$distro" == cachyos ]] || want=paru
@@ -157,7 +142,8 @@ main() {
     *) echo "AUR_HELPER=$want is not a helper this script knows (paru|shelly)" >&2; exit 2 ;;
   esac
 
-  if (( ! yes_flag )); then
+  # Only ask when nobody said: a configured AUR_HELPER is the answer.
+  if (( ! yes_flag )) && [[ -z "$configured" ]]; then
     echo "No AUR helper installed." >&2
     want="$(ui_choose "Which AUR helper?" \
       'paru|mature AUR helper (the default)' \
