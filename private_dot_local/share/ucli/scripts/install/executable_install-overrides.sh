@@ -16,10 +16,15 @@
 #             for this user — only meaningful when the Flatpaks are system-wide too
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
+# shellcheck source=../lib/firefox.sh
+source "$script_dir/../lib/firefox.sh"
 
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+real_home="$(ucli_real_home)"
 
 force_args=()
 scope_args=()
@@ -27,13 +32,10 @@ for arg in "$@"; do
   case "$arg" in
     --force) force_args=(--force) ;;
     --system) scope_args=(--system) ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
-
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
 
 # Detect desktop for gnome-only blocks (firefox-gnome-theme, gnome extensions)
 desktop="$(detect_desktop 2>/dev/null || echo none)"
@@ -49,15 +51,6 @@ desktop="$(detect_desktop 2>/dev/null || echo none)"
 if [[ -x "$script_dir/install-flatpak-gtk-theme.sh" ]]; then
   "$script_dir/install-flatpak-gtk-theme.sh" ${scope_args[@]+"${scope_args[@]}"} \
     || echo "warning: Flatpak GTK theme extension not installed; re-run: ucli flatpak-theme" >&2
-fi
-
-fx_lib="$real_home/.local/share/ucli/scripts/lib/firefox.sh"
-if [[ -r "$fx_lib" ]]; then
-  # shellcheck source=/dev/null
-  source "$fx_lib"
-else
-  echo "warning: $fx_lib missing; Firefox handling is skipped (run: ucli chezmoi-apply)" >&2
-  exit 1
 fi
 
 # Everything that makes Firefox a configured browser — profile creation, Betterfox
