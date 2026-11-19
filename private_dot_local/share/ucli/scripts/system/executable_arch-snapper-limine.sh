@@ -37,7 +37,9 @@ USAGE
 done
 
 run() {
-  printf '+ %q ' "$@"; echo
+  # one "+", then the words: printf repeats its whole format per argument, so
+  # '+ %q ' printed a "+" before every word
+  printf '+'; printf ' %q' "$@"; echo
   if (( ! dry_run )); then "$@"; fi
 }
 
@@ -78,8 +80,9 @@ source "$script_dir/../lib/common.sh"
 # shellcheck source=../lib/detect.sh
 source "$script_dir/../lib/detect.sh"
 
-if (( EUID != 0 )); then
-  echo "Run as root: sudo $0" >&2
+# UCLI_TEST_ROOT: the test seam the root scripts share (skips this check).
+if (( EUID != 0 )) && [[ -z "${UCLI_TEST_ROOT:-}" ]]; then
+  echo "Run as root: sudo ucli setup-snapshots" >&2
   exit 1
 fi
 
@@ -150,11 +153,13 @@ else
 fi
 helper_args=()
 (( yes_flag )) && helper_args=(--yes)
+# A dry run asks which helper would be used; it must not install one.
+(( dry_run )) && helper_args=(--print-only)
 aur_helper="$("$script_dir/../install/install-aur-helper.sh" "${helper_args[@]+"${helper_args[@]}"}")"
 # One line by contract; take the last line anyway (see install-aur-helper.sh).
 aur_helper="${aur_helper##*$'\n'}"
 echo "AUR helper: $aur_helper"
-if ! command -v "$aur_helper" >/dev/null 2>&1; then
+if (( ! dry_run )) && ! command -v "$aur_helper" >/dev/null 2>&1; then
   echo "$aur_helper not available after install attempt" >&2
   exit 1
 fi

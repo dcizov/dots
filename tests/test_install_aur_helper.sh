@@ -54,7 +54,7 @@ test_an_unknown_configured_helper_is_an_error() {
 deployed() {
   D="$T_ROOT/scripts"
   mkdir -p "$D/install"
-  ln -s "$(cd ../private_dot_local/share/ucli/scripts/lib && pwd)" "$D/lib"
+  cp -R ../private_dot_local/share/ucli/scripts/lib "$D/lib"   # a copy: fakes must never reach the repo
   cp ../private_dot_local/share/ucli/scripts/install/executable_install-aur-helper.sh "$D/install/install-aur-helper.sh"
   local h
   for h in paru shelly; do

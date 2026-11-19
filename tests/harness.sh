@@ -84,14 +84,16 @@ t_minimal_path() {
 }
 
 # t_deployed <area>/<name> — copy scripts/<area>/executable_<name>.sh to its
-# deployed name under $T_ROOT/scripts (with lib/ linked in), for scripts that
+# deployed name under $T_ROOT/scripts (with a copy of lib/), for scripts that
 # call their siblings by deployed name; prints the copy's path. Siblings it
 # calls can then be faked next to it. Tests still source the real file for
 # everything that needs no sibling.
 t_deployed() {
   local area="${1%/*}" name="${1#*/}" d="$T_ROOT/scripts"
   mkdir -p "$d/$area"
-  [[ -e "$d/lib" ]] || ln -s "$(cd "$T_SCRIPTS/lib" && pwd)" "$d/lib"
+  # A copy, never a link: a test that fakes a lib file must not be able to
+  # write through into the repository.
+  [[ -e "$d/lib" ]] || cp -R "$T_SCRIPTS/lib" "$d/lib"
   cp "$T_SCRIPTS/$area/executable_$name.sh" "$d/$area/$name.sh"
   chmod +x "$d/$area/$name.sh"
   printf '%s\n' "$d/$area/$name.sh"

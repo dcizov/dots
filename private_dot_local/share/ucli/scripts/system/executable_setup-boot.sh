@@ -64,7 +64,9 @@ if [[ "${EUID:-$(id -u)}" -ne 0 && -z "$root" ]]; then
 fi
 
 run() {
-  printf '+ %q ' "$@"; echo
+  # one "+", then the words: printf repeats its whole format per argument, so
+  # '+ %q ' printed a "+" before every word
+  printf '+'; printf ' %q' "$@"; echo
   if (( ! dry_run )) && [[ -z "${UCLI_DRY_RUN_ONLY:-}" ]]; then "$@"; fi
 }
 
