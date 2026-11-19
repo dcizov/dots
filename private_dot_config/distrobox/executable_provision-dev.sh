@@ -158,6 +158,37 @@ run() {
   return "$rc"
 }
 
+# devbox_locale <wanted> — the UTF-8 locale to generate for a wanted LANG: the
+# name without its @modifier, or C.UTF-8 when the wish is not a UTF-8 locale.
+devbox_locale() {
+  # The modifier goes first: de_DE.UTF-8@euro is a UTF-8 locale, and testing
+  # the suffix before stripping it used to send such hosts to C.UTF-8.
+  local want="${1:-}"
+  want="${want%%@*}"
+  case "$want" in
+    *.[Uu][Tt][Ff]-8|*.[Uu][Tt][Ff]8) ;;
+    *) want="C.UTF-8" ;;
+  esac
+  printf '%s\n' "$want"
+}
+
+# debian_php_branch <major> — the PHP branch Debian's own archive ships for a
+# release (bookworm 12, trixie 13, forky 14), empty when unknown.
+debian_php_branch() {
+  case "${1:-}" in
+    12) echo 8.2 ;;
+    13) echo 8.4 ;;
+    14) echo 8.5 ;;
+  esac
+}
+
+# Tests source this file for the helpers above and stop here, before anything
+# is redirected, checked or written.
+if [ "${DEVBOX_HELPERS_ONLY:-0}" = "1" ]; then
+  [ "${BASH_SOURCE[0]}" = "$0" ] && exit 0   # executed with the flag: nothing to do
+  return 0
+fi
+
 # plain-text transcript, ANSI stripped, for "what happened" after the fact
 LOG="${DEVBOX_LOG:-/var/log/devbox-provision.log}"
 strip_ansi() { sed -u -e 's/\x1b\[[0-9;]*[a-zA-Z]//g' -e 's/\r//g' -e '/^[[:space:]]*$/d'; }
@@ -434,12 +465,7 @@ fi
 # make sure C.UTF-8 exists as the fallback 00-env.zsh relies on.
 # DEVBOX_LOCALE is what the host runs with (passed in by devbox-reconcile); the
 # process environment here is a bare `podman exec` and usually has no LANG.
-LOC_WANT="${DEVBOX_LOCALE:-${LC_ALL:-${LC_CTYPE:-${LANG:-}}}}"
-case "$LOC_WANT" in
-  *.[Uu][Tt][Ff]-8|*.[Uu][Tt][Ff]8) ;;
-  *) LOC_WANT="C.UTF-8" ;;
-esac
-LOC_WANT="${LOC_WANT%%@*}"            # strip @euro and friends
+LOC_WANT="$(devbox_locale "${DEVBOX_LOCALE:-${LC_ALL:-${LC_CTYPE:-${LANG:-}}}}")"
 LOC_BASE="${LOC_WANT%%.*}"
 # `locale -a` spells them de_DE.UTF-8 -> de_DE.utf8
 LOC_GREP="${LOC_BASE,,}.utf8"
@@ -489,12 +515,7 @@ fi
 # ---------------------------------------------------------------------------
 # 4. drop the archive's PHP branch so it cannot win /usr/bin/php
 # ---------------------------------------------------------------------------
-DEB_PHP=""
-case "$DEBIAN_MAJOR" in
-  12) DEB_PHP="8.2" ;;
-  13) DEB_PHP="8.4" ;;
-  14) DEB_PHP="8.5" ;;
-esac
+DEB_PHP="$(debian_php_branch "$DEBIAN_MAJOR")"
 if ! dpkg -l "php${PHP_BRANCH}-cli" 2>/dev/null | grep -q '^ii'; then
   # apt patterns, quoted so the shell never globs them against the cwd.
   purge=()
