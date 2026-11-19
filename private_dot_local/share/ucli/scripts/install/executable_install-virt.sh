@@ -18,7 +18,12 @@
 # Usage: install-virt.sh [--no-service] [--status] [--yes]
 set -euo pipefail
 
-real_user="${SUDO_USER:-$USER}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+
+real_user="$(ucli_real_user)"
+kvm="${UCLI_TEST_ROOT:-}/dev/kvm"   # UCLI_TEST_ROOT: test seam
 
 mode=apply
 take_service=1
@@ -28,15 +33,10 @@ for arg in "$@"; do
     --status) mode=status ;;
     --no-service) take_service=0 ;;
     --yes|-y) yes_flag=1 ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
-
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
-# shellcheck source=/dev/null
-source "$script_dir/../lib/common.sh"
 
 # libvirt 9+ ships both the monolithic libvirtd and per-driver modular daemons.
 # Enabling the socket starts the daemon on first `virsh`/virt-manager use; the
@@ -52,9 +52,9 @@ libvirt_unit() {
 in_group() { id -nG "$real_user" 2>/dev/null | tr ' ' '\n' | grep -qx "$1"; }
 
 kvm_state() {
-  if [[ ! -e /dev/kvm ]]; then
+  if [[ ! -e "$kvm" ]]; then
     echo "no /dev/kvm — VT-x/AMD-V is off in firmware (or kvm module not loaded)"
-  elif [[ -r /dev/kvm && -w /dev/kvm ]]; then
+  elif [[ -r "$kvm" && -w "$kvm" ]]; then
     echo "yes (/dev/kvm usable)"
   else
     echo "yes, but not usable by $real_user (kvm group membership)"
@@ -92,7 +92,7 @@ args=()
 "$script_dir/install-packages.sh" ${args[@]+"${args[@]}"} virt
 
 # 2. KVM. A VM without it boots, but emulated — worth saying once, loudly.
-if [[ ! -e /dev/kvm ]]; then
+if [[ ! -e "$kvm" ]]; then
   cat >&2 <<'KVM'
 warning: /dev/kvm is missing, so guests will run emulated (slow).
          Enable VT-x / AMD-V (SVM) in firmware, and make sure the CPU supports it:
