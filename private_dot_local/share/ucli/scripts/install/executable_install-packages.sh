@@ -79,34 +79,25 @@ done
 [[ -n "$mode" ]] || { usage; exit 2; }
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
+# shellcheck source=../lib/aur.sh
+source "$script_dir/../lib/aur.sh"
 
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
-
-# shellcheck source=/dev/null
-source "$real_home/.config/ucli/packages.bash"
-
-# Personal picks, if this machine has an overlay (same idea as ~/.config/zsh/
-# local.zsh): PERSONAL_PKGS / PERSONAL_DEV / PERSONAL_FLATPAKS /
-# PERSONAL_GNOME_EXTENSIONS. Never chezmoi-managed, never required.
-personal_file="$real_home/.config/ucli/packages.local.bash"
-if [[ -r "$personal_file" ]]; then
-  # shellcheck source=/dev/null
-  source "$personal_file"
-fi
-
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
-
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/aur.sh"
-
+# packages.bash, then the overlay if this machine has one (same idea as
+# ~/.config/zsh/local.zsh): PERSONAL_PKGS / PERSONAL_DEV / PERSONAL_FLATPAKS /
+# PERSONAL_GNOME_EXTENSIONS. Under sudo, the invoking user's files.
+ucli_load_packages "$(ucli_real_home)"
 
 distro="$(ucli_norm "${distro_override:-$(detect_distro)}")"
 cpu="$(ucli_norm "${cpu_override:-$(detect_cpu)}")"
 gpu="$(ucli_norm "${gpu_override:-$(detect_gpu)}")"
 desktop="$(ucli_norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
+# One spelling from here on: DESKTOP_REMOVE_KDE, not a missing _PLASMA, is the
+# --ignore list for a desktop called "plasma".
+[[ "$desktop" == plasma ]] && desktop=kde
 role="$(ucli_norm "$(detect_role)")"
 gaming="$(ucli_norm "$(detect_gaming)")"
 
