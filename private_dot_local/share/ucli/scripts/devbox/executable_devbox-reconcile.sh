@@ -39,12 +39,13 @@
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
+SELF="${BASH_SOURCE[0]}"   # this script, whether executed or sourced
 exists_only=0
 for arg in "$@"; do
   case "$arg" in
     --exists) exists_only=1 ;;
     --quiet)  QUIET=1 ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$SELF"; exit 0 ;;
     *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
@@ -175,7 +176,7 @@ fi
 if [ "${DEVBOX_LOCKED:-0}" != "1" ] && command -v flock >/dev/null 2>&1; then
   mkdir -p "$HOME/.local/state"
   export DEVBOX_LOCKED=1
-  exec flock -w 900 "$HOME/.local/state/distrobox-dev.lock" "$0" "$@"
+  exec flock -w 900 "$HOME/.local/state/distrobox-dev.lock" "$SELF" "$@"
 fi
 [ -f "$INI" ] || die "missing $INI (run 'chezmoi apply' first)"
 
@@ -254,7 +255,7 @@ ensure_running() {
           "$BOX" "$(container_status)" >&2
         printf 'last lines of the container log:\n' >&2
         container_logs_tail >&2
-        die "the container's init hook or entrypoint is failing; fix $INI, then: distrobox rm -f $BOX && $0"
+        die "the container's init hook or entrypoint is failing; fix $INI, then: distrobox rm -f $BOX && $SELF"
         ;;
     esac
     sleep 1
