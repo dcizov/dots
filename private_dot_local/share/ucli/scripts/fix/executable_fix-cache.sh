@@ -15,17 +15,17 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
 
 keep=2
 dry_run=0
 while (($#)); do
   case "$1" in
-    --keep) keep="${2:-2}"; shift 2 ;;
+    --keep) keep="${2:-}"; shift $(( $# >= 2 ? 2 : 1 )) ;;
     --keep=*) keep="${1#*=}"; shift ;;
     --dry-run|-n) dry_run=1; shift ;;
-    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done

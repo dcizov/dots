@@ -14,8 +14,8 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
 
 reset=0
 dry_run=0
@@ -23,7 +23,7 @@ for arg in "$@"; do
   case "$arg" in
     --reset) reset=1 ;;
     --dry-run|-n) dry_run=1 ;;
-    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -43,7 +43,7 @@ run() {
 
 keyrings=()
 for candidate in archlinux cachyos; do
-  compgen -G "/usr/share/pacman/keyrings/${candidate}.gpg" >/dev/null 2>&1 && keyrings+=("$candidate")
+  compgen -G "${UCLI_TEST_ROOT:-}/usr/share/pacman/keyrings/${candidate}.gpg" >/dev/null 2>&1 && keyrings+=("$candidate")
 done
 (( ${#keyrings[@]} )) || keyrings=(archlinux)
 

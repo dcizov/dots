@@ -15,8 +15,8 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
 
 yes_flag=0
 dry_run=0
@@ -24,7 +24,7 @@ for arg in "$@"; do
   case "$arg" in
     --yes|-y) yes_flag=1 ;;
     --dry-run|-n) dry_run=1 ;;
-    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
