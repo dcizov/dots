@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# `ucli gaming`: the opt-in gaming packages and Flatpaks. On CachyOS this is
+# CachyOS Hello's job (its gaming meta packages), so nothing is done there.
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
-
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
 
 distro="$(ucli_norm "$(detect_distro)")"
 if [[ "$distro" == "cachyos" ]]; then

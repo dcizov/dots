@@ -13,12 +13,16 @@ set -euo pipefail
 #
 # Source: https://github.com/essembeh/gnome-extensions-cli
 
-PIPX_BIN="${HOME}/.local/bin/pipx"
+# pipx puts its apps in ~/.local/bin, which a fresh login may not have on PATH
+# yet. Add it unconditionally: checking for ~/.local/bin/pipx (as this used to)
+# missed the normal case of Arch's /usr/bin/pipx, and a successful install then
+# ended in "gext not found".
+mkdir -p "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$PATH"
 
 if ! command -v pipx >/dev/null 2>&1; then
-  echo "pipx not found; installing python-pipx first ..."
-  echo "  run: sudo pacman -S --needed python-pipx"
-  echo "  then re-run this script"
+  echo "pipx not found; install it first, then re-run this:" >&2
+  echo "  sudo pacman -S --needed python-pipx" >&2
   exit 1
 fi
 
@@ -29,11 +33,6 @@ fi
 
 echo "Installing gnome-extensions-cli via pipx ..."
 pipx install gnome-extensions-cli
-
-# Ensure pipx binaries are on PATH
-if [[ -x "${PIPX_BIN}" ]]; then
-  export PATH="${HOME}/.local/bin:${PATH}"
-fi
 
 if command -v gext >/dev/null 2>&1; then
   echo "gnome-extensions-cli (gext) installed successfully"
