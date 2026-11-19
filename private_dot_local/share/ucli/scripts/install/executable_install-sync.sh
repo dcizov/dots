@@ -19,8 +19,12 @@
 # Usage: install-sync.sh [--no-service] [--status]
 set -euo pipefail
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 take_service=1
 mode=apply
@@ -28,14 +32,10 @@ for arg in "$@"; do
   case "$arg" in
     --no-service) take_service=0 ;;
     --status) mode=status ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
-
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$script_dir/../lib/common.sh"
 
 unit="syncthing@${real_user}.service"
 
@@ -51,8 +51,23 @@ config_file() {
   return 1
 }
 
+# This machine's ID. Syncthing answers that itself (`device-id` in 2.x,
+# `--device-id` in 1.x), from its own certificate. config.xml is only the
+# fallback: once devices are paired it lists them too, and its first
+# <device id=…> could be the *other* machine — the wrong ID to pair with.
 device_id() {
-  local cfg
+  local id cfg
+  local -a as_owner=()
+  if [[ "${EUID:-$(id -u)}" -eq 0 && "$real_user" != root ]]; then
+    as_owner=(runuser -u "$real_user" -- env HOME="$real_home")
+  fi
+  if command -v syncthing >/dev/null 2>&1; then
+    id="$("${as_owner[@]}" syncthing device-id 2>/dev/null || "${as_owner[@]}" syncthing --device-id 2>/dev/null || true)"
+    if [[ "$id" =~ ^[A-Z0-9]{7}(-[A-Z0-9]{7}){7}$ ]]; then
+      printf '%s\n' "$id"
+      return 0
+    fi
+  fi
   cfg="$(config_file)" || return 1
   sed -n 's/.*<device id="\([^"]*\)".*/\1/p' "$cfg" | head -n1
 }
