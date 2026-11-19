@@ -50,3 +50,27 @@ if providers:
     print(providers[0])
 PY
 }
+
+# aur_build <pkg> <yes 0|1> [pgp-key] — clone https://aur.archlinux.org/<pkg>
+# into a private temp dir and `makepkg -si` it, as the current (non-root) user.
+# The key, when given, is imported first so makepkg can check the source
+# signature the PKGBUILD lists in validpgpkeys; checksums are checked either
+# way. (An AUR checkout carries no .sig file of its own — looking for one, as
+# the paru and shelly installers each used to, always came up empty.) Git and
+# gpg chatter goes to stderr: callers keep stdout for their one-line answer.
+aur_build() {
+  local pkg="$1" yes="${2:-0}" key="${3:-}" workdir
+  workdir="$(mktemp -d -t "$pkg-build.XXXXXX")"
+  (
+    trap 'rm -rf "$workdir"' EXIT
+    echo "cloning the $pkg AUR repository ..." >&2
+    git clone -q "https://aur.archlinux.org/$pkg.git" "$workdir/$pkg" >&2
+    cd "$workdir/$pkg" || exit 1
+    if [[ -n "$key" ]] && command -v gpg >/dev/null 2>&1 && ! gpg --list-keys "$key" >/dev/null 2>&1; then
+      gpg --recv-keys "$key" >&2 2>/dev/null \
+        || gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$key" >&2 2>/dev/null \
+        || echo "warning: could not import PGP key $key; makepkg will refuse a signed source it cannot verify" >&2
+    fi
+    if (( yes )); then makepkg -si --noconfirm >&2; else makepkg -si >&2; fi
+  )
+}
