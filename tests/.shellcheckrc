@@ -1,0 +1,8 @@
+# shellcheck reads only the nearest .shellcheckrc, so the root settings repeat here.
+source-path=SCRIPTDIR
+external-sources=true
+
+# Harness idioms, true of every test file:
+#   SC2016  stub bodies are single-quoted code for the stub to run later
+#   SC2031  HOME and friends are set by t_sandbox before each test
+disable=SC2016,SC2031

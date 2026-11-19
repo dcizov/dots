@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # stub bodies are code for the stub to run, not here
 # install.sh: the console bootstrap. Arguments, the Arch-family gate, the exact
 # pacman/chezmoi calls, the console-only apply, and the post-bootstrap snapshot.
 . "$(dirname -- "${BASH_SOURCE[0]}")/harness.sh"

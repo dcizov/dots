@@ -58,7 +58,6 @@ stub() {
   local name="$1" body="${2:-exit 0}"
   {
     printf '#!/usr/bin/env bash\n'
-    # shellcheck disable=SC2016  # $* and $T_CALLS expand when the stub runs
     printf 'printf "%%s\\n" "%s $*" >>"$T_CALLS"\n' "$name"
     printf '%s\n' "$body"
   } >"$T_BIN/$name"

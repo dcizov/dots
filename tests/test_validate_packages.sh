@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # stub bodies are code for the stub to run, not here
 # validate-packages.sh: every array name resolves through pacman or the AUR,
 # extension lists are PK:UUID, and the personal overlay is checked as well.
 . "$(dirname -- "${BASH_SOURCE[0]}")/harness.sh"

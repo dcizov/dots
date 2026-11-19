@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # stub bodies are code for the stub to run, not here
 # lib/common.sh: privilege and lookup helpers, the real user's home under
 # sudo, the packages.bash + overlay loader, and header-comment help text.
 . "$(dirname -- "${BASH_SOURCE[0]}")/harness.sh"
