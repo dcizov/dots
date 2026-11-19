@@ -59,14 +59,21 @@ installed and enabled on the next Firefox start.
   --user NAME     whose extension lists to read (default: $SUDO_USER, else $USER)
 USAGE
 }
-for arg in "$@"; do
-  case "$arg" in
+# A while/shift loop: `--user NAME` consumes the next word. Inside
+# `for arg in "$@"` the shift did not move the loop, so NAME then came round as
+# its own argument and the script died with "unknown arg".
+while (($#)); do
+  case "$1" in
     --dev) dev_list=1 ;;
     --dry-run|-n) dry_run=1 ;;
-    --user) shift; target_user="${1:-}" ;;
+    --user)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "--user needs a name" >&2; usage; exit 2; }
+      target_user="$2"; shift ;;
+    --user=*) target_user="${1#*=}" ;;
     --help|-h) usage; exit 0 ;;
-    *) echo "unknown arg: $arg" >&2; usage; exit 2 ;;
+    *) echo "unknown arg: $1" >&2; usage; exit 2 ;;
   esac
+  shift
 done
 
 # Test seam: prefix for every system path, so the whole thing can be exercised
@@ -84,7 +91,7 @@ if [[ -z "$real_home" ]]; then
 fi
 if [[ "${EUID:-$(id -u)}" -ne 0 && -z "$root" && "$dry_run" -eq 0 ]]; then
   echo "Run as root: sudo ucli firefox-policies" >&2
-  echo "  (or: sudo $0$([[ $dev_list == 1 ]] && echo ' --dev'))" >&2
+  echo "  (or: sudo ${BASH_SOURCE[0]}$([[ $dev_list == 1 ]] && echo ' --dev'))" >&2
   exit 1
 fi
 
