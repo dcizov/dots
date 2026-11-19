@@ -30,8 +30,11 @@ ucli fingerprint       # reader working in the DE's Settings (see below)
 
 `ucli config-audit` is the Arch answer to Bluefin's `ujust check-local-overrides`
 (which diffs `/usr/etc` against `/etc`): it lists what `pacdiff -o` says is
-waiting to be merged plus every packaged file whose checksum changed, and exits 0
-either way — drift is normal, but it should not be invisible. Read-only.
+waiting to be merged, then the packaged files whose content changed (`pacman
+-Qkk`) in two groups — ordinary files, which the next upgrade of their package
+overwrites, and `backup=` configs such as `/etc/fstab`, which pacman keeps and
+answers with a `.pacnew` instead. It exits 0 either way — drift is normal, but
+it should not be invisible. Read-only.
 
 `ucli sync` installs Syncthing, enables `syncthing@<user>.service` (runs as you,
 not root) and prints the Web GUI and this machine's device ID; pairing is the
@@ -257,7 +260,8 @@ function had been copy-pasted into eight scripts:
 | `lib/detect.sh` | machine facts as functions — `detect_distro`, `detect_desktop`, `detect_root_fstype`, `detect_snapper_root`, `detect_limine`, … — so no script re-implements `/etc/os-release` parsing |
 | `lib/aur.sh` | `aur_exists` / `aur_provides` — AUR lookups (RPC, `git ls-remote` fallback, `provides=` resolution) shared by `install-packages.sh` and `validate-packages.sh`, which each used to carry their own copy |
 | `lib/firefox.sh` | `fx_profile_root` / `fx_profile_dirs` / `fx_config_dir` — the 147+ `~/.config/mozilla/firefox` vs `~/.mozilla/firefox` split, in one place |
-| `lib/common.sh` | `as_root` (sudo only when needed), `have`, `confirm` (honours the caller's `--yes`) — sourced by the service installers, `doctor`, `config-audit`, `uninstall` and `arch-snapper-limine` |
+| `lib/common.sh` | `as_root` (sudo only when needed), `have`, `confirm` (honours the caller's `--yes`), `ucli_real_home` (the invoking user's home under sudo), `ucli_load_packages` (`packages.bash` then the optional overlay), `ucli_script_help` (the header comment as `--help`) — sourced by the service installers, `doctor`, `config-audit`, `validate-packages`, `uninstall` and `arch-snapper-limine` |
+| `lib/detect.sh` also has | `os_release_field KEY` — the one reader of `/etc/os-release` (in a subshell, so nothing leaks) behind `detect_distro_raw` / `detect_distro_like` |
 
 The libs live next to the scripts, not in `~/.config`, so a script running under
 sudo loads them from its own path (`source "$(dirname "$0")/../lib/ui.sh"`);
