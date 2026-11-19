@@ -7,13 +7,25 @@
 # host, not inside the dev box).
 #
 # Usage:
-#   ~/.local/share/ucli/scripts/install/executable_install-vscodium-extensions.sh
-#   # or via ucli:   ucli vscodium-extensions
+#   ucli vscodium-extensions [--force]
+#   (~/.local/share/ucli/scripts/install/install-vscodium-extensions.sh)
 #
 # Lines starting with '#' are ignored.
 # ============================================================================
 
 set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/version-script.sh
+. "$script_dir/../lib/version-script.sh"
+
+FORCE=0
+for arg in "$@"; do
+    case "$arg" in
+        --force) FORCE=1 ;;
+        *) echo "unknown argument: $arg (usage: ucli vscodium-extensions [--force])" >&2; exit 2 ;;
+    esac
+done
 
 EXT_FILE="${HOME}/.config/VSCodium/User/extensions.txt"
 
@@ -32,11 +44,7 @@ fi
 # Versioned gate (ported from Bluefin's /usr/lib/ublue/setup-services/libsetup.sh):
 # the token is a hash of extensions.txt, so the slow `codium --install-extension`
 # loop only runs when the list actually changed. `--force` re-runs it anyway.
-# shellcheck source=/dev/null
-. "${HOME}/.local/share/ucli/scripts/lib/version-script.sh"
 EXT_VERSION="$(vs_hash "$EXT_FILE")"
-FORCE=0
-[[ "${1:-}" == "--force" ]] && FORCE=1
 if (( ! FORCE )) && ! vs_check vscodium-extensions user "$EXT_VERSION"; then
     echo "VSCodium extensions unchanged since the last run (${EXT_VERSION}); skipping."
     echo "    re-run with --force to install again, or edit $EXT_FILE"
@@ -44,6 +52,7 @@ if (( ! FORCE )) && ! vs_check vscodium-extensions user "$EXT_VERSION"; then
 fi
 
 count=0
+failed=()
 while IFS= read -r line || [[ -n "$line" ]]; do
     # strip leading/trailing whitespace, skip blanks and comments
     line="${line%%#*}"
@@ -51,10 +60,17 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" ]] && continue
 
     echo "==> installing $line"
-    codium --install-extension "$line" || echo "    (failed or already present: $line)"
+    # An extension that is already installed exits 0, so a failure is real
+    # (offline, a typo, gone from Open VSX) and must not be remembered as done.
+    codium --install-extension "$line" || failed+=("$line")
     count=$((count + 1))
 done < "$EXT_FILE"
 
+if ((${#failed[@]})); then
+    echo "==> $count extension entries processed; failed: ${failed[*]}" >&2
+    echo "    nothing recorded as done: the next run retries" >&2
+    exit 1
+fi
 vs_commit vscodium-extensions user "$EXT_VERSION"
 
 echo "==> done. $count extension entries processed."
