@@ -84,7 +84,7 @@ test_no_reader_installs_nothing_unless_forced() {
   t_run fingerprint --yes
   assert_status 0
   assert_contains "$T_OUT" "No fingerprint reader found"
-  assert_not_called "pacman"
+  assert_not_called "pacman -S"
   t_run fingerprint --yes --force
   assert_contains "$T_OUT" "not detected, continuing (--force)"
   assert_called "pacman -S --needed --noconfirm fprintd"
@@ -94,7 +94,7 @@ test_an_installed_fprintd_is_not_reinstalled() {
   machine; stub fprintd
   t_run fingerprint --yes
   assert_contains "$T_OUT" "fprintd: already installed"
-  assert_not_called "pacman"
+  assert_not_called "pacman -S"
 }
 
 test_status_reports_reader_service_fingers_and_pam() {

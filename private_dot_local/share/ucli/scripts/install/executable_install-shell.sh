@@ -2,12 +2,12 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
+# shellcheck source=../lib/common.sh
 . "$script_dir/../lib/common.sh"
 
 # When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 # Pass real_home to oh-my-zsh installer via env so it uses the right home.
 export UCLI_REAL_HOME="$real_home"

@@ -123,7 +123,9 @@ t_sandbox() {
   export PATH="$T_BIN:$PATH"
   export T_CALLS="$T_ROOT/calls"
   : >"$T_CALLS"
-  unset SUDO_USER
+  # Nothing from the host session: its shell framework and desktop would leak
+  # into what the scripts detect.
+  unset SUDO_USER ZSH ZSH_CUSTOM XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
   export UCLI_NO_LINKS=1 NO_COLOR=1
 }
 
