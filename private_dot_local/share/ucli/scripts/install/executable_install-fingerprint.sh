@@ -17,8 +17,13 @@
 # Usage: install-fingerprint.sh [--status] [--enroll] [--pam] [--force] [--yes]
 set -euo pipefail
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
+
+real_user="$(ucli_real_user)"
 
 mode=apply
 take_pam=0
@@ -31,29 +36,15 @@ for arg in "$@"; do
     --pam) take_pam=1 ;;
     --force) force=1 ;;
     --yes|-y) yes_flag=1 ;;
-    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+    -h|--help) ucli_script_help; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
 
-pam_file="/etc/pam.d/system-auth"
+pam_file="${UCLI_ETC_ROOT:-}/etc/pam.d/system-auth"   # UCLI_ETC_ROOT: test seam
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$script_dir/../lib/common.sh"
-
-has_reader() {
-  # lib/detect.sh knows the vendor/product ids (138a, 06cb, 27c6, 08ff, 0483)
-  local lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
-  if [[ -r "$lib" ]]; then
-    # shellcheck source=/dev/null
-    source "$lib"
-    [[ "$(detect_fingerprint 2>/dev/null || echo no)" == yes ]]
-    return
-  fi
-  have lsusb || return 1
-  lsusb 2>/dev/null | grep -Eiq '138a:|06cb:|27c6:|08ff:|0483:'
-}
+# lib/detect.sh knows the vendor/product ids (138a, 06cb, 27c6, 08ff, 0483).
+has_reader() { [[ "$(detect_fingerprint 2>/dev/null || echo no)" == yes ]]; }
 
 pam_wired() { [[ -r "$pam_file" ]] && grep -q 'pam_fprintd' "$pam_file"; }
 
@@ -63,16 +54,7 @@ enrolled_fingers() {
     | sed -n 's/^.*: \(.*\)$/\1/p' | tr '\n' ' '
 }
 
-desktop_name() {
-  local lib="$real_home/.local/share/ucli/scripts/lib/detect.sh"
-  if [[ -r "$lib" ]]; then
-    # shellcheck source=/dev/null
-    source "$lib"
-    detect_desktop 2>/dev/null || echo none
-  else
-    echo none
-  fi
-}
+desktop_name() { detect_desktop 2>/dev/null || echo none; }
 
 # Prints the desktop's own enrollment page. Named enroll_hint, not ui_hint:
 # ui_hint is the shared dim one-liner in lib/ui.sh.
@@ -166,32 +148,34 @@ if (( take_pam )); then
       as_root cp -a "$pam_file" "$backup"
       echo "PAM: backup written to $backup"
     fi
-    # "sufficient" after pam_unix means: password still works, and the finger is
-    # tried as an alternative. On the wrong side of pam_unix it would stop the
-    # password from being asked for.
+    # First line of the auth stack, as the Arch Wiki (Fprint) has it: the finger
+    # is tried, and when it fails or times out the stack carries on to the
+    # password. It must go ABOVE every auth line, never between them: Arch's
+    # system-auth jumps with [success=N] (pam_systemd_home skips 2, pam_unix 1),
+    # and a line inserted under a jump moves its target. Right after pam_unix, a
+    # correct password skipped pam_fprintd and landed on `pam_faillock authfail
+    # [default=die]` — every password login, sudo and unlock then failed.
     as_root python3 - "$pam_file" <<'PY'
 import os, sys
 
 path = sys.argv[1]
 with open(path) as handle:
     lines = handle.readlines()
-out, inserted = [], False
-for line in lines:
-    out.append(line)
-    fields = line.split()
-    if (not inserted and fields and fields[0] == "auth"
-            and any("pam_unix.so" in field for field in fields)):
-        out.append("auth      sufficient  pam_fprintd.so\n")
-        inserted = True
-if not inserted:
+if not any(l.split()[:1] in (["auth"], ["-auth"]) and "pam_unix.so" in l for l in lines):
     sys.stderr.write("no 'auth ... pam_unix.so' line found; %s left untouched\n" % path)
     sys.exit(1)
+out, inserted = [], False
+for line in lines:
+    if not inserted and line.split()[:1] in (["auth"], ["-auth"]):
+        out.append("auth       sufficient                  pam_fprintd.so\n")
+        inserted = True
+    out.append(line)
 tmp = path + ".ucli-new"
 with open(tmp, "w") as handle:
     handle.write("".join(out))
 os.replace(tmp, path)
 PY
-    echo "PAM: added 'auth sufficient pam_fprintd.so' after pam_unix"
+    echo "PAM: added 'auth sufficient pam_fprintd.so' at the top of the auth stack"
     echo "     (test it: lock the screen and unlock with the finger, and keep a"
     echo "      root shell open until you have — $backup is the way back)"
   fi
@@ -200,10 +184,8 @@ fi
 echo
 echo "==> fingerprint reader ready"
 enroll_hint
+printf '\n    Notes:\n      - enrollment is per user; the finger enrolled here is %s'"'"'s\n' "$real_user"
 cat <<'NOTES'
-
-    Notes:
-      - enrollment is per user; the finger enrolled here is $USER's
       - without PAM the finger only works for apps that ask fprintd directly
         (and for the enrollment test in Settings) — `ucli fingerprint --pam`
         wires login, screen unlock and sudo
