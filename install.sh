@@ -7,6 +7,9 @@ APPLY=1
 SNAPSHOT=1
 YES=0
 DRY_RUN=0
+# Test seam shared with setup-boot/setup-pacman: every /etc path is read below
+# this root, so a fake tree can stand in for the machine.
+ETC_ROOT="${UCLI_ETC_ROOT:-}"
 
 usage() {
   cat <<'USAGE'
@@ -53,10 +56,17 @@ WARNING: method 1 pipes a remote script straight into bash. It runs as you, and
 USAGE
 }
 
+# need_value <option> <remaining args…> — the option's value, or a usage error
+# (a bare `shift 2` would die with bash's "shift count out of range").
+need_value() {
+  [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || { echo "$1 needs a value" >&2; usage >&2; exit 2; }
+  printf '%s\n' "$2"
+}
+
 while (($#)); do
   case "$1" in
     --repo)
-      REPO="${2:-}"
+      REPO="$(need_value "$@")"
       shift 2
       ;;
     --repo=*)
@@ -64,7 +74,7 @@ while (($#)); do
       shift
       ;;
     --branch)
-      BRANCH="${2:-}"
+      BRANCH="$(need_value "$@")"
       shift 2
       ;;
     --branch=*)
@@ -123,16 +133,16 @@ require_linux() {
   [[ "$(uname -s)" == Linux ]] || die "Linux required"
 }
 
-detect_distro() {
-  # shellcheck disable=SC1091
-  . /etc/os-release
-  printf '%s\n' "${ID:-unknown}"
-}
-
-detect_distro_like() {
-  # shellcheck disable=SC1091
-  . /etc/os-release
-  printf '%s\n' "${ID_LIKE:-}"
+# os_release_field <KEY> [fallback] — the bootstrap runs before ucli's
+# lib/detect.sh exists, so it carries this one copy of the same reader.
+os_release_field() {
+  local key="$1" fallback="${2:-}" file="$ETC_ROOT/etc/os-release"
+  [[ -r "$file" ]] || { printf '%s\n' "$fallback"; return 0; }
+  (
+    # shellcheck disable=SC1090
+    . "$file"
+    printf '%s\n' "${!key:-$fallback}"
+  )
 }
 
 ensure_local_bin() {
@@ -166,8 +176,8 @@ install_arch_requirements() {
 
 install_requirements() {
   local distro like
-  distro="$(detect_distro)"
-  like="$(detect_distro_like)"
+  distro="$(os_release_field ID unknown)"
+  like="$(os_release_field ID_LIKE)"
 
   case "$distro" in
     arch|archlinux|cachyos)
@@ -237,7 +247,7 @@ take_fresh_snapshot() {
     log "skipping the post-bootstrap snapshot (--no-snapshot)"
     return 0
   fi
-  if [[ ! -f /etc/snapper/configs/root ]]; then
+  if [[ ! -f "$ETC_ROOT/etc/snapper/configs/root" ]]; then
     log "no snapper config yet; 'ucli setup-snapshots' sets it up and takes snapshot #1"
     return 0
   fi
