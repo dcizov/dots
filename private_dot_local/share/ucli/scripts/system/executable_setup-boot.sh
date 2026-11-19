@@ -75,23 +75,13 @@ changed=0
 # ---------------------------------------------------------------- configuration
 # The tokens and the theme come from the same file as everything else this
 # machine gets. Read them out of the invoking user's home: sudo runs us as root.
-real_user="${SUDO_USER:-$USER}"
-if [[ -n "$root" ]]; then
-  # Test seam: with UCLI_ETC_ROOT set the config comes from $HOME, not the passwd
-  # database, so a fake tree can be exercised without touching the real machine.
-  real_home="${HOME:-}"
-else
-  real_home="$(getent passwd "$real_user" 2>/dev/null | cut -d: -f6 || true)"
-  [[ -n "$real_home" ]] || real_home="${HOME:-}"
-fi
-if [[ -z "$real_home" ]]; then
-  echo "warning: cannot resolve $real_user's home; using KERNEL_CMDLINE_EXTRA's defaults" >&2
-fi
-for cfg in "$real_home/.config/ucli/packages.bash" "$real_home/.config/ucli/packages.local.bash"; do
-  [[ -n "$real_home" && -r "$cfg" ]] || continue
-  # shellcheck source=/dev/null
-  . "$cfg"
-done
+# The tokens and the theme come from the same file as everything else this
+# machine gets, read from the invoking user's home (sudo runs us as root). A
+# missing file just means the defaults below.
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+ucli_load_packages "$(ucli_real_home)" 2>/dev/null || true
 KERNEL_CMDLINE_EXTRA=("${KERNEL_CMDLINE_EXTRA[@]:-}")
 PLYMOUTH_THEME="${PLYMOUTH_THEME:-}"
 
