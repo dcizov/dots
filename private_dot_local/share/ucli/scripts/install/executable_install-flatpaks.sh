@@ -36,21 +36,24 @@ for arg in "$@"; do
 done
 [[ -n "$mode" ]] || { usage; exit 2; }
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
 
-# When run via sudo, $HOME is root's home; use the invoking user's home instead.
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
-# shellcheck source=/dev/null
-source "$real_home/.config/ucli/packages.bash"
-# Optional personal overlay (PERSONAL_FLATPAKS), same idea as ~/.config/zsh/local.zsh.
-personal_file="$real_home/.config/ucli/packages.local.bash"
-if [[ -r "$personal_file" ]]; then
-  # shellcheck source=/dev/null
-  source "$personal_file"
+# Under sudo, --user would install into root's Flatpak store, which no desktop
+# session reads: re-run as the invoking user (install-flatpak-gtk-theme.sh does
+# the same). --system is the scope that wants root.
+if [[ "$scope" == --user && "${EUID:-$(id -u)}" -eq 0 && -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then
+  exec runuser -u "$real_user" -- env HOME="$real_home" "${BASH_SOURCE[0]}" "$@"
 fi
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
+
+# packages.bash and the optional overlay (PERSONAL_FLATPAKS).
+ucli_load_packages "$real_home"
 
 desktop="$(ucli_norm "${desktop_override:-$(detect_desktop 2>/dev/null || echo none)}")"
 role="$(ucli_norm "$(detect_role)")"
@@ -73,8 +76,11 @@ select_apps() {
         *) echo "Unsupported desktop: $desktop" >&2; exit 1 ;;
       esac
       ;;
-    dev) [[ "$role" == *dev* ]] && add_array DEV_FLATPAKS ;;
-    gaming) [[ "$gaming" == true || "$role" == *gaming* ]] && add_array GAMING_FLATPAKS ;;
+    # `if`, not `[[ … ]] && add_array`: a false test made the function return 1,
+    # and set -e ended the run silently (dev on a non-dev role, and so `full`
+    # on any machine that is not both dev and gaming).
+    dev) if [[ "$role" == *dev* ]]; then add_array DEV_FLATPAKS; fi ;;
+    gaming) if [[ "$gaming" == true || "$role" == *gaming* ]]; then add_array GAMING_FLATPAKS; fi ;;
     full-profile|full) select_apps apps; select_apps dev; select_apps gaming ;;
     *) echo "unknown mode: $1" >&2; usage; exit 2 ;;
   esac
