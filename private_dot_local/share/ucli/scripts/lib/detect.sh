@@ -151,7 +151,11 @@ detect_machine() {
 
 detect_virtualization() {
   if command -v systemd-detect-virt >/dev/null 2>&1; then
-    systemd-detect-virt 2>/dev/null || printf 'none\n'
+    # On bare metal it prints "none" *and* exits 1, so `|| printf none` printed
+    # it twice; keep its one answer.
+    local virt
+    virt="$(systemd-detect-virt 2>/dev/null || true)"
+    printf '%s\n' "${virt:-none}"
   else
     printf 'unknown\n'
   fi
