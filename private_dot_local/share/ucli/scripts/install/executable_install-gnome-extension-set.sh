@@ -65,11 +65,18 @@ for arg in "$@"; do
 done
 
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$script_dir/../lib/common.sh"
+# shellcheck source=../lib/detect.sh
+source "$script_dir/../lib/detect.sh"
+# shellcheck source=../lib/version-script.sh
+source "$script_dir/../lib/version-script.sh"
+
 # When run via sudo (from setup-desktop.sh), $HOME is root's home;
 # use the invoking user's home instead.
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 # gext is installed by pipx to $real_home/.local/bin; add it to PATH
 # when running as root so command -v gext finds it.
@@ -77,23 +84,16 @@ if [[ "$EUID" -eq 0 ]] && [[ -d "$real_home/.local/bin" ]]; then
   export PATH="$real_home/.local/bin:$PATH"
 fi
 
-# Optional personal overlay: PERSONAL_GNOME_EXTENSIONS, "PK:UUID" pairs.
+# packages.bash, then the optional overlay (PERSONAL_GNOME_EXTENSIONS, "PK:UUID").
 personal_file="$real_home/.config/ucli/packages.local.bash"
-# shellcheck source=/dev/null
-source "$real_home/.config/ucli/packages.bash"
-if [[ -r "$personal_file" ]]; then
-  # shellcheck source=/dev/null
-  source "$personal_file"
-fi
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/detect.sh"
+ucli_load_packages "$real_home"
 
 # Run a command as the real user (not root) when invoked via sudo.
 # Extensions and dconf are per-user: as root they would land in root's
 # profile/database instead of the user's. HOME is forced too, because dconf
 # resolves its database from it.
 as_user() {
-  if [[ "$EUID" -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
+  if [[ "$EUID" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
     runuser -u "$real_user" -- env -u XDG_CONFIG_HOME HOME="$real_home" \
       PATH="$real_home/.local/bin:$PATH" "$@"
   else
@@ -260,8 +260,6 @@ state_incomplete() {
 # do not change, this mode has nothing new to install, and gext talks to
 # extensions.gnome.org on every call — by far the slowest step in the setup. `--force` re-runs it, e.g. after
 # you disable an extension by hand and want the managed set back.
-# shellcheck source=/dev/null
-source "$real_home/.local/share/ucli/scripts/lib/version-script.sh"
 gate_name="gnome-extensions-$mode"
 gate_version="$(vs_hash "$real_home/.config/ucli/packages.bash")"
 # The personal set is defined in the overlay, so its hash is part of the token.
