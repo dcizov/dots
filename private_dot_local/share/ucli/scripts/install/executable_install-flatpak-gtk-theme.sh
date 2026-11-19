@@ -79,7 +79,7 @@ theme_names=(adw-gtk3 adw-gtk3-dark)
 if [[ "$scope" == "--user" ]] && [[ "${EUID:-$(id -u)}" -eq 0 ]] \
    && [[ -n "${SUDO_USER:-}" ]] && [[ "$SUDO_USER" != root ]]; then
   exec runuser -u "$real_user" -- env HOME="$real_home" \
-    PATH="$real_home/.local/bin:$PATH" "$0" "$@"
+    PATH="$real_home/.local/bin:$PATH" "${BASH_SOURCE[0]}" "$@"
 fi
 
 # flatpak comes with `ucli apps`; a machine without it has no sandbox to theme.
@@ -93,7 +93,8 @@ fi
 # (gnome-defaults skips it), so say that instead of only installing the extension.
 host_theme=""
 for name in "${theme_names[@]}"; do
-  for dir in "/usr/share/themes/$name" "$real_home/.local/share/themes/$name"; do
+  # UCLI_TEST_ROOT prefixes the system path (the seam the fix scripts use)
+  for dir in "${UCLI_TEST_ROOT:-}/usr/share/themes/$name" "$real_home/.local/share/themes/$name"; do
     [[ -d "$dir" ]] || continue
     host_theme="$name"
     break 2
@@ -172,6 +173,10 @@ for extension in "${extensions[@]}"; do
   grep -qx "$extension" <<<"$installed" && verified=$((verified + 1))
 done
 
+if (( rc == 0 && verified < ${#extensions[@]} )); then
+  echo "error: flatpak reported success, but only $verified/${#extensions[@]} extension(s) are installed ($scope)" >&2
+  rc=1
+fi
 if (( rc == 0 )); then
   echo "flatpak theme: $verified/${#extensions[@]} adw-gtk3 extension(s) installed ($scope)"
   echo "GTK3 Flatpak apps pick the theme up from the host's gtk-theme key; restart"
