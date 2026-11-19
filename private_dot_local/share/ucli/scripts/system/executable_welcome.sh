@@ -67,7 +67,10 @@ pending_updates() {
 }
 
 last_snapshot() {
-  local f="/etc/ucli/installation-snapshot" id age
+  # last-snapshot is updated by every ucli snapshot; older machines only have
+  # installation-snapshot, which then is the latest one they recorded.
+  local f="/etc/ucli/last-snapshot" id age
+  [[ -r "$f" ]] || f="/etc/ucli/installation-snapshot"
   [[ -r "$f" ]] || { printf 'none\n'; return 0; }
   id="$(cat "$f" 2>/dev/null || echo '?')"
   local mtime now

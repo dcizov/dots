@@ -288,7 +288,8 @@ failed run retries next time.
 | `~/.local/share/ucli/scripts/` | the install/system/check scripts themselves |
 | `/etc/firefox/policies/policies.json` | Firefox extensions as policy (`ucli firefox-policies`) |
 | `~/.local/state/ucli/` | gates, motd mode, devmode marker |
-| `/etc/ucli/installation-snapshot` | the snapshot id of snapshot #1 |
+| `/etc/ucli/installation-snapshot` | the snapshot id of snapshot #1 (written once) |
+| `/etc/ucli/last-snapshot` | the id of the most recent ucli snapshot (`ucli welcome` shows it) |
 | `~/.oh-my-zsh/` | oh-my-zsh + the plugin clones (not chezmoi-managed) |
 
 Firefox is the one app whose files are split: profiles stay Firefox's own

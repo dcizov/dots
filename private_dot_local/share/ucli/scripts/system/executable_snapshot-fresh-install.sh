@@ -48,8 +48,11 @@ if (( ! take_snapshot )); then
   exit 0
 fi
 
-if (( EUID != 0 )); then
-  echo "Run as root: sudo $0 <description>" >&2
+# UCLI_TEST_ROOT: the test seam the root scripts share — skips this check
+# and roots /etc in the sandbox.
+etc="${UCLI_TEST_ROOT:-}/etc"
+if (( EUID != 0 )) && [[ -z "${UCLI_TEST_ROOT:-}" ]]; then
+  echo "Run as root: sudo ucli snapshot <description>" >&2
   exit 1
 fi
 
@@ -61,7 +64,7 @@ if ! command -v snapper >/dev/null 2>&1; then
   exit 0
 fi
 
-if [[ ! -f /etc/snapper/configs/root ]]; then
+if [[ ! -f "$etc/snapper/configs/root" ]]; then
   echo "note: no snapper root config (/etc/snapper/configs/root), so no snapshot was taken"
   echo "      run 'ucli setup-snapshots' once; on CachyOS the installer already did"
   exit 0
@@ -75,7 +78,7 @@ fi
 
 if (( dry_run )); then
   echo "+ snapper --no-dbus -c root create --description $(printf '%q' "$description") --userdata important=yes"
-  echo "+ record the snapshot number in /etc/ucli/installation-snapshot"
+  echo "+ record the snapshot number in $etc/ucli/last-snapshot"
   exit 0
 fi
 
@@ -83,8 +86,12 @@ snap_id="$(snapper --no-dbus -c root create --print-number \
   --description "$description" \
   --userdata "important=yes")"
 
-mkdir -p /etc/ucli
-echo "$snap_id" >/etc/ucli/installation-snapshot
+# last-snapshot is every run's; installation-snapshot is written once and
+# keeps snapshot #1, the restore point the docs promise it holds. (One file for
+# both used to overwrite #1 with every later debloat/uninstall snapshot.)
+mkdir -p "$etc/ucli"
+echo "$snap_id" >"$etc/ucli/last-snapshot"
+[[ -s "$etc/ucli/installation-snapshot" ]] || echo "$snap_id" >"$etc/ucli/installation-snapshot"
 
 echo "Created snapshot ($snap_id): $description"
 
