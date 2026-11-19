@@ -42,14 +42,17 @@ assert_not_called() {
 assert_file() { [[ -e "$1" ]] || t_die "missing file: $1"; }
 assert_no_file() { [[ ! -e "$1" ]] || t_die "file should not exist: $1"; }
 
-# t_run <cmd…> — run in a subshell, capturing combined output in T_OUT and the
-# exit status in T_STATUS, without stopping the test on failure. Deliberately
+# t_run <cmd…> — run in a subshell, capturing combined output in T_OUT (and in
+# T_PLAIN without ANSI colours) and the exit status in T_STATUS, without
+# stopping the test on failure. Deliberately
 # not `T_OUT=$(cmd) || T_STATUS=$?`: bash ignores `set -e` anywhere inside an
 # || list, so a sourced script would no longer stop at its first failure.
 t_run() {
   ( "$@" ) >"$T_ROOT/t_run.out" 2>&1
   T_STATUS=$?
   T_OUT="$(cat "$T_ROOT/t_run.out")"
+  # shellcheck disable=SC2034  # read by the test files
+  T_PLAIN="$(sed 's/\x1b\[[0-9;]*m//g' "$T_ROOT/t_run.out")"
 }
 
 # stub <name> [body] — a fake command on PATH that records its arguments and
