@@ -27,7 +27,7 @@ set -uo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-. "$script_dir/../lib/ui.sh"
+. "$script_dir/../lib/common.sh"
 
 level="full"
 take_snapshot=1
@@ -49,7 +49,11 @@ USAGE
 
 while (($#)); do
   case "$1" in
-    --level) level="${2:-}"; shift 2 ;;
+    # Without set -e a failed `shift 2` shifts nothing, so a bare trailing
+    # --level used to send this loop round forever.
+    --level)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "--level needs full, minimal or prompt" >&2; exit 2; }
+      level="$2"; shift 2 ;;
     --level=*) level="${1#*=}"; shift ;;
     --no-snapshot) take_snapshot=0; shift ;;
     --scheduled) scheduled=1; level="minimal"; shift ;;
@@ -103,21 +107,16 @@ run_step() {
 # --- the AUR helper ---------------------------------------------------------
 # Both files are plain assignments (install-aur-helper.sh sources them the same
 # way); the subshell keeps their arrays out of the updater's own namespace.
+# AUR_HELPER from packages.bash / the overlay, read in a subshell so their
+# arrays stay out of the updater's own namespace.
 configured_helper() {
-  local cfg
   (
     AUR_HELPER="${AUR_HELPER:-}"
-    for cfg in "$HOME/.config/ucli/packages.bash" "$HOME/.config/ucli/packages.local.bash"; do
-      [[ -r "$cfg" ]] || continue
-      # shellcheck source=/dev/null
-      . "$cfg"
-    done
+    ucli_load_packages "$(ucli_real_home)" 2>/dev/null || true
     printf '%s' "${AUR_HELPER:-}"
   )
 }
 
-# The configured helper wins when it is actually installed, otherwise the first
-# one that is. Empty output means nothing here can rebuild AUR packages.
 aur_helper() {
   local want
   want="$(configured_helper)"
@@ -213,7 +212,10 @@ fi
 flatpak_update() {
   flatpak update -y || return 1
   if (( EUID == 0 )) && [[ -n "${UCLI_TIMER_USER:-}" ]]; then
-    runuser -u "$UCLI_TIMER_USER" -- flatpak update -y || \
+    # with the user's HOME: runuser keeps root's, and per-user Flatpaks live
+    # under ~/.local/share/flatpak
+    runuser -u "$UCLI_TIMER_USER" -- env HOME="$(getent passwd "$UCLI_TIMER_USER" | cut -d: -f6)" \
+      flatpak update -y || \
       printf 'warning: user Flatpaks not updated (flatpak as %s failed)\n' "$UCLI_TIMER_USER" >&2
   fi
 }
@@ -222,8 +224,8 @@ ui_have mise && run_step "mise: runtimes" mise_upgrade
 
 if (( scheduled )); then
   ui_rule "dev box: skipped (scheduled run)"
-elif [[ -x "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh" ]]; then
-  run_step "dev box" "$HOME/.local/share/ucli/scripts/devbox/devbox-reconcile.sh"
+elif [[ -x "$script_dir/../devbox/devbox-reconcile.sh" ]]; then
+  run_step "dev box" "$script_dir/../devbox/devbox-reconcile.sh"
 else
   ui_rule "dev box: skipped (devbox-reconcile.sh not found)"
 fi
