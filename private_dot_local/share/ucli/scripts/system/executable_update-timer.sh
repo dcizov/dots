@@ -22,8 +22,10 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/ui.sh"
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 action=""
 time_spec="daily"
@@ -31,10 +33,12 @@ dry_run=0
 while (($#)); do
   case "$1" in
     on|off|status) action="$1"; shift ;;
-    --time) time_spec="${2:-daily}"; shift 2 ;;
+    --time)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "--time needs daily or HH:MM" >&2; exit 2; }
+      time_spec="$2"; shift 2 ;;
     --time=*) time_spec="${1#*=}"; shift ;;
     --dry-run|-n) dry_run=1; shift ;;
-    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -103,12 +107,16 @@ EOF
   chmod 644 "$svc" "$tmr"
 }
 
+# is-enabled exits non-zero for "disabled" as well as for an unknown unit
+# (systemctl(1)), so the status alone called an installed-but-off timer "not
+# installed". Read the text, and the unit file when there is no text.
 timer_state() {
   local state
-  # is-enabled prints "enabled"/"disabled"/"static" and exits 0 for a unit it
-  # knows; for one it does not, it exits non-zero. Use the status, not the text.
-  if state="$(systemctl is-enabled "$timer" 2>/dev/null)"; then
-    printf '%s\n' "${state:-enabled}"
+  state="$(systemctl is-enabled "$timer" 2>/dev/null || true)"
+  if [[ -n "$state" && "$state" != not-found ]]; then
+    printf '%s\n' "$state"
+  elif [[ -e "$unit_dir/$timer" ]]; then
+    printf 'installed, not enabled\n'
   else
     printf 'not installed\n'
   fi
