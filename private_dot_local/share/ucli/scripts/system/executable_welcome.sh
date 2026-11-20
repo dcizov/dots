@@ -25,13 +25,15 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "$script_dir/../lib/version-script.sh"
 
-real_user="${SUDO_USER:-$USER}"
-real_home="$(getent passwd "$real_user" | cut -d: -f6)"
+# shellcheck source=../lib/common.sh
+. "$script_dir/../lib/common.sh"
+real_user="$(ucli_real_user)"
+real_home="$(ucli_real_home)"
 
 mode="full"
 while (($#)); do
   case "$1" in
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --status) mode="status" ;;
     --full) mode="full" ;;
     --first-login) mode="first-login" ;;
@@ -105,10 +107,10 @@ desktop_name() {
 }
 
 tweaks_on() {
-  local packages_bash="$real_home/.config/ucli/packages.bash" entry n unit kind on=0 total=0
-  [[ -r "$packages_bash" ]] || { printf 'n/a\n'; return 0; }
-  # shellcheck source=/dev/null
-  . "$packages_bash"
+  local entry n unit kind on=0 total=0
+  # packages.bash *and* the overlay, which may override TWEAKS (tweaks.sh reads
+  # both, so the count must too)
+  ucli_load_packages "$real_home" 2>/dev/null || { printf 'n/a\n'; return 0; }
   declare -p TWEAKS >/dev/null 2>&1 || { printf 'n/a\n'; return 0; }
   for entry in "${TWEAKS[@]}"; do
     IFS='|' read -r n unit _ kind _ <<<"$entry"
