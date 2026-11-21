@@ -14,6 +14,7 @@
 # suddenly writes ~/.zshrc, starship.toml, ~/.config/ghostty and ~/.config/firefox.
 # Ignoring never deletes: files already in $HOME stay there, unmanaged.
 README.md
+CLAUDE.md
 AGENT_HANDOFF.md
 docs/
 tests/
