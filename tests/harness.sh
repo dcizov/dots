@@ -127,7 +127,8 @@ t_sandbox() {
   : >"$T_CALLS"
   # Nothing from the host session: its shell framework and desktop would leak
   # into what the scripts detect.
-  unset SUDO_USER ZSH ZSH_CUSTOM XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
+  unset SUDO_USER ZSH ZSH_CUSTOM XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION \
+    DBUS_SESSION_BUS_ADDRESS SSH_CONNECTION
   export UCLI_NO_LINKS=1 NO_COLOR=1
 }
 

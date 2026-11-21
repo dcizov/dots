@@ -1,0 +1,16 @@
+#!/bin/sh
+# bat only reads themes from its cache, so a new .tmTheme file in
+# ~/.config/bat/themes is invisible until `bat cache --build` runs.
+#
+# chezmoi re-runs a run_onchange_ script only when its own rendered content
+# changes, so the theme's hash is part of it: editing the theme rebuilds the
+# cache (it used to need an edit of this script). Harmless without bat.
+#
+# theme hash: {{ include "private_dot_config/bat/themes/Lambda.tmTheme" | sha256sum }}
+
+command -v bat >/dev/null 2>&1 || exit 0
+
+# Keep whatever cache location the user has configured.
+bat cache --build >/dev/null 2>&1 || true
+
+exit 0
